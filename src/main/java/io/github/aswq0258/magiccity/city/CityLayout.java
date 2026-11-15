@@ -709,6 +709,19 @@ public final class CityLayout {
         return h;
     }
 
+    /**
+     * 실내 조명을 깔 높이 범위. 도시 안은 지면 3칸 아래 ~ 158칸 위 (하수도 던전은 일부러 어둡게 남김),
+     * 바깥은 건물이 선 평평한 터에서만.
+     */
+    public int[] lightRange(int x, int z) {
+        int du = x - cx, dn = cz - z;
+        if (Math.hypot(du, dn) <= R_APRON) return new int[]{base - 3, base + 158};
+        for (int[] f : flats) {
+            if (du >= f[0] - 2 && du <= f[2] + 2 && dn >= f[1] - 2 && dn <= f[3] + 2) return new int[]{base + f[4] - 1, base + f[4] + 40};
+        }
+        return null;
+    }
+
     private boolean inFlat(int du, int dn, int pad) {
         for (int[] f : flats) if (du >= f[0] - pad && du <= f[2] + pad && dn >= f[1] - pad && dn <= f[3] + pad) return true;
         return false;

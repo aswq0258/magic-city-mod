@@ -111,6 +111,10 @@ public final class CityBuildJob {
                     if (pass == Placer.Pass.WATER) f.spawn(level, layout);
                 }
             }
+            if (pass == Placer.Pass.SOLID) {
+                p.finishShapes(layout.base - 26, layout.base + 160);
+                p.lightInteriors(layout::lightRange);
+            }
         } catch (RuntimeException e) {
             MagicCityMod.LOGGER.error("Magic City: failed to build chunk {}", cp, e);
         }
