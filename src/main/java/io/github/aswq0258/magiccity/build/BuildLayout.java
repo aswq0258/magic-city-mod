@@ -26,4 +26,18 @@ public interface BuildLayout {
 
     /** 건물에 넘겨줄 왕성도시 설계도 (지역 설계도는 null) */
     CityLayout city();
+
+    /** 지을 청크 목록 (null 이면 중심 기준 정사각형 radius 안 전부) — 대륙 곳곳에 흩어진 건물용 */
+    default List<ChunkPos> chunkList() {
+        return null;
+    }
+
+    /** 계단·울타리 연결을 맞출 높이 범위 */
+    default int shapeMinY() {
+        return base() - 26;
+    }
+
+    default int shapeMaxY() {
+        return base() + 160;
+    }
 }

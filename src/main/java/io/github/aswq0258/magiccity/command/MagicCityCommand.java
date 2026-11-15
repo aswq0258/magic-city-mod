@@ -26,6 +26,8 @@ import java.util.List;
  * /magiccity site oldcapital — 왕국 대륙에 몰락한 옛 왕도(네더 포탈이 열려 멸망한 수도) 건설
  * /magiccity goto oldcapital — 옛 왕도 앞 연합군 봉쇄 요새로 이동
  * /magiccity boss reset      — 심연의 문지기 재도전 (마계문 닫힘)
+ * /magiccity site roads      — 길 10개의 쉼터·몬스터 둥지·필드보스 결투장 건설
+ * /magiccity roads           — 길(지역) 목록과 필드보스 위치
  * /magiccity status          — 진행률 확인
  * /magiccity cancel          — 건설 중단
  */
@@ -39,7 +41,20 @@ public final class MagicCityCommand {
                         .executes(ctx -> build(ctx, false))
                         .then(Commands.literal("here").executes(ctx -> build(ctx, true))))
                 .then(Commands.literal("kingdom").executes(MagicCityCommand::kingdom))
-                .then(Commands.literal("site").then(Commands.literal("oldcapital").executes(MagicCityCommand::oldCapital)))
+                .then(Commands.literal("site").then(Commands.literal("oldcapital").executes(MagicCityCommand::oldCapital))
+                        .then(Commands.literal("roads").executes(MagicCityCommand::roads)))
+                .then(Commands.literal("roads").executes(ctx -> {
+                    StringBuilder sb = new StringBuilder("§b[마법 도시] 길(지역) 과 필드보스:");
+                    for (int i = 0; i < io.github.aswq0258.magiccity.world.KingdomRoads.ROADS.length; i++) {
+                        var r = io.github.aswq0258.magiccity.world.KingdomRoads.ROADS[i];
+                        sb.append("\n§e").append(r.name()).append(" §7(").append(Math.round(r.length())).append("블록) §f")
+                                .append(io.github.aswq0258.magiccity.site.RoadTheme.THEMES[i].region());
+                    }
+                    sb.append("\n§b필드보스 결투장:").append(io.github.aswq0258.magiccity.boss.FieldBosses.describe());
+                    String msg = sb.toString();
+                    ctx.getSource().sendSuccess(() -> Component.literal(msg), false);
+                    return 1;
+                }))
                 .then(Commands.literal("goto").then(Commands.literal("oldcapital").executes(ctx -> {
                     ServerLevel k = ctx.getSource().getServer().getLevel(io.github.aswq0258.magiccity.world.ModWorldgen.KINGDOM);
                     if (k == null) return 0;
@@ -143,6 +158,26 @@ public final class MagicCityCommand {
         CityBuildManager.start(job);
         src.sendSuccess(() -> Component.literal(String.format("§b[마법 도시] 몰락한 옛 왕도 건설 시작! 중심 (%d, %d), 건물 %d개, 청크 %d개. "
                 + "/magiccity goto oldcapital 로 봉쇄 요새에 갈 수 있습니다.", site.cx(), site.cz(), site.featureCount(), job.chunkCount())), true);
+        return 1;
+    }
+
+    /** 왕국 대륙의 길 10개에 쉼터·몬스터 둥지·필드보스 결투장 건설 */
+    private static int roads(CommandContext<CommandSourceStack> ctx) {
+        CommandSourceStack src = ctx.getSource();
+        if (CityBuildManager.isRunning()) {
+            src.sendFailure(Component.literal("[마법 도시] 이미 건설 중입니다. /magiccity status 로 확인하세요."));
+            return 0;
+        }
+        ServerLevel k = src.getServer().getLevel(io.github.aswq0258.magiccity.world.ModWorldgen.KINGDOM);
+        if (k == null) {
+            src.sendFailure(Component.literal("[마법 도시] 왕국 대륙 차원을 찾을 수 없습니다."));
+            return 0;
+        }
+        io.github.aswq0258.magiccity.site.RoadSites layout = new io.github.aswq0258.magiccity.site.RoadSites();
+        CityBuildJob job = new CityBuildJob(k, layout);
+        CityBuildManager.start(job);
+        src.sendSuccess(() -> Component.literal(String.format("§b[마법 도시] 길 거점 건설 시작! 쉼터·몬스터 둥지·필드보스 결투장 %d곳, 청크 %d개. "
+                + "/magiccity roads 로 위치를 볼 수 있습니다.", layout.featureCount(), job.chunkCount())), true);
         return 1;
     }
 }

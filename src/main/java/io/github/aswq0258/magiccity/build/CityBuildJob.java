@@ -29,6 +29,11 @@ public final class CityBuildJob {
     public CityBuildJob(ServerLevel level, BuildLayout layout) {
         this.level = level;
         this.layout = layout;
+        List<ChunkPos> listed = layout.chunkList();
+        if (listed != null) {
+            chunks.addAll(listed);
+            return;
+        }
         int r = layout.radius() + 2;
         int c0x = (layout.cx() - r) >> 4, c1x = (layout.cx() + r) >> 4;
         int c0z = (layout.cz() - r) >> 4, c1z = (layout.cz() + r) >> 4;
@@ -112,7 +117,7 @@ public final class CityBuildJob {
                 }
             }
             if (pass == Placer.Pass.SOLID) {
-                p.finishShapes(layout.base() - 26, layout.base() + 160);
+                p.finishShapes(layout.shapeMinY(), layout.shapeMaxY());
                 p.lightInteriors(layout::lightRange);
             }
         } catch (RuntimeException e) {

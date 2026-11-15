@@ -79,6 +79,10 @@ public class KingdomChunkGenerator extends ChunkGenerator {
     static BlockState blockAt(KingdomTerrain.Column c, int x, int y, int z) {
         if (y == MIN_Y) return BEDROCK;
         int h = c.h();
+        if (c.road() > 0) {
+            BlockState r = RoadBlocks.at(c, x, y, z);
+            if (r != null) return r == RoadBlocks.KEEP_AIR ? null : r;
+        }
         if (y > h) {
             if (c.water() != Integer.MIN_VALUE && y <= c.water()) {
                 return (c.kind() == KingdomTerrain.Kind.FROZEN_OCEAN && y == c.water()) ? ICE : WATER;
@@ -149,6 +153,7 @@ public class KingdomChunkGenerator extends ChunkGenerator {
                 int x = cp.getMinBlockX() + lx, z = cp.getMinBlockZ() + lz;
                 KingdomTerrain.Column c = KingdomTerrain.column(x, z);
                 int top = Math.max(c.h() + 1, c.water() == Integer.MIN_VALUE ? c.h() + 1 : c.water());
+                if (c.road() > 0) top += 4;                                        // 다리 난간·가로등
                 for (int y = MIN_Y; y <= top; y++) {
                     BlockState s = blockAt(c, x, y, z);
                     if (s == null) continue;

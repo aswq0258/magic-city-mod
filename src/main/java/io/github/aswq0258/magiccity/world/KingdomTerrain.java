@@ -37,8 +37,15 @@ public final class KingdomTerrain {
 
     public enum Kind { OCEAN, DEEP_OCEAN, FROZEN_OCEAN, BEACH, RIVER, PLAINS, FARMLAND, FOREST, ELF_FOREST, CURSED, SNOW, MEADOW, PEAKS, DWARF, WASTELAND, SWAMP, ASH, CORRUPT }
 
-    /** 한 기둥: 지면 높이, 물 높이(없으면 Integer.MIN_VALUE), 종류 */
-    public record Column(int h, int water, Kind kind, boolean steep) {}
+    /**
+     * 한 기둥: 지면 높이, 물 높이(없으면 Integer.MIN_VALUE), 종류, 가파름,
+     * 가까운 길 번호(KingdomRoads.ROADS 인덱스 + 1, 근처에 길이 없으면 0) 와 길 가장자리까지 거리(0 이하 = 길 위)
+     */
+    public record Column(int h, int water, Kind kind, boolean steep, int road, float roadEdge) {
+        public boolean onRoad() {
+            return road > 0 && roadEdge <= 0;
+        }
+    }
 
     // ───────────────────────── 노이즈 ─────────────────────────
 
@@ -293,6 +300,17 @@ public final class KingdomTerrain {
         }
         if (water == Integer.MIN_VALUE && hi < SEA - 1 && kind != Kind.RIVER) water = SEA - 1;   // 낮은 땅의 웅덩이
         boolean steep = mtn > 0.2 && Math.abs(ridged(x / 60.0, z / 60.0, 2, 34) - 0.5) > 0.32;
-        return new Column(hi, water, kind, steep);
+        int road = 0;
+        float roadEdge = 99;
+        if (!KingdomRoads.excluded(x, z)) {
+            double[] out = new double[1];
+            int ri = KingdomRoads.nearest(x, z, 4, out);
+            if (ri >= 0) {
+                road = ri + 1;
+                roadEdge = (float) out[0];
+                if (roadEdge <= 0) steep = false;
+            }
+        }
+        return new Column(hi, water, kind, steep, road, roadEdge);
     }
 }
