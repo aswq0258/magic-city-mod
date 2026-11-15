@@ -31,6 +31,7 @@ public final class Placer {
     private static final int FLAGS = Block.UPDATE_CLIENTS;
     private static final BlockState AIR = Blocks.AIR.defaultBlockState();
     private static final BlockState FOUNDATION = Blocks.STONE.defaultBlockState();
+    private static final BlockState FOUNDATION_TOP = Blocks.QUARTZ_BRICKS.defaultBlockState();
 
     private final ServerLevel level;
     private final Pass pass;
@@ -119,18 +120,26 @@ public final class Placer {
         }
     }
 
-    /** fromY 부터 아래로 단단한 블록을 만날 때까지 돌로 채움 (공중에 뜨지 않게) */
+    /** fromY 부터 아래로 단단한 블록을 만날 때까지 채움 (위 6칸은 석영 벽돌, 그 아래는 돌) */
     public void foundation(int x, int z, int fromY, int maxDepth) {
         if (pass != Pass.SOLID || !contains(x, z)) return;
         for (int y = fromY; y > fromY - maxDepth && y >= minY; y--) {
             BlockState s = get(x, y, z);
             if (!s.isAir() && s.getFluidState().isEmpty() && !s.canBeReplaced()) return;
-            set(x, y, z, FOUNDATION);
+            set(x, y, z, fromY - y < 6 ? FOUNDATION_TOP : FOUNDATION);
         }
     }
 
     private static boolean needsShapeUpdate(BlockState state) {
         Block b = state.getBlock();
         return b instanceof StairBlock || b instanceof IronBarsBlock || b instanceof FenceBlock || b instanceof WallBlock;
+    }
+
+    /** 이 기둥의 원래 지면 높이 (나뭇잎·물 제외, 꼭대기 블록의 y) */
+    public int naturalTop(int x, int z) {
+        int y = level.getHeight(net.minecraft.world.level.levelgen.Heightmap.Types.OCEAN_FLOOR, x, z) - 1;
+        // 통나무·나뭇잎은 지면이 아님
+        while (y > minY && (level.getBlockState(cursor.set(x, y, z)).is(net.minecraft.tags.BlockTags.LOGS) || level.getBlockState(cursor).is(net.minecraft.tags.BlockTags.LEAVES))) y--;
+        return y;
     }
 }

@@ -33,20 +33,22 @@ import java.util.Map;
 import static io.github.aswq0258.magiccity.city.Palette.*;
 
 /**
- * 520 x 520 판타지 성채 도시 (사용자 도면 그대로, 도면 좌표 X/Z 0~520)
+ * 판타지 성채 도시 — 사용자 520 도면에서 바깥 둘레 띠(P 구획)를 걷어내 약 395 x 395 로 줄인 버전
  *
  *  도면 좌표 (u, v): u = 도면 X (동쪽 +), v = 도면 Z (북쪽 +)
  *  월드 좌표: x = cx + (u - 260),  z = cz - (v - 260)   ← 마인크래프트의 북쪽은 -Z 이므로 뒤집음
  *
- *  - 외성벽(u/v 9~15, 504~510, 높이 24) + 모서리 큰 탑, 중간 탑, 성문 탑 / 동서남북 성문
- *  - 외곽 순환로(70~81, 440~451), 왕성 순환로(165~176, 345~356), 성문 대로 4개, 보조 도로 8개
+ *  - 외성벽(u/v 63~69, 451~457, 높이 24) + 모서리 큰 탑, 중간 탑, 성문 탑 / 동서남북 성문
+ *  - 성벽 안 순환로(70~81, 439~450), 왕성 순환로(165~176, 345~356), 성문 대로 4개, 보조 도로 8개
  *  - 구획 N01~N12(북: 군사·마법), W01~W04(서: 장인), E01~E04(동: 귀족·종교), S01~S11(남: 시장·상업·모험가),
- *    P01~P16(성벽 안쪽 둘레: 주거·공공·물류)
+ *
  *  - 해자 + 다층 왕성 (RoyalCastle + RoyalHall + Keep)
- *  - 북문 밖 공동묘지
+ *  - 북문 밖 공동묘지, 성벽 바깥은 원래 지형까지 완만한 잔디 경사로
  */
 public final class CityLayout {
-    public static final int SIZE = 520, WALL_H = 24;
+    public static final int W0 = 63, W1 = 457, WALL_H = 24, APRON = 9, SLOPE = 24;
+    /** 공동묘지 범위 (도면 좌표) */
+    private static final int CEM_U0 = 292, CEM_U1 = 450, CEM_V0 = 466, CEM_V1 = 525;
 
     public enum Style { MILITARY, MAGIC, CRAFT, NOBLE, PUBLIC, COMMERCE, RESIDENT, LOGISTIC }
 
@@ -74,31 +76,21 @@ public final class CityLayout {
             new Parcel("S07", 276, 85, 341, 115, Style.COMMERCE), new Parcel("S08", 360, 85, 387, 115, Style.COMMERCE),
             new Parcel("S09", 360, 135, 387, 160, Style.COMMERCE), new Parcel("S10", 405, 135, 435, 160, Style.COMMERCE),
             new Parcel("S11", 405, 85, 435, 115, Style.COMMERCE),
-            new Parcel("P01", 26, 350, 64, 394, Style.RESIDENT), new Parcel("P02", 26, 298, 64, 338, Style.PUBLIC),
-            new Parcel("P03", 26, 188, 64, 241, Style.RESIDENT), new Parcel("P04", 26, 281, 64, 295, Style.LOGISTIC),
-            new Parcel("P05", 457, 355, 496, 435, Style.PUBLIC), new Parcel("P06", 457, 298, 496, 338, Style.PUBLIC),
-            new Parcel("P07", 457, 185, 496, 236, Style.RESIDENT), new Parcel("P08", 457, 277, 496, 292, Style.LOGISTIC),
-            new Parcel("P09", 85, 455, 156, 494, Style.RESIDENT), new Parcel("P10", 184, 455, 243, 494, Style.MILITARY),
-            new Parcel("P11", 278, 455, 338, 494, Style.LOGISTIC), new Parcel("P12", 359, 455, 434, 494, Style.LOGISTIC),
-            new Parcel("P13", 85, 26, 160, 65, Style.RESIDENT), new Parcel("P14", 182, 26, 243, 65, Style.LOGISTIC),
-            new Parcel("P15", 278, 26, 338, 65, Style.PUBLIC), new Parcel("P16", 359, 26, 434, 65, Style.LOGISTIC),
     };
 
     /** 도로 사각형 (u0, v0, u1, v1) */
     private static final int[][] ROADS = {
-            // 성벽 안쪽 순환로
-            {16, 16, 503, 25}, {16, 494 + 1, 503, 503}, {16, 16, 25, 503}, {494 + 1, 16, 503, 503},
-            // 외곽 순환로
-            {70, 70, 451, 81}, {70, 440, 451, 451}, {70, 70, 81, 451}, {440, 70, 451, 451},
+            // 성벽 안 순환로
+            {70, 70, 450, 81}, {70, 439, 450, 450}, {70, 70, 81, 450}, {439, 70, 450, 450},
             // 왕성 순환로
             {165, 165, 356, 176}, {165, 345, 356, 356}, {165, 165, 176, 356}, {345, 165, 356, 356},
             // 성문 대로
-            {254, 357, 267, 503}, {254, 16, 267, 164}, {16, 254, 164, 267}, {357, 254, 503, 267},
+            {254, 357, 267, 456}, {254, 64, 267, 164}, {64, 254, 164, 267}, {357, 254, 456, 267},
             // 보조 도로
-            {121, 80, 130, 166}, {121, 355, 130, 441}, {391, 80, 400, 166}, {391, 355, 400, 441},
-            {80, 121, 166, 130}, {355, 121, 441, 130}, {80, 391, 166, 400}, {355, 391, 441, 400},
-            // 묘지 가는 길
-            {254, 504, 267, 534}, {268, 529, 292, 534},
+            {121, 80, 130, 166}, {121, 355, 130, 440}, {391, 80, 400, 166}, {391, 355, 400, 440},
+            {80, 121, 166, 130}, {355, 121, 440, 130}, {80, 391, 166, 400}, {355, 391, 440, 400},
+            // 북문 밖 길과 묘지 가는 길
+            {254, 457, 267, 478}, {268, 473, 291, 478},
     };
 
     public final int cx, cz, base, radius;
@@ -112,7 +104,7 @@ public final class CityLayout {
         this.cx = cx;
         this.cz = cz;
         this.base = base;
-        this.radius = 330;
+        this.radius = CEM_V1 - 260 + SLOPE + 4;
         this.seed = seed;
 
         RandomSource rand = RandomSource.create(seed);
@@ -204,10 +196,10 @@ public final class CityLayout {
     // ───────────────────────── 성벽 탑 · 묘지 ─────────────────────────
 
     private void addWallTowers() {
-        int[] ends = {12, 508};
+        int[] ends = {W0 + 3, W1 - 3};
         for (int a : ends) for (int b : ends) features.add(new WallTower(this, wx(a), wz(b), 10, 44));
         for (int t : ends) {
-            for (int m : new int[]{125, 395}) {
+            for (int m : new int[]{160, 360}) {
                 features.add(new WallTower(this, wx(t), wz(m), 7, 36));
                 features.add(new WallTower(this, wx(m), wz(t), 7, 36));
             }
@@ -219,12 +211,12 @@ public final class CityLayout {
     }
 
     private static boolean inCemetery(int u, int v) {
-        return u >= 292 && u <= 500 && v >= 522 && v <= 585;
+        return u >= CEM_U0 && u <= CEM_U1 && v >= CEM_V0 && v <= CEM_V1;
     }
 
     private void addCemetery() {
-        for (int u = 310; u <= 490; u += 30) {
-            for (int v = 540; v <= 575; v += 30) {
+        for (int u = 310; u <= 430; u += 30) {
+            for (int v = 485; v <= 515; v += 30) {
                 features.add(new Mausoleum(wx(u), wz(v), Direction.SOUTH));
             }
         }
@@ -303,10 +295,6 @@ public final class CityLayout {
         pack("N04", 25, 3, (l, i, r) -> role(l, Role.BARRACKS, r), rand);
         pack("N05", 25, 3, (l, i, r) -> role(l, Role.STABLE, r), rand);
         pack("N06", 25, 3, (l, i, r) -> role(l, Role.WAREHOUSE, r), rand);
-        Parcel p10 = parcel("P10");                                                        // 수비대 주둔지
-        features.add(new TrainingGround(wx(184), wz(494), wx(210), wz(455), rand.nextLong()));
-        pack(p10, 214, 243, 25, 3, (l, i, r) -> role(l, Role.BARRACKS, r), rand);
-
         // ── 북동: 마법 구역
         pack("N07", 25, 3, (l, i, r) -> new AcademyHall(this, l, r), rand);
         pack("N08", 23, 3, (l, i, r) -> new MageTower(this, l, r), rand);
@@ -350,24 +338,6 @@ public final class CityLayout {
         squareIn("S10", 26, l -> new MarketSquare(this, l, rand, villager(0.6F, rand)));
         pack("S11", 14, 1, (l, i, r) -> role(l, i == 0 ? Role.INN : Role.SHOP, r), rand);
 
-        // ── 둘레: 주거·공공·물류
-        Maker homes = (l, i, r) -> house(l, r);
-        pack("P01", 15, 2, homes, rand);
-        squareIn("P02", 39, l -> new Garden(this, l, rand));
-        pack("P03", 15, 2, homes, rand);
-        Parcel p05 = parcel("P05");
-        features.add(new Garden(this, lot(457, 355, 496, 394, Direction.SOUTH), rand));
-        features.add(new FountainSquare(this, lot(457, 396, 496, 435, Direction.SOUTH)));
-        squareIn("P06", 39, l -> new FountainSquare(this, l));
-        pack("P07", 15, 2, homes, rand);
-        pack("P09", 15, 2, homes, rand);
-        Maker logi = (l, i, r) -> role(l, i % 2 == 0 ? Role.WAREHOUSE : Role.STABLE, r);
-        pack("P11", 25, 3, logi, rand);
-        pack("P12", 25, 0, logi, rand);
-        pack("P13", 15, 2, homes, rand);
-        pack("P14", 25, 3, logi, rand);
-        features.add(whole("P15", l -> new MarketPlaza(l.minX(), l.minZ(), l.maxX(), l.maxZ(), rand.nextLong())));
-        pack("P16", 25, 0, logi, rand);
     }
 
     // ───────────────────────── 조회 ─────────────────────────
@@ -410,16 +380,20 @@ public final class CityLayout {
             return;
         }
         boolean road = isRoad(u, v);
-        if (!road && (u < 0 || u > SIZE || v < 0 || v > SIZE)) return;   // 바깥은 자연 지형 그대로
+        int e = flatDist(u, v);
+        if (e > 0) {                                                       // 평평한 도시 바깥: 원래 지형까지 경사로
+            slope(p, x, z, e);
+            return;
+        }
 
         p.clearAbove(x, z, b + 1);
         BlockState surface;
         int lowest = b;
 
-        if (u < 9 || u > 510 || v < 9 || v > 510) {                       // 성벽 바깥 잔디 띠
+        if (u < W0 || u > W1 || v < W0 || v > W1) {                       // 성벽 바깥 잔디 띠
             surface = road ? roadBlock(u, v) : GRASS;
-            if (!road && (u == 4 || u == 516 || v == 4 || v == 516) && Math.floorMod(u + v, 24) == 0) Shapes.lampPost(p, x, z, b);
-        } else if (u <= 15 || u >= 504 || v <= 15 || v >= 504) {          // 외성벽
+            if (!road && (u == W0 - 5 || u == W1 + 5 || v == W0 - 5 || v == W1 + 5) && Math.floorMod(u + v, 24) == 0) Shapes.lampPost(p, x, z, b);
+        } else if (u <= W0 + 6 || u >= W1 - 6 || v <= W0 + 6 || v >= W1 - 6) {          // 외성벽
             p.set(x, b, z, QUARTZ_BRICKS);
             wallColumn(p, x, z, u, v);
             p.foundation(x, z, b - 1, 48);
@@ -465,6 +439,31 @@ public final class CityLayout {
         p.foundation(x, z, lowest - 1, 48);
     }
 
+    /** 평평하게 지은 영역(성벽 + 바깥 잔디 띠, 묘지, 묘지 길) 밖으로 몇 칸 떨어졌는지. 0 이하 = 안쪽 */
+    private static int flatDist(int u, int v) {
+        int ds = Math.max(Math.max(W0 - APRON - u, u - W1 - APRON), Math.max(W0 - APRON - v, v - W1 - APRON));
+        int dc = Math.max(Math.max(CEM_U0 - u, u - CEM_U1), Math.max(CEM_V0 - v, v - CEM_V1));
+        int dr = Math.max(Math.max(254 - u, u - 291), Math.max(W1 - v, v - 478));
+        return Math.min(ds, Math.min(dc, dr));
+    }
+
+    /** 도시 바닥 높이에서 원래 지형 높이로 이어지는 완만한 잔디 경사 (돌 절벽 대신) */
+    private void slope(Placer p, int x, int z, int e) {
+        if (e > SLOPE) return;
+        int top = p.naturalTop(x, z);
+        double t = (double) e / (SLOPE + 1);
+        t = t * t * (3 - 2 * t);
+        int target = (int) Math.round(base + (top - base) * t);
+        if (target == top) return;
+        if (target < top) {
+            p.clearAbove(x, z, target + 1);
+        } else {
+            for (int y = top + 1; y < target; y++) p.set(x, y, z, Blocks.DIRT.defaultBlockState());
+        }
+        p.set(x, target, z, GRASS);
+        if (Shapes.hash(x, 9, z, seed) % 17 == 0) p.set(x, target + 1, z, FLOWERS[Shapes.hash(x, 10, z, seed) % FLOWERS.length]);
+    }
+
     private static BlockState roadBlock(int u, int v) {
         boolean edge = !isRoad(u + 1, v) || !isRoad(u - 1, v) || !isRoad(u, v + 1) || !isRoad(u, v - 1);
         return edge ? MINT_CUT : (Math.floorMod(u * 3 + v * 7, 11) == 0 ? CALCITE : SMOOTH_QUARTZ);
@@ -499,8 +498,8 @@ public final class CityLayout {
     /** 외성벽: 높이 24, 민트 띠, 총안, 성문 아치 (가로 254~267) */
     private void wallColumn(Placer p, int x, int z, int u, int v) {
         int b = base, H = WALL_H;
-        boolean uBand = u <= 15 || u >= 504, vBand = v <= 15 || v >= 504;
-        int t = uBand ? (u <= 15 ? u - 9 : 510 - u) : (v <= 15 ? v - 9 : 510 - v);   // 0 = 바깥면
+        boolean uBand = u <= W0 + 6 || u >= W1 - 6, vBand = v <= W0 + 6 || v >= W1 - 6;
+        int t = uBand ? (u <= W0 + 6 ? u - W0 : W1 - u) : (v <= W0 + 6 ? v - W0 : W1 - v);   // 0 = 바깥면
         int lat = uBand ? v : u;
         boolean gate = !(uBand && vBand) && lat >= 254 && lat <= 267;
         double open = gate ? 9 + 3 * Math.sqrt(Math.max(0, 1 - Math.pow((lat - 260.5) / 7.0, 2))) : -1;
@@ -523,10 +522,10 @@ public final class CityLayout {
     /** 공동묘지: 방해석 길, 묘비(조각 석영 + 촛불), 꽃 핀 무덤, 영혼 랜턴 기둥, 낮은 담 */
     private void cemetery(Placer p, int x, int z, int u, int v) {
         int b = base;
-        int a = Math.floorMod(u - 292, 14), c = Math.floorMod(v - 522, 14);
+        int a = Math.floorMod(u - CEM_U0, 14), c = Math.floorMod(v - CEM_V0, 14);
         boolean path = a <= 1 || c <= 1;
-        boolean border = u == 292 || u == 500 || v == 522 || v == 585;
-        boolean entrance = u == 292 && v >= 529 && v <= 534;
+        boolean border = u == CEM_U0 || u == CEM_U1 || v == CEM_V0 || v == CEM_V1;
+        boolean entrance = u == CEM_U0 && v >= 473 && v <= 478;
         int h = Shapes.hash(x, 21, z, seed);
         p.set(x, b, z, path || entrance ? CALCITE : GRASS);
         if (border) {
