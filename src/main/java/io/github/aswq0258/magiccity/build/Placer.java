@@ -36,6 +36,7 @@ public final class Placer {
     private final Pass pass;
     private final int minX, minZ, maxX, maxZ, minY, maxY;
     private final BlockPos.MutableBlockPos cursor = new BlockPos.MutableBlockPos();
+    private boolean sawWater = false;
 
     public Placer(ServerLevel level, ChunkPos chunk, Pass pass) {
         this.level = level;
@@ -48,12 +49,27 @@ public final class Placer {
         this.maxY = level.getMaxBuildHeight() - 1;
     }
 
+    /** SOLID 패스 중 물 자리를 만났는지 (WATER 패스에서 다시 방문할 청크) */
+    public boolean sawWater() {
+        return sawWater;
+    }
+
     public Pass pass() {
         return pass;
     }
 
     public ServerLevel level() {
         return level;
+    }
+
+    public int minX() { return minX; }
+    public int maxX() { return maxX; }
+    public int minZ() { return minZ; }
+    public int maxZ() { return maxZ; }
+
+    /** 사각 영역이 이 청크와 겹치는지 */
+    public boolean intersects(int x0, int z0, int x1, int z1) {
+        return x0 <= maxX && x1 >= minX && z0 <= maxZ && z1 >= minZ;
     }
 
     public boolean contains(int x, int z) {
@@ -79,7 +95,10 @@ public final class Placer {
         if (!contains(x, z) || y < minY || y > maxY) return;
         boolean water = state.is(Blocks.WATER);
         if (pass == Pass.SOLID) {
-            if (water) state = AIR;
+            if (water) {
+                state = AIR;
+                sawWater = true;
+            }
         } else if (!water) {
             return;
         }

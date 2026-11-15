@@ -28,6 +28,11 @@ public abstract class Feature {
     /** 마지막 패스에서 건물 중심 청크가 처리될 때 한 번 호출 (주민 소환 등) */
     public void spawn(ServerLevel level, CityLayout city) {}
 
+    /** spawn() 에서 소환할 것이 있는지 */
+    public boolean needsSpawn() {
+        return false;
+    }
+
     /** 가로등 격자가 이 칸을 피해야 하는지 */
     public boolean occupies(int x, int z) {
         return x >= minX - 1 && x <= maxX + 1 && z >= minZ - 1 && z <= maxZ + 1;

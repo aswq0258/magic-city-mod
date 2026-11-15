@@ -220,4 +220,9 @@ public class House extends Feature {
         int u = f.width / 2;
         Shapes.spawnVillager(level, f.x(u, 3) + 0.5, groundY + 1, f.z(u, 3) + 0.5);
     }
+
+    @Override
+    public boolean needsSpawn() {
+        return villager;
+    }
 }

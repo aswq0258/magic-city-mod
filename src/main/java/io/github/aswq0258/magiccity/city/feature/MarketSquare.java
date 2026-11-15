@@ -40,7 +40,7 @@ public class MarketSquare extends Feature {
         int i = 0;
         for (int sx = -1; sx <= 1; sx += 2) {
             for (int sz = -1; sz <= 1; sz += 2) {
-                buildStall(p, b, mx + sx * 4, mz + sz * 4, sx, sz, goods[i++]);
+                stall(p, b, mx + sx * 4, mz + sz * 4, sx, sz, goods[i++], seed);
             }
         }
 
@@ -57,7 +57,8 @@ public class MarketSquare extends Feature {
         }
     }
 
-    private void buildStall(Placer p, int b, int scx, int scz, int sx, int sz, BlockState job) {
+    /** 노점 하나 (3x3, 줄무늬 차양). sx/sz: 광장 중심에서 본 방향(±1) */
+    public static void stall(Placer p, int b, int scx, int scz, int sx, int sz, BlockState job, long seed) {
         for (int dx = -1; dx <= 1; dx++) {
             for (int dz = -1; dz <= 1; dz++) {
                 int x = scx + dx, z = scz + dz;
@@ -84,5 +85,10 @@ public class MarketSquare extends Feature {
         if (!villagers) return;
         Shapes.spawnVillager(level, mx + 4.5, groundY + 1, mz + 4.5);
         Shapes.spawnVillager(level, mx - 3.5, groundY + 1, mz - 3.5);
+    }
+
+    @Override
+    public boolean needsSpawn() {
+        return villagers;
     }
 }
