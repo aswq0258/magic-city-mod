@@ -36,6 +36,7 @@
 - `/magiccity map` — 가 보지 않은 곳까지 그려진 지역 지도 (내 위치 중심 2048 x 2048, 쉼터·둥지·필드보스 표시). `/magiccity map <x> <z>` 로 다른 곳
 - `/magiccity map world` — 대륙 전체가 한 장에 그려진 전도
 - `/magiccity site worldtree` — 세계수 성역 건설 (세계수·나선 계단 전망대·정령호·엘프 나무집 10채·장로의 전당), `/magiccity goto worldtree` 로 이동
+- `/magiccity site dwarf` — 드워프 광산왕국 건설 (산의 문·드워프 왕 거상·대전당·옥좌실·대장간·주거 회랑·광산·자수정 정동·잃어버린 광부의 갱도), `/magiccity goto dwarf` 로 이동
 
 ### 길 = 지역
 길은 지형이 생성될 때 바로 깔립니다 (왕도/교역로 = 폭 7 돌길 + 가로등, 숲길/산악길 = 폭 5 흙길, 봉쇄된 옛길 = 부서진 돌길, 물 위는 다리).

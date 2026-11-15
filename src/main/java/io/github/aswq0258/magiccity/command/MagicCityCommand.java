@@ -32,6 +32,8 @@ import java.util.List;
  * /magiccity map world       — 대륙 전도
  * /magiccity site worldtree  — 세계수 성역 (세계수·정령호·엘프 나무집 마을) 건설
  * /magiccity goto worldtree  — 세계수 광장으로 이동
+ * /magiccity site dwarf      — 드워프 광산왕국 (산의 문·대전당·옥좌실·대장간·광산) 건설
+ * /magiccity goto dwarf      — 드워프 교역 마당으로 이동
  * /magiccity status          — 진행률 확인
  * /magiccity cancel          — 건설 중단
  */
@@ -47,7 +49,17 @@ public final class MagicCityCommand {
                 .then(Commands.literal("kingdom").executes(MagicCityCommand::kingdom))
                 .then(Commands.literal("site").then(Commands.literal("oldcapital").executes(MagicCityCommand::oldCapital))
                         .then(Commands.literal("roads").executes(MagicCityCommand::roads))
-                        .then(Commands.literal("worldtree").executes(MagicCityCommand::worldTree)))
+                        .then(Commands.literal("worldtree").executes(MagicCityCommand::worldTree))
+                        .then(Commands.literal("dwarf").executes(MagicCityCommand::dwarf)))
+                .then(Commands.literal("goto").then(Commands.literal("dwarf").executes(ctx -> {
+                    ServerLevel k = ctx.getSource().getServer().getLevel(io.github.aswq0258.magiccity.world.ModWorldgen.KINGDOM);
+                    if (k == null) return 0;
+                    int x = io.github.aswq0258.magiccity.site.DwarfHold.CX, z = io.github.aswq0258.magiccity.site.DwarfHold.CZ - 40;
+                    int y = io.github.aswq0258.magiccity.world.KingdomTerrain.column(io.github.aswq0258.magiccity.site.DwarfHold.CX,
+                            io.github.aswq0258.magiccity.site.DwarfHold.CZ - 50).h() + 1;
+                    ctx.getSource().getPlayerOrException().teleportTo(k, x + 0.5, y, z + 0.5, 180F, 0F);
+                    return 1;
+                })))
                 .then(Commands.literal("goto").then(Commands.literal("worldtree").executes(ctx -> {
                     ServerLevel k = ctx.getSource().getServer().getLevel(io.github.aswq0258.magiccity.world.ModWorldgen.KINGDOM);
                     if (k == null) return 0;
@@ -255,6 +267,27 @@ public final class MagicCityCommand {
         CityBuildManager.start(job);
         src.sendSuccess(() -> Component.literal(String.format("§a[마법 도시] 세계수 성역 건설 시작! 중심 (%d, %d), 건물 %d개, 청크 %d개. "
                 + "/magiccity goto worldtree 로 갈 수 있습니다.", site.cx(), site.cz(), site.featureCount(), job.chunkCount())), true);
+        return 1;
+    }
+
+    /** 드워프 광산왕국 건설 */
+    private static int dwarf(CommandContext<CommandSourceStack> ctx) {
+        CommandSourceStack src = ctx.getSource();
+        if (CityBuildManager.isRunning()) {
+            src.sendFailure(Component.literal("[마법 도시] 이미 건설 중입니다. /magiccity status 로 확인하세요."));
+            return 0;
+        }
+        ServerLevel k = src.getServer().getLevel(io.github.aswq0258.magiccity.world.ModWorldgen.KINGDOM);
+        if (k == null) {
+            src.sendFailure(Component.literal("[마법 도시] 왕국 대륙 차원을 찾을 수 없습니다."));
+            return 0;
+        }
+        io.github.aswq0258.magiccity.site.DwarfHold site = new io.github.aswq0258.magiccity.site.DwarfHold(k.getSeed() ^ 0xD3A2FL);
+        CityBuildJob job = new CityBuildJob(k, site);
+        CityBuildManager.start(job);
+        src.sendSuccess(() -> Component.literal(String.format("§6[마법 도시] 드워프 광산왕국 건설 시작! 산의 문 (%d, %d, %d), 청크 %d개. "
+                + "/magiccity goto dwarf 로 갈 수 있습니다.", io.github.aswq0258.magiccity.site.DwarfHold.CX, site.floorY() + 1,
+                io.github.aswq0258.magiccity.site.DwarfHold.CZ - 95, job.chunkCount())), true);
         return 1;
     }
 }
