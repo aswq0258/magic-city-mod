@@ -137,24 +137,29 @@ public final class Royal {
      * baseY 층이 원뿔 밑면(반지름 r), 높이 h 만큼 좁아집니다.
      */
     public static void spire(Placer p, int cx, int cz, int baseY, double r, int h) {
+        spire(p, cx, cz, baseY, r, h, Chateau.ROOF, GOLD);
+    }
+
+    /** 재료를 지정하는 원뿔 첨탑 (몸체, 갈비뼈·띠) */
+    public static void spire(Placer p, int cx, int cz, int baseY, double r, int h, BlockState body, BlockState rib) {
         int ext = (int) Math.ceil(r) + 1;
         if (!p.intersects(cx - ext, cz - ext, cx + ext, cz + ext)) return;
         p.forColumns(cx - ext, cz - ext, cx + ext, cz + ext, (x, z) -> {
             int dx = x - cx, dz = z - cz;
             double d = Math.sqrt(dx * dx + dz * dz);
             double frac = (Shapes.angle(dx, dz) * 8 / (Math.PI * 2)) % 1.0;
-            boolean rib = frac < 0.13 || frac > 0.95;
+            boolean isRib = frac < 0.13 || frac > 0.95;
             for (int k = 0; k < h; k++) {
                 double rk = (r + 0.5) * (1.0 - (double) k / h);
                 if (d > rk) break;
                 boolean shell = d > rk - 1.25 || k == 0;
                 if (!shell) continue;
-                BlockState st = (k > 0 && k % 7 == 3) ? GOLD : (rib && d > 0.8) ? GOLD : Chateau.ROOF;
+                BlockState st = (k > 0 && k % 7 == 3) ? rib : (isRib && d > 0.8) ? rib : body;
                 if (k == 0) st = d > r - 0.5 ? Palette.CHISELED_QUARTZ : Palette.SMOOTH_QUARTZ;
                 p.set(x, baseY + k, z, st);
             }
         });
-        for (int k = 0; k < 4; k++) p.set(cx, baseY + h + k, cz, GOLD);
+        for (int k = 0; k < 4; k++) p.set(cx, baseY + h + k, cz, rib);
         p.set(cx, baseY + h + 4, cz, Palette.END_ROD);
     }
 

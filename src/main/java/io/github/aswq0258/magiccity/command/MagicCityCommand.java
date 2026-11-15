@@ -87,7 +87,7 @@ public final class MagicCityCommand {
                 "§b[마법 도시] 건설 시작! 중심 (%d, %d), 지면 Y=%d%s, 원형 도시 지름 약 520, 건물 %d개, 청크 %d개",
                 feet.getX(), feet.getZ(), base, here ? "(발밑)" : "(자동)", layout.featureCount(), job.chunkCount())), true);
         src.sendSuccess(() -> Component.literal(
-                "§7진행률은 채팅으로 알려드립니다. 30~60분 정도 걸릴 수 있습니다. 끝날 때까지 서버(게임)를 켜 두세요."), false);
+                "§7진행률은 채팅으로 알려드립니다. 1~2시간 정도 걸릴 수 있습니다. 끝날 때까지 서버(게임)를 켜 두세요."), false);
         return 1;
     }
 }

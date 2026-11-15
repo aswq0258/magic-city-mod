@@ -31,6 +31,12 @@ public final class Chateau {
      * @return 용마루 꼭대기 y
      */
     public static int hipRoof(Placer p, int x0, int z0, int x1, int z1, int y, int maxRise, double holeR, int hx, int hz) {
+        return hipRoof(p, x0, z0, x1, z1, y, maxRise, holeR, hx, hz, ROOF, Chateau::roofStairs, Royal.GOLD);
+    }
+
+    /** 재료를 지정하는 모임지붕 (판, 계단, 용마루 장식) */
+    public static int hipRoof(Placer p, int x0, int z0, int x1, int z1, int y, int maxRise, double holeR, int hx, int hz,
+                              BlockState roof, java.util.function.Function<Direction, BlockState> stairs, BlockState crest) {
         final int ox0 = Math.min(x0, x1) - 1, oz0 = Math.min(z0, z1) - 1, ox1 = Math.max(x0, x1) + 1, oz1 = Math.max(z0, z1) + 1;
         final int ridgeD = Math.min((Math.min(ox1 - ox0, oz1 - oz0)) / 2, Math.max(1, maxRise / 2));
         if (!p.intersects(ox0, oz0, ox1, oz1)) return y + 2 * ridgeD + 2;
@@ -41,12 +47,12 @@ public final class Chateau {
             Direction out = d == dW ? Direction.WEST : d == dE ? Direction.EAST : d == dN ? Direction.NORTH : Direction.SOUTH;
             int ly = 2 * Math.min(d, ridgeD);
             if (d >= ridgeD) {
-                p.set(x, y + ly, z, ROOF);
-                p.set(x, y + ly + 1, z, ROOF);
-                if (d == ridgeD && Math.floorMod(x + z, 2) == 0) p.set(x, y + ly + 2, z, Royal.GOLD);
+                p.set(x, y + ly, z, roof);
+                p.set(x, y + ly + 1, z, roof);
+                if (d == ridgeD && Math.floorMod(x + z, 2) == 0) p.set(x, y + ly + 2, z, crest);
             } else {
-                p.set(x, y + ly, z, ROOF);
-                p.set(x, y + ly + 1, z, roofStairs(out.getOpposite()));
+                p.set(x, y + ly, z, roof);
+                p.set(x, y + ly + 1, z, stairs.apply(out.getOpposite()));
             }
         });
         return y + 2 * ridgeD + 2;

@@ -3,7 +3,11 @@ package io.github.aswq0258.magiccity.city;
 import io.github.aswq0258.magiccity.build.Placer;
 import io.github.aswq0258.magiccity.city.feature.AcademyHall;
 import io.github.aswq0258.magiccity.city.feature.BarrierTower;
-import io.github.aswq0258.magiccity.city.feature.Cathedral;
+import io.github.aswq0258.magiccity.city.feature.ArchmageTower;
+import io.github.aswq0258.magiccity.city.feature.GrandCathedral;
+import io.github.aswq0258.magiccity.city.feature.GuildHall;
+import io.github.aswq0258.magiccity.city.feature.Observatory;
+import io.github.aswq0258.magiccity.city.feature.Outskirts;
 import io.github.aswq0258.magiccity.city.feature.Citadel;
 import io.github.aswq0258.magiccity.city.feature.Feature;
 import io.github.aswq0258.magiccity.city.feature.FloatingIsland;
@@ -12,7 +16,6 @@ import io.github.aswq0258.magiccity.city.feature.Garden;
 import io.github.aswq0258.magiccity.city.feature.GuildYard;
 import io.github.aswq0258.magiccity.city.feature.House;
 import io.github.aswq0258.magiccity.city.feature.Keep;
-import io.github.aswq0258.magiccity.city.feature.MageTower;
 import io.github.aswq0258.magiccity.city.feature.MarketPlaza;
 import io.github.aswq0258.magiccity.city.feature.MarketSquare;
 import io.github.aswq0258.magiccity.city.feature.RingWallWalk;
@@ -61,7 +64,7 @@ import static io.github.aswq0258.magiccity.city.Palette.*;
 public final class CityLayout {
     public static final int R_CASTLE = 72, R_CRING = 82, R_INNER = 147, R_IWALL_IN = 148, R_IWALL_OUT = 154, R_IRING = 163,
             R_MID = 207, R_MRING = 215, R_OUTER = 252, R_WALL_IN = 253, R_WALL_OUT = 259, R_MOAT_IN = 262, R_MOAT_OUT = 275,
-            R_APRON = 285, SLOPE = 24, WALL_H = 24, IWALL_H = 16, AVE = 6;
+            R_APRON = 285, SLOPE = 24, WALL_H = 24, IWALL_H = 16, AVE = 6, OUT = 390, EDGE = 20;
     /** 자동 지면 높이 조사 범위 (반지름) */
     public static final int SURVEY_R = R_WALL_OUT;
     /** 하수도 입구 (도면 좌표) */
@@ -76,13 +79,15 @@ public final class CityLayout {
     private final List<Feature> features = new ArrayList<>();
     private final Map<Long, List<Feature>> byChunk = new HashMap<>();
     private final List<int[]> taken = new ArrayList<>();      // 놓인 건물 범위 {du0, dn0, du1, dn1}
+    private final List<int[]> flats = new ArrayList<>();      // 바깥 세계의 평평한 터 {du0, dn0, du1, dn1, 높이}
+    private final Map<Feature, Integer> lifts = new HashMap<>();
     private int villagerBudget = 160;
 
     public CityLayout(int cx, int cz, int base, long seed) {
         this.cx = cx;
         this.cz = cz;
         this.base = base;
-        this.radius = R_APRON + SLOPE + 18;
+        this.radius = OUT + 2;
         this.seed = seed;
 
         RandomSource rand = RandomSource.create(seed);
@@ -92,9 +97,10 @@ public final class CityLayout {
         addFacilities(rand);
         addHouses(rand);
         addUnderworldAndSky(rand);
+        addOutskirts(rand);
 
         for (Feature f : features) {
-            f.groundY = base;
+            f.groundY = base + lifts.getOrDefault(f, 0);
             for (int x = (f.minX - 1) >> 4; x <= (f.maxX + 1) >> 4; x++) {
                 for (int z = (f.minZ - 1) >> 4; z <= (f.maxZ + 1) >> 4; z++) {
                     byChunk.computeIfAbsent(ChunkPos.asLong(x, z), k -> new ArrayList<>()).add(f);
@@ -227,13 +233,15 @@ public final class CityLayout {
         place(86, 72, 25, l -> new RoleBuilding(l, Role.STABLE, rand, false));                     // 왕실 마구간
         features.add(new Temple(cx + 97, cz - 54, cx + 127, cz - 8, Direction.SOUTH, rand.nextLong()));
         take(97, 8, 127, 54);                                                                      // 별빛의 신전
-        features.add(new Cathedral(cx + 54, cz + 64, cx + 82, cz + 120, Direction.NORTH, rand.nextLong()));
-        take(54, -120, 82, -64);                                                                   // 대성당 (2단계에서 새 디자인)
+        features.add(new GrandCathedral(cx + 32, cz + 93, rand.nextLong()));                       // 왕국 대성당 (쾰른식)
+        take(16, -112, 94, -74);
+        features.add(new Outskirts.Graveyard(cx + 95, cz + 50, cx + 122, cz + 72, rand.nextLong()));   // 성당 묘지
+        take(95, -72, 122, -50);
         mansion(-100, 57, Direction.EAST, rand);
         mansion(-101, -47, Direction.EAST, rand);
         mansion(-66, -94, Direction.NORTH, rand);
         mansion(-125, 20, Direction.EAST, rand);
-        mansion(25, -125, Direction.NORTH, rand);
+        mansion(-75, 105, Direction.SOUTH, rand);
         features.add(new Garden(this, lotRel(-45, -127, -16, -98, Direction.NORTH), rand));        // 귀족 정원
         take(-45, -127, -16, -98);
         features.add(new FountainSquare(this, lotRel(33, 86, 59, 112, Direction.SOUTH)));         // 내성 분수 광장
@@ -244,12 +252,15 @@ public final class CityLayout {
         features.add(new TrainingGround(cx - 182, cz - 89, cx - 153, cz - 66, rand.nextLong()));
         take(-182, 66, -153, 89);
         place(-32, 183, 23, l -> new RoleBuilding(l, Role.ARMORY, rand, false));                   // 무기고
-        features.add(new RoleBuilding(lotRel(13, 173, 43, 193, Direction.SOUTH), Role.GUILD, rand, true));   // 모험가 길드
-        take(11, 171, 45, 195);
+        features.add(new GuildHall(cx + 13, cz - 193, cx + 43, cz - 173, rand.nextLong()));        // 모험가 길드 본관
+        take(9, 169, 47, 197);
         features.add(new GuildYard(this, 315, 420, 340, 446, rand.nextLong()));
         take(55, 160, 80, 186);
-        place(161, 93, 25, l -> new AcademyHall(this, l, rand));                                   // 마법 아카데미 (2단계에서 새 디자인)
-        place(99, 158, 23, l -> new MageTower(this, l, rand));
+        place(161, 93, 25, l -> new AcademyHall(this, l, rand));                                   // 아카데미 강의동
+        features.add(new ArchmageTower(cx + 131, cz - 131, Direction.WEST, rand.nextLong()));      // 대마법사의 수정탑
+        take(115, 115, 147, 147);
+        features.add(new Observatory(cx + 99, cz - 158, Direction.SOUTH));                         // 천문대
+        take(87, 146, 111, 170);
         features.add(new MarketPlaza(cx + 77, cz + 145, cx + 109, cz + 177, rand.nextLong()));      // 중앙 시장
         take(77, -177, 109, -145);
         place(161, -93, 15, l -> new RoleBuilding(l, Role.SHOP, rand, true));                      // 상인 길드 상점
@@ -380,6 +391,7 @@ public final class CityLayout {
             for (int k = 0; k < 4; k++) {                                                  // 대각 방사로
                 double a = Math.toRadians(45 + 90 * k);
                 double lat = -du * Math.sin(a) + dn * Math.cos(a), along = du * Math.cos(a) + dn * Math.sin(a);
+                if (k == 0 && along > R_IRING && along < R_MID) continue;                    // 아카데미 부지
                 if (along > 0 && Math.abs(lat) <= 3) return true;
             }
         }
@@ -418,7 +430,7 @@ public final class CityLayout {
         final int du = x - cx, dn = cz - z, b = base;
         final double r = Math.hypot(du, dn);
         if (r > R_APRON) {
-            slope(p, x, z, du, dn, (int) Math.ceil(r - R_APRON));
+            outskirts(p, x, z, du, dn);
             return;
         }
         p.clearAbove(x, z, b + 1);
@@ -544,30 +556,178 @@ public final class CityLayout {
         return h < 12 ? SMOOTH_QUARTZ : h < 16 ? CALCITE : h < 19 ? Blocks.POLISHED_DIORITE.defaultBlockState() : Blocks.CRACKED_STONE_BRICKS.defaultBlockState();
     }
 
-    /** 도시 바깥: 원래 지형까지 완만한 잔디 경사로, 대로 연장선은 흙길 */
-    private void slope(Placer p, int x, int z, int du, int dn, int e) {
-        boolean trail = Math.abs(du) <= 5 || Math.abs(dn) <= 5;
-        BlockState path = Shapes.hash(x, 15, z, seed) % 4 == 0 ? Blocks.COARSE_DIRT.defaultBlockState() : Blocks.DIRT_PATH.defaultBlockState();
-        if (e > SLOPE) {
-            if (trail && e <= SLOPE + 16) {
-                int top = p.naturalTop(x, z);
-                p.clearAbove(x, z, top + 1);
-                p.set(x, top, z, path);
+    // ───────────────────────── 성벽 바깥 세계 ─────────────────────────
+
+    /**
+     * 북: 산맥(가운데 고갯길·강 계곡은 낮게)·국경 요새·광산 / 남: 평원·밭·풍차·목장·농촌 마을 /
+     * 서: 숲·벌목장·작은 마을 / 동: 강·항구·다리·교역로 / 북서: 묘지 / 사방: 초소
+     */
+    private void addOutskirts(RandomSource rand) {
+        flatFeature(new Outskirts.BorderFort(cx, cz - 332, 18, 14), -22, 314, 22, 350, null);
+        flatFeature(new Outskirts.Mine(cx + 118, cz - 316, 30), 104, 300, 132, 318, null);
+        for (int[] w : new int[][]{{-210, -330}, {-95, -352}, {75, -330}, {215, -350}}) {
+            flatFeature(new Outskirts.Windmill(cx + w[0], cz - w[1], rand.nextLong()), w[0] - 7, w[1] - 7, w[0] + 7, w[1] + 7, null);
+        }
+        int ranchLv = flat(105, -352, 185, -293);
+        lift(new Outskirts.Ranch(cx + 110, cz + 298, cx + 180, cz + 328, rand.nextLong()), ranchLv);
+        lift(new Outskirts.Barn(cx + 160, cz + 342, Direction.NORTH, 15, 11), ranchLv);
+        int farmLv = flat(-72, -364, -20, -303);
+        for (int[] h : new int[][]{{-55, -315}, {-32, -328}, {-60, -340}, {-35, -352}}) {
+            lift(new House(this, lotRel(h[0] - 6, h[1] - 6, h[0] + 6, h[1] + 6, Direction.EAST), rand, villager(0.5F, rand)), farmLv);
+        }
+        flatFeature(new Outskirts.LumberCamp(cx - 345, cz - 46, cx - 305, cz - 16, rand.nextLong()), -347, 14, -303, 48, null);
+        int villageLv = flat(-374, -90, -310, -10);
+        for (int[] h : new int[][]{{-340, -22}, {-322, -46}, {-356, -52}, {-330, -74}}) {
+            lift(new House(this, lotRel(h[0] - 6, h[1] - 6, h[0] + 6, h[1] + 6, Direction.NORTH), rand, villager(0.5F, rand)), villageLv);
+        }
+        flatFeature(new Outskirts.Graveyard(cx - 215, cz - 290, cx - 165, cz - 250, rand.nextLong()), -217, 248, -163, 292, null);
+        flatFeature(new Outskirts.Port(cx + 296, cz - 45, cx + 322, cz + 45, cx + (int) Math.round(riverX(0)), rand.nextLong()), 292, -47, 322, 47, 0);
+        for (int[] w : new int[][]{{250, -250}, {-250, -250}, {250, 250}}) {
+            flatFeature(new Outskirts.Watchpost(cx + w[0], cz - w[1]), w[0] - 10, w[1] - 10, w[0] + 10, w[1] + 10, null);
+        }
+        features.add(new OutskirtsDecor());
+    }
+
+    private int flat(int du0, int dn0, int du1, int dn1) {
+        int lv = (int) Math.round(rawH((du0 + du1) / 2, (dn0 + dn1) / 2));
+        flats.add(new int[]{Math.min(du0, du1), Math.min(dn0, dn1), Math.max(du0, du1), Math.max(dn0, dn1), lv});
+        return lv;
+    }
+
+    private void lift(Feature f, int lv) {
+        features.add(f);
+        lifts.put(f, lv);
+    }
+
+    private void flatFeature(Feature f, int du0, int dn0, int du1, int dn1, Integer level) {
+        int lv = level != null ? level : (int) Math.round(rawH((du0 + du1) / 2, (dn0 + dn1) / 2));
+        flats.add(new int[]{Math.min(du0, du1), Math.min(dn0, dn1), Math.max(du0, du1), Math.max(dn0, dn1), lv});
+        lift(f, lv);
+    }
+
+    public static double riverX(int dn) {
+        return 332 + 8 * Math.sin(dn / 45.0);
+    }
+
+    /** 다지기 전의 지형 높이 (도시 지면 기준) */
+    private static double rawH(int du, int dn) {
+        double r = Math.hypot(du, dn);
+        double h = 0.8 * (1.6 * Math.sin(du / 37.0 + 0.7) + 1.4 * Math.cos(dn / 41.0) + 0.9 * Math.sin((du + dn) / 23.0));
+        if (dn > 270) {
+            double m = Math.max(0, Math.min(1, (dn - 295) / 80.0));
+            m = m * m * (3 - 2 * m);
+            double ridge = 48 + 18 * Math.sin(du / 29.0) * Math.cos(du / 53.0 + 1) + 9 * Math.sin(du / 11.0 + dn / 17.0);
+            double pass = 1 - Math.exp(-Math.pow(du / 22.0, 2));
+            double rv = 1 - Math.exp(-Math.pow((du - riverX(dn)) / 26.0, 2));
+            h += m * ridge * (0.12 + 0.88 * pass) * (0.15 + 0.85 * rv);
+        }
+        double s = Math.max(0, Math.min(1, (r - R_APRON) / 22.0));
+        return h * s;
+    }
+
+    /** 평평한 터를 반영한 지형 높이 */
+    public double terrainH(int du, int dn) {
+        double h = rawH(du, dn);
+        int best = 99;
+        double lv = 0;
+        for (int[] f : flats) {
+            int d = Math.max(Math.max(f[0] - du, du - f[2]), Math.max(f[1] - dn, dn - f[3]));
+            d = Math.max(d, 0);
+            if (d < best) {
+                best = d;
+                lv = f[4];
+            }
+        }
+        if (best == 0) return lv;
+        if (best < 8) {
+            double t = best / 8.0;
+            return lv * (1 - t) + h * t;
+        }
+        return h;
+    }
+
+    private boolean inFlat(int du, int dn, int pad) {
+        for (int[] f : flats) if (du >= f[0] - pad && du <= f[2] + pad && dn >= f[1] - pad && dn <= f[3] + pad) return true;
+        return false;
+    }
+
+    private static boolean southFields(int du, int dn) {
+        return dn < -295 && Math.abs(du) <= -dn - 12;
+    }
+
+    private static boolean westForest(int du, int dn) {
+        return du < -282 && Math.abs(dn) <= -du - 12;
+    }
+
+    private void outskirts(Placer p, int x, int z, int du, int dn) {
+        int m = Math.max(Math.abs(du), Math.abs(dn));
+        if (m > OUT) return;
+        final int b = base;
+        int h = Shapes.hash(x, 31, z, seed);
+        boolean road = Math.abs(du) <= 3 || Math.abs(dn) <= 3;
+        double rd = Math.abs(du - riverX(dn));
+        if (du > 290 && rd <= 7) {                                                           // 강
+            p.clearAbove(x, z, b);
+            for (int y = b - 4; y <= b - 1; y++) p.set(x, y, z, WATER);
+            p.set(x, b - 5, z, h % 3 == 0 ? Blocks.GRAVEL.defaultBlockState() : Blocks.SAND.defaultBlockState());
+            p.foundation(x, z, b - 6, 24);
+            if (Math.abs(dn) <= 3) {                                                         // 다리
+                p.set(x, b, z, Blocks.SPRUCE_PLANKS.defaultBlockState());
+                if (Math.abs(dn) == 3) p.set(x, b + 1, z, Blocks.SPRUCE_FENCE.defaultBlockState());
+                if (Math.abs(dn) == 3 && Math.round(rd) % 4 == 0) for (int y = b - 5; y < b; y++) p.set(x, y, z, Blocks.SPRUCE_LOG.defaultBlockState());
             }
             return;
         }
+        int H = (int) Math.round(terrainH(du, dn));
         int top = p.naturalTop(x, z);
-        double t = (double) e / (SLOPE + 1);
-        t = t * t * (3 - 2 * t);
-        int target = (int) Math.round(base + (top - base) * t);
-        if (target < top) p.clearAbove(x, z, target + 1);
-        else for (int y = top + 1; y < target; y++) p.set(x, y, z, Blocks.DIRT.defaultBlockState());
-        if (trail) {
-            p.set(x, target, z, path);
-            return;
+        int target = b + H;
+        int eb = OUT - m;
+        if (eb < EDGE) {
+            double t = eb / (double) EDGE;
+            t = t * t * (3 - 2 * t);
+            target = (int) Math.round(top + (target - top) * t);
         }
-        p.set(x, target, z, GRASS);
-        if (Shapes.hash(x, 9, z, seed) % 17 == 0) p.set(x, target + 1, z, FLOWERS[Shapes.hash(x, 10, z, seed) % FLOWERS.length]);
+        boolean mountain = dn > 285 && H >= 12;
+        if (target < top) p.clearAbove(x, z, target + 1);
+        else {
+            p.clearAbove(x, z, top + 1);
+            for (int y = top + 1; y < target; y++) p.set(x, y, z, (mountain || y < target - 3) ? Blocks.STONE.defaultBlockState() : Blocks.DIRT.defaultBlockState());
+        }
+        BlockState surface = GRASS;
+        BlockState plant = null;
+        if (road && !inFlat(du, dn, 0)) {
+            surface = h % 5 == 0 ? Blocks.GRAVEL.defaultBlockState() : h % 4 == 0 ? Blocks.COARSE_DIRT.defaultBlockState() : Blocks.DIRT_PATH.defaultBlockState();
+        } else if (du > 280 && rd <= 10) {
+            surface = Blocks.SAND.defaultBlockState();
+        } else if (mountain) {
+            surface = H >= 50 ? Blocks.SNOW_BLOCK.defaultBlockState() : H >= 30 ? (h % 3 == 0 ? Blocks.ANDESITE.defaultBlockState() : Blocks.STONE.defaultBlockState())
+                    : (h % 3 == 0 ? Blocks.STONE.defaultBlockState() : h % 7 == 0 ? Blocks.GRAVEL.defaultBlockState() : GRASS);
+        } else if (southFields(du, dn) && !inFlat(du, dn, 2)) {
+            int col = Math.floorMod(du, 12), row = Math.floorMod(dn, 26);
+            if (row == 0) {
+                surface = GRASS;
+                plant = Royal.HEDGE;
+            } else if (row == 1) {
+                surface = Blocks.DIRT_PATH.defaultBlockState();
+            } else if (col == 0) {
+                surface = WATER;
+            } else {
+                surface = Blocks.FARMLAND.defaultBlockState().setValue(net.minecraft.world.level.block.FarmBlock.MOISTURE, 7);
+                int kind = Math.floorMod(Shapes.hash(Math.floorDiv(du, 12), 1, Math.floorDiv(dn, 26), seed), 4);
+                net.minecraft.world.level.block.CropBlock crop = (net.minecraft.world.level.block.CropBlock)
+                        (kind == 0 ? Blocks.WHEAT : kind == 1 ? Blocks.CARROTS : kind == 2 ? Blocks.POTATOES : Blocks.BEETROOTS);
+                plant = crop.getStateForAge(Math.min(crop.getMaxAge(), 3 + h % 5));
+            }
+        } else if (westForest(du, dn)) {
+            surface = h % 5 == 0 ? Blocks.PODZOL.defaultBlockState() : h % 7 == 0 ? Blocks.COARSE_DIRT.defaultBlockState() : GRASS;
+            if (h % 9 == 0) plant = Blocks.FERN.defaultBlockState();
+        } else if (h % 29 == 0) {
+            plant = FLOWERS[h % FLOWERS.length];
+        } else if (h % 13 == 0) {
+            plant = Blocks.SHORT_GRASS.defaultBlockState();
+        }
+        p.set(x, target, z, surface);
+        if (plant != null && surface != WATER) p.set(x, target + 1, z, plant);
     }
 
     // ───────────────────────── 빈 땅 장식 ─────────────────────────
@@ -635,6 +795,60 @@ public final class CityLayout {
                 };
                 if (prop != null) p.set(x, b + 1, z, prop);
             });
+        }
+    }
+
+    /** 성벽 바깥 나무·바위: 서쪽 숲은 빽빽하게, 평원은 드문드문, 산 아래쪽은 가문비나무와 바위 */
+    private final class OutskirtsDecor extends Feature {
+        OutskirtsDecor() {
+            super(cx - OUT, cz - OUT, cx + OUT, cz + OUT);
+        }
+
+        @Override
+        public boolean occupies(int x, int z) {
+            return false;
+        }
+
+        @Override
+        public void build(Placer p, CityLayout city) {
+            for (int x = p.minX() - 3; x <= p.maxX() + 3; x++) {
+                for (int z = p.minZ() - 3; z <= p.maxZ() + 3; z++) {
+                    int du = x - cx, dn = cz - z;
+                    int m = Math.max(Math.abs(du), Math.abs(dn));
+                    if (m > OUT - EDGE - 2 || Math.hypot(du, dn) < R_APRON + 6) continue;
+                    if (Math.abs(du) <= 6 || Math.abs(dn) <= 6 || inFlat(du, dn, 4)) continue;
+                    if (du > 270 && Math.abs(du - riverX(dn)) <= 13) continue;
+                    if (southFields(du, dn)) continue;
+                    boolean forest = westForest(du, dn);
+                    int H = (int) Math.round(terrainH(du, dn));
+                    boolean mountain = dn > 285 && H >= 12;
+                    if (mountain && H >= 34) continue;
+                    int cell = forest ? 5 : mountain ? 9 : 17;
+                    int gx = Math.floorDiv(du, cell), gz = Math.floorDiv(dn, cell);
+                    int hh = Shapes.hash(gx, 61, gz, seed);
+                    int jx = Math.floorMod(hh, cell), jz = Math.floorMod(hh >> 5, cell);
+                    if (Math.floorMod(du, cell) != jx || Math.floorMod(dn, cell) != jz) continue;
+                    int chance = forest ? 80 : mountain ? 45 : 30;
+                    if (Math.floorMod(hh >> 10, 100) >= chance) continue;
+                    int y = base + H;
+                    int kind = Math.floorMod(hh >> 3, 10);
+                    if (mountain) {
+                        if (kind < 6) Outskirts.spruceTree(p, x, z, y, 7 + kind % 4);
+                        else {
+                            p.set(x, y + 1, z, Blocks.MOSSY_COBBLESTONE.defaultBlockState());
+                            p.set(x + 1, y + 1, z, Blocks.COBBLESTONE.defaultBlockState());
+                            p.set(x, y + 2, z, Blocks.COBBLESTONE.defaultBlockState());
+                        }
+                    } else if (forest) {
+                        if (kind < 4) Outskirts.spruceTree(p, x, z, y, 8 + kind % 4);
+                        else if (kind < 8) Outskirts.oakTree(p, x, z, y, 5 + kind % 2);
+                        else Shapes.birchTree(p, x, z, y, 6);
+                    } else {
+                        if (kind < 6) Outskirts.oakTree(p, x, z, y, 5);
+                        else Shapes.birchTree(p, x, z, y, 5 + kind % 2);
+                    }
+                }
+            }
         }
     }
 }
