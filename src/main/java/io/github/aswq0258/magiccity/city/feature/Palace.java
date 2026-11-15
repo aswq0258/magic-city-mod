@@ -145,15 +145,17 @@ public class Palace extends Feature {
                 p.set(x, b + h, z, SMOOTH_QUARTZ);
                 if (arc % 2 == 0) p.set(x, b + h + 1, z, CALCITE);
             }
-            double frac = (ang * 8 / (Math.PI * 2)) % 1.0;
-            for (int k = 1; k <= (int) Math.ceil(rad); k++) {
-                double d3 = Math.sqrt(d * d + k * k);
-                if (d3 <= rad + 0.3 && d3 > rad - 1.1) p.set(x, b + h + k, z, (frac < 0.12 && d > 1) ? Royal.GOLD : SMOOTH_QUARTZ);
-            }
         });
-        int top = b + h + (int) Math.ceil(rad) + 1;
-        for (int y = top; y < top + 3; y++) p.set(tx, y, tz, Royal.GOLD);
-        p.set(tx, top + 3, tz, END_ROD);
+        // 원뿔 첨탑 (반지름의 약 3.5배 높이)
+        Royal.spire(p, tx, tz, b + h + 1, rad, (int) Math.round(rad * 3.5) + 4);
+        // 난간 위 피너클 8개, 큰 탑은 작은 첨탑 4개 추가
+        int n = rad >= 5 ? 8 : 4;
+        for (int i = 0; i < n; i++) {
+            double a = Math.PI * 2 * i / n + Math.PI / n;
+            int px = tx + (int) Math.round(Math.cos(a) * (rad + 1)), pz = tz + (int) Math.round(Math.sin(a) * (rad + 1));
+            if (rad >= 5 && i % 2 == 0) Royal.spire(p, px, pz, b + h + 1, 1.5, 8);
+            else Royal.pinnacle(p, px, pz, b + h + 1, rad >= 5 ? 3 : 2);
+        }
     }
 
     // ───────────────────────── 기단 ─────────────────────────

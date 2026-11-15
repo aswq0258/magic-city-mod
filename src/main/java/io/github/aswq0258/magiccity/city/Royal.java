@@ -131,4 +131,38 @@ public final class Royal {
         p.set(x, b + 2 + h, z, GOLD);
         p.set(x, b + 3 + h, z, Palette.END_ROD);
     }
+
+    /**
+     * 뾰족한 원뿔 첨탑: 흰 석영 + 금 갈비뼈 8줄 + 금 띠, 꼭대기 금 침과 엔드 막대.
+     * baseY 층이 원뿔 밑면(반지름 r), 높이 h 만큼 좁아집니다.
+     */
+    public static void spire(Placer p, int cx, int cz, int baseY, double r, int h) {
+        int ext = (int) Math.ceil(r) + 1;
+        if (!p.intersects(cx - ext, cz - ext, cx + ext, cz + ext)) return;
+        p.forColumns(cx - ext, cz - ext, cx + ext, cz + ext, (x, z) -> {
+            int dx = x - cx, dz = z - cz;
+            double d = Math.sqrt(dx * dx + dz * dz);
+            double frac = (Shapes.angle(dx, dz) * 8 / (Math.PI * 2)) % 1.0;
+            boolean rib = frac < 0.13 || frac > 0.95;
+            for (int k = 0; k < h; k++) {
+                double rk = (r + 0.5) * (1.0 - (double) k / h);
+                if (d > rk) break;
+                boolean shell = d > rk - 1.25 || k == 0;
+                if (!shell) continue;
+                BlockState st = (k > 0 && k % 7 == 3) ? GOLD : (rib && d > 0.8) ? GOLD : Palette.SMOOTH_QUARTZ;
+                if (k == 0) st = d > r - 0.5 ? Palette.CHISELED_QUARTZ : Palette.SMOOTH_QUARTZ;
+                p.set(x, baseY + k, z, st);
+            }
+        });
+        for (int k = 0; k < 4; k++) p.set(cx, baseY + h + k, cz, GOLD);
+        p.set(cx, baseY + h + 4, cz, Palette.END_ROD);
+    }
+
+    /** 가는 침탑(피너클): 석영 기둥 + 조각 석영 + 금 + 엔드 막대 */
+    public static void pinnacle(Placer p, int x, int z, int b, int h) {
+        for (int y = b; y < b + h; y++) p.set(x, y, z, Palette.QUARTZ_PILLAR);
+        p.set(x, b + h, z, Palette.CHISELED_QUARTZ);
+        p.set(x, b + h + 1, z, GOLD);
+        p.set(x, b + h + 2, z, Palette.END_ROD);
+    }
 }

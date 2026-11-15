@@ -105,12 +105,13 @@ public final class RoyalBox {
                     int dp = doorPart(x, z, ly);
                     p.set(x, y + ly, z, dp == 1 ? AIR : dp == 2 ? CHISELED_QUARTZ : dp == 3 ? Royal.GOLD : exterior(idx, ly, corner));
                 }
-                if (corner || idx % 10 == 5) {
+                if (corner) {
+                    Royal.pinnacle(p, x, z, y + H + 1, 5);              // 모서리: 높은 침탑
+                } else if (idx % 10 == 5) {
+                    Royal.pinnacle(p, x, z, y + H + 1, 2);              // 난간 기둥: 짧은 침탑
+                } else if (idx % 10 == 0 && floors * fh >= 16) {
                     p.set(x, y + H + 1, z, CHISELED_QUARTZ);
-                    if (idx % 10 == 5) {
-                        p.set(x, y + H + 2, z, QUARTZ_PILLAR);
-                        p.set(x, y + H + 3, z, Royal.GOLD);
-                    }
+                    p.set(x, y + H + 2, z, END_ROD);
                 } else {
                     p.set(x, y + H + 1, z, idx % 2 == 0 ? CHISELED_QUARTZ : SMOOTH_QUARTZ_SLAB);
                 }

@@ -105,7 +105,10 @@ public class RoyalHall extends Feature {
         p.set(f.x(cu + off - 1, -1), y + 6, f.z(cu + off - 1, -1), Royal.redBanner(front));
 
         if (kind == Kind.CHAPEL || kind == Kind.THRONE) {
-            dome(p, (minX + maxX) >> 1, (minZ + maxZ) >> 1, y + floors * fh + 1, kind == Kind.THRONE ? 8 : 6);
+            int r = kind == Kind.THRONE ? 8 : 6;
+            dome(p, (minX + maxX) >> 1, (minZ + maxZ) >> 1, y + floors * fh + 1, r);
+        } else {
+            Royal.spire(p, (minX + maxX) >> 1, (minZ + maxZ) >> 1, y + floors * fh + 1, 2.5, 14);   // 지붕 가운데 뾰족탑
         }
     }
 
@@ -170,18 +173,22 @@ public class RoyalHall extends Feature {
         }
     }
 
-    /** 지붕 위 흰 돔 (금 갈비뼈) + 금 채광탑 */
+    /** 지붕 위 뾰족 첨탑: 원통 받침(창) + 높은 원뿔 + 둘레 작은 첨탑 */
     static void dome(Placer p, int dcx, int dcz, int by, int r) {
         p.forColumns(dcx - r - 1, dcz - r - 1, dcx + r + 1, dcz + r + 1, (x, z) -> {
             double d = Math.hypot(x - dcx, z - dcz);
-            if (d <= r + 0.5) p.set(x, by, z, d > r - 0.5 ? CHISELED_QUARTZ : SMOOTH_QUARTZ);
-            double frac = (Shapes.angle(x - dcx, z - dcz) * 8 / (Math.PI * 2)) % 1.0;
-            for (int k = 1; k <= r; k++) {
-                double d3 = Math.sqrt(d * d + k * k);
-                if (d3 <= r + 0.3 && d3 > r - 1.0) p.set(x, by + k, z, (frac < 0.12 && d > 1) ? Royal.GOLD : SMOOTH_QUARTZ);
+            if (d > r + 0.5) return;
+            boolean wall = d > r - 0.5;
+            int arc = (int) Math.floor(Shapes.angle(x - dcx, z - dcz) * r);
+            for (int k = 0; k <= 5; k++) {
+                BlockState s = k == 0 ? SMOOTH_QUARTZ : !wall ? AIR : k == 5 ? Royal.GOLD : (k >= 2 && k <= 3 && arc % 3 == 0) ? Royal.GOLD_PANE : QUARTZ_BRICKS;
+                p.set(x, by + k, z, s);
             }
         });
-        for (int k = 1; k <= 3; k++) p.set(dcx, by + r + k, dcz, Royal.GOLD);
-        p.set(dcx, by + r + 4, dcz, END_ROD);
+        Royal.spire(p, dcx, dcz, by + 6, r, r * 4);
+        for (int i = 0; i < 4; i++) {
+            double a = Math.PI / 4 + Math.PI / 2 * i;
+            Royal.spire(p, dcx + (int) Math.round(Math.cos(a) * (r + 2)), dcz + (int) Math.round(Math.sin(a) * (r + 2)), by, 1.5, 10);
+        }
     }
 }

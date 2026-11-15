@@ -46,8 +46,8 @@ public final class MagicCityCommand {
         BlockPos feet = BlockPos.containing(src.getPosition());
         int base = feet.getY() - 1; // 발밑 블록 = 도시 지면 높이
 
-        if (base + 140 > level.getMaxBuildHeight()) {
-            int maxY = level.getMaxBuildHeight() - 141;
+        if (base + 145 > level.getMaxBuildHeight()) {
+            int maxY = level.getMaxBuildHeight() - 146;
             src.sendFailure(Component.literal("[마법 도시] 너무 높은 곳입니다. 중앙 대성이 높이 제한을 넘습니다. Y=" + maxY + " 이하에서 실행하세요."));
             return 0;
         }

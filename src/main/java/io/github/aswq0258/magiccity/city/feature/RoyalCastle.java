@@ -102,7 +102,8 @@ public class RoyalCastle extends Feature {
             }
             p.set(x, y0 + ly, z, s);
         }
-        if (outer && Math.floorMod(lat, 4) < 2) p.set(x, y0 + WALL_H + 1, z, CALCITE);
+        if (outer && Math.floorMod(lat, 12) == 6 && !gate) Royal.pinnacle(p, x, z, y0 + WALL_H + 1, 3);
+        else if (outer && Math.floorMod(lat, 4) < 2) p.set(x, y0 + WALL_H + 1, z, CALCITE);
         if (inner) p.set(x, y0 + WALL_H + 1, z, SMOOTH_QUARTZ_SLAB);
     }
 

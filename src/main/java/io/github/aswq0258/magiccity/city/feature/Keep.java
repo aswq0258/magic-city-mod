@@ -17,7 +17,7 @@ import static io.github.aswq0258.magiccity.city.Palette.*;
  *  1단 (46 x 40, 3층, +18 ~ +42): 1층 대현관홀 / 2층 왕실 서재 / 3층 연회장
  *  2단 (34 x 28, 2층, +42 ~ +60): 1층 국왕·왕비 침실 / 2층 집무실
  *  3단 (22 x 16, 2층, +60 ~ +76): 1층 기도실 / 2층 보물실
- *  첨탑 (반지름 6, +76 ~ +104): 금 띠 + 창, 꼭대기 관측실, 금 갈비뼈 돔과 금 첨탑 (~+124)
+ *  첨탑 (반지름 6, +76 ~ +104): 금 띠 + 창, 꼭대기 관측실, 관측실 위 높이 30 원뿔 첨탑 (~+143)
  *  가운데를 관통하는 나선 대계단(빛기둥 + 유리 난간)으로 모든 층과 첨탑 꼭대기까지 연결.
  *  각 단의 지붕은 금 머리 조각상 난간이 둘린 테라스이고, 1·2단 지붕 모서리에 작은 금 돔 탑.
  */
@@ -76,6 +76,14 @@ public class Keep extends Feature {
             for (int sz = -1; sz <= 1; sz += 2) {
                 Palace.palaceTower(p, sx < 0 ? minX + 2 : maxX - 2, sz < 0 ? minZ + 2 : maxZ - 2, 2.5, yB, 10);
                 Palace.palaceTower(p, sx < 0 ? minX + 8 : maxX - 8, sz < 0 ? minZ + 8 : maxZ - 8, 2.0, yC, 8);
+            }
+        }
+        // 3단 지붕 모서리 첨탑
+        for (int sx = -1; sx <= 1; sx += 2) {
+            for (int sz = -1; sz <= 1; sz += 2) {
+                int px = sx < 0 ? minX + 14 : maxX - 14, pz = sz < 0 ? minZ + 14 : maxZ - 14;
+                Royal.pinnacle(p, px, pz, yS + 1, 2);
+                Royal.spire(p, px, pz, yS + 4, 1.5, 10);
             }
         }
         // 1단 지붕 테라스 가로등
@@ -144,16 +152,22 @@ public class Keep extends Feature {
                 p.set(x, ys + SPIRE_H, z, SMOOTH_QUARTZ);
                 if (arc % 2 == 0) p.set(x, ys + SPIRE_H + 1, z, CHISELED_QUARTZ);
             }
-            double frac = (Shapes.angle(dx, dz) * 8 / (Math.PI * 2)) % 1.0;
-            for (int k = 1; k <= r + 1; k++) {
-                double d3 = Math.sqrt(d * d + k * k * 0.6);
-                if (d3 <= r + 0.3 && d3 > r - 1.0) p.set(x, ys + SPIRE_H + k, z, (frac < 0.12 && d > 1) ? Royal.GOLD : SMOOTH_QUARTZ);
-            }
         });
-        int top = ys + SPIRE_H + r + 2;
-        for (int y = top; y < top + 8; y++) p.set(kx, y, kz, Royal.GOLD);
-        p.set(kx, top + 8, kz, END_ROD);
-        Shapes.crystal(p, kx, top + 13, kz, 2);
+        // 꼭대기 관측실 벽 (유리창 4칸 높이)
+        p.forColumns(kx - r - 1, kz - r - 1, kx + r + 1, kz + r + 1, (x, z) -> {
+            double d = Math.hypot(x - kx, z - kz);
+            if (d > r + 0.5 || d <= r - 1.0) return;
+            int arc = (int) Math.floor(Shapes.angle(x - kx, z - kz) * r);
+            for (int k = 1; k <= 4; k++) p.set(x, ys + SPIRE_H + k, z, k == 4 ? Royal.GOLD : arc % 2 == 0 ? QUARTZ_PILLAR : Royal.CLEAR_PANE);
+        });
+        // 바늘처럼 높은 원뿔 첨탑 + 둘레의 작은 첨탑 4개 + 피너클 4개 (발코니 위)
+        Royal.spire(p, kx, kz, ys + SPIRE_H + 5, r, 30);
+        for (int i = 0; i < 8; i++) {
+            double a = Math.PI * 2 * i / 8 + Math.PI / 8;
+            int px = kx + (int) Math.round(Math.cos(a) * (r + 1.5)), pz = kz + (int) Math.round(Math.sin(a) * (r + 1.5));
+            if (i % 2 == 0) Royal.spire(p, px, pz, ys + SPIRE_H + 1, 1.5, 10);
+            else Royal.pinnacle(p, px, pz, ys + SPIRE_H + 1, 4);
+        }
         // 꼭대기 관측실 가구
         int fy = ys + SPIRE_H + 1;
         p.set(kx + 3, fy, kz, ENCHANTING_TABLE);
