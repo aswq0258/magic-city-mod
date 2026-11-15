@@ -22,7 +22,10 @@ import java.util.List;
  * /magiccity build      — 현재 위치를 중심으로 지름 약 520 의 방사형 이중 성곽 도시 + 동화성 왕성 건설.
  *                          도시 범위의 지형 높이를 재서 가장 알맞은(중간값) 높이를 지면으로 자동 결정
  * /magiccity build here — 자동 대신 발밑 블록 높이를 지면으로 사용
- * /magiccity kingdom    — 왕국 대륙 차원의 왕성도시 터(250, 250) 로 이동
+ * /magiccity kingdom    — 왕국 대륙 차원의 왕성도시 터(260, 260) 로 이동
+ * /magiccity site oldcapital — 왕국 대륙에 몰락한 옛 왕도(네더 포탈이 열려 멸망한 수도) 건설
+ * /magiccity goto oldcapital — 옛 왕도 앞 연합군 봉쇄 요새로 이동
+ * /magiccity boss reset      — 심연의 문지기 재도전 (마계문 닫힘)
  * /magiccity status          — 진행률 확인
  * /magiccity cancel          — 건설 중단
  */
@@ -36,6 +39,19 @@ public final class MagicCityCommand {
                         .executes(ctx -> build(ctx, false))
                         .then(Commands.literal("here").executes(ctx -> build(ctx, true))))
                 .then(Commands.literal("kingdom").executes(MagicCityCommand::kingdom))
+                .then(Commands.literal("site").then(Commands.literal("oldcapital").executes(MagicCityCommand::oldCapital)))
+                .then(Commands.literal("goto").then(Commands.literal("oldcapital").executes(ctx -> {
+                    ServerLevel k = ctx.getSource().getServer().getLevel(io.github.aswq0258.magiccity.world.ModWorldgen.KINGDOM);
+                    if (k == null) return 0;
+                    ctx.getSource().getPlayerOrException().teleportTo(k, io.github.aswq0258.magiccity.world.KingdomTerrain.FORT_X + 0.5,
+                            io.github.aswq0258.magiccity.world.KingdomTerrain.OLD_Y + 2, io.github.aswq0258.magiccity.world.KingdomTerrain.FORT_Z + 0.5, 0F, 0F);
+                    return 1;
+                })))
+                .then(Commands.literal("boss").then(Commands.literal("reset").executes(ctx -> {
+                    io.github.aswq0258.magiccity.boss.GateKeeper.reset(ctx.getSource().getServer());
+                    ctx.getSource().sendSuccess(() -> Component.literal("§e[마법 도시] 심연의 문지기를 다시 소환할 수 있게 했습니다 (마계문은 닫힘)."), true);
+                    return 1;
+                })))
                 .then(Commands.literal("status").executes(ctx -> {
                     ctx.getSource().sendSuccess(() -> Component.literal(CityBuildManager.status()), false);
                     return 1;
@@ -107,6 +123,26 @@ public final class MagicCityCommand {
         src.getPlayerOrException().teleportTo(target, x + 0.5, y, z + 0.5, 0F, 0F);
         src.sendSuccess(() -> Component.literal("§b[마법 도시] 왕국 대륙의 왕성도시 터 (" + x + ", " + z + ") 에 도착했습니다. "
                 + "여기서 /magiccity build 를 입력하면 왕성도시와 주변 왕국이 지어집니다."), true);
+        return 1;
+    }
+
+    /** 왕국 대륙에 몰락한 옛 왕도 + 연합군 봉쇄 요새 건설 */
+    private static int oldCapital(CommandContext<CommandSourceStack> ctx) {
+        CommandSourceStack src = ctx.getSource();
+        if (CityBuildManager.isRunning()) {
+            src.sendFailure(Component.literal("[마법 도시] 이미 건설 중입니다. /magiccity status 로 확인하세요."));
+            return 0;
+        }
+        ServerLevel k = src.getServer().getLevel(io.github.aswq0258.magiccity.world.ModWorldgen.KINGDOM);
+        if (k == null) {
+            src.sendFailure(Component.literal("[마법 도시] 왕국 대륙 차원을 찾을 수 없습니다."));
+            return 0;
+        }
+        io.github.aswq0258.magiccity.site.OldCapital site = new io.github.aswq0258.magiccity.site.OldCapital(k.getSeed() ^ 0x0DCA717AL);
+        CityBuildJob job = new CityBuildJob(k, site);
+        CityBuildManager.start(job);
+        src.sendSuccess(() -> Component.literal(String.format("§b[마법 도시] 몰락한 옛 왕도 건설 시작! 중심 (%d, %d), 건물 %d개, 청크 %d개. "
+                + "/magiccity goto oldcapital 로 봉쇄 요새에 갈 수 있습니다.", site.cx(), site.cz(), site.featureCount(), job.chunkCount())), true);
         return 1;
     }
 }

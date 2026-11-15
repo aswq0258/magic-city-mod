@@ -18,7 +18,7 @@ import java.util.List;
  */
 public final class CityBuildJob {
     private final ServerLevel level;
-    private final CityLayout layout;
+    private final BuildLayout layout;
     private final List<ChunkPos> chunks = new ArrayList<>();
     private final List<ChunkPos> waterChunks = new ArrayList<>();
     private Placer.Pass pass = Placer.Pass.SOLID;
@@ -26,12 +26,12 @@ public final class CityBuildJob {
     private int lastReportedPercent = -1;
     private final long startMillis = System.currentTimeMillis();
 
-    public CityBuildJob(ServerLevel level, CityLayout layout) {
+    public CityBuildJob(ServerLevel level, BuildLayout layout) {
         this.level = level;
         this.layout = layout;
-        int r = layout.radius + 2;
-        int c0x = (layout.cx - r) >> 4, c1x = (layout.cx + r) >> 4;
-        int c0z = (layout.cz - r) >> 4, c1z = (layout.cz + r) >> 4;
+        int r = layout.radius() + 2;
+        int c0x = (layout.cx() - r) >> 4, c1x = (layout.cx() + r) >> 4;
+        int c0z = (layout.cz() - r) >> 4, c1z = (layout.cz() + r) >> 4;
         for (int x = c0x; x <= c1x; x++) {
             for (int z = c0z; z <= c1z; z++) {
                 chunks.add(new ChunkPos(x, z));
@@ -41,9 +41,9 @@ public final class CityBuildJob {
     }
 
     private double distanceToChunk(ChunkPos cp) {
-        double nx = Math.max(cp.getMinBlockX(), Math.min(layout.cx, cp.getMaxBlockX()));
-        double nz = Math.max(cp.getMinBlockZ(), Math.min(layout.cz, cp.getMaxBlockZ()));
-        double dx = nx - layout.cx, dz = nz - layout.cz;
+        double nx = Math.max(cp.getMinBlockX(), Math.min(layout.cx(), cp.getMaxBlockX()));
+        double nz = Math.max(cp.getMinBlockZ(), Math.min(layout.cz(), cp.getMaxBlockZ()));
+        double dx = nx - layout.cx(), dz = nz - layout.cz();
         return Math.sqrt(dx * dx + dz * dz);
     }
 
@@ -79,7 +79,7 @@ public final class CityBuildJob {
                 }
                 long sec = (System.currentTimeMillis() - startMillis) / 1000;
                 broadcast(String.format("§a[마법 도시] 완성! (%d분 %d초) 중심: %d, %d, %d",
-                        sec / 60, sec % 60, layout.cx, layout.base + 1, layout.cz));
+                        sec / 60, sec % 60, layout.cx(), layout.base() + 1, layout.cz()));
                 return true;
             }
             buildChunk(current().get(index++));
@@ -105,14 +105,14 @@ public final class CityBuildJob {
             }
             long key = cp.toLong();
             for (Feature f : layout.featuresIn(cp)) {
-                f.build(p, layout);
+                f.build(p, layout.city());
                 if (f.anchorChunk() == key && f.needsSpawn()) {
                     spawns = true;
-                    if (pass == Placer.Pass.WATER) f.spawn(level, layout);
+                    if (pass == Placer.Pass.WATER) f.spawn(level, layout.city());
                 }
             }
             if (pass == Placer.Pass.SOLID) {
-                p.finishShapes(layout.base - 26, layout.base + 160);
+                p.finishShapes(layout.base() - 26, layout.base() + 160);
                 p.lightInteriors(layout::lightRange);
             }
         } catch (RuntimeException e) {

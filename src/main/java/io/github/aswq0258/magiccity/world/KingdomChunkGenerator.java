@@ -115,6 +115,14 @@ public class KingdomChunkGenerator extends ChunkGenerator {
                 if (top) return hash % 3 == 0 ? BLACKSTONE : RED_SAND;
                 return TERRACOTTA[Math.floorMod(y, TERRACOTTA.length)];
             }
+            case ASH -> {
+                if (top) return hash % 5 == 0 ? Blocks.COARSE_DIRT.defaultBlockState() : hash % 3 == 0 ? GRAVEL : hash % 7 == 0 ? BLACKSTONE : Blocks.TUFF.defaultBlockState();
+                return hash % 4 == 0 ? Blocks.TUFF.defaultBlockState() : STONE;
+            }
+            case CORRUPT -> {
+                if (top) return hash % 4 == 0 ? Blocks.CRIMSON_NYLIUM.defaultBlockState() : hash % 3 == 0 ? BLACKSTONE : Blocks.NETHERRACK.defaultBlockState();
+                return Blocks.NETHERRACK.defaultBlockState();
+            }
             case CURSED -> {
                 return top ? (hash % 3 == 0 ? PODZOL : GRASS) : DIRT;
             }

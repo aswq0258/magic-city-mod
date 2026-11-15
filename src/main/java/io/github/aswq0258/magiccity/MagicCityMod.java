@@ -25,6 +25,9 @@ public class MagicCityMod {
         NeoForge.EVENT_BUS.addListener(MagicCityMod::onRegisterCommands);
         NeoForge.EVENT_BUS.addListener(CityBuildManager::onServerTick);
         NeoForge.EVENT_BUS.addListener(CityBuildManager::onServerStopping);
+        NeoForge.EVENT_BUS.addListener(io.github.aswq0258.magiccity.boss.GateKeeper::onServerTick);
+        NeoForge.EVENT_BUS.addListener(io.github.aswq0258.magiccity.boss.GateKeeper::onDeath);
+        NeoForge.EVENT_BUS.addListener(io.github.aswq0258.magiccity.boss.GateKeeper::onTravel);
     }
 
     private static void onRegisterCommands(RegisterCommandsEvent event) {

@@ -1,0 +1,29 @@
+package io.github.aswq0258.magiccity.build;
+
+import io.github.aswq0258.magiccity.city.CityLayout;
+import io.github.aswq0258.magiccity.city.feature.Feature;
+import net.minecraft.world.level.ChunkPos;
+
+import java.util.List;
+
+/** 청크 단위로 지을 수 있는 설계도 (왕성도시, 옛 왕도 같은 지역) */
+public interface BuildLayout {
+    int cx();
+
+    int cz();
+
+    int base();
+
+    /** 지을 범위 (정사각형 반지름) */
+    int radius();
+
+    void buildColumn(Placer p, int x, int z);
+
+    List<Feature> featuresIn(ChunkPos cp);
+
+    /** 실내 조명 범위, 없으면 null */
+    int[] lightRange(int x, int z);
+
+    /** 건물에 넘겨줄 왕성도시 설계도 (지역 설계도는 null) */
+    CityLayout city();
+}

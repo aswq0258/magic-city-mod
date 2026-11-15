@@ -61,7 +61,7 @@ import static io.github.aswq0258.magiccity.city.Palette.*;
  *  좌표: 도시 중심 기준 du(동 +), dn(북 +). 마인크래프트 월드 x = cx + du, z = cz - dn.
  *  도면 좌표 (u, v) = (260 + du, 260 + dn) 도 하수도·길드 마당에서 씁니다.
  */
-public final class CityLayout {
+public final class CityLayout implements io.github.aswq0258.magiccity.build.BuildLayout {
     public static final int R_CASTLE = 72, R_CRING = 82, R_INNER = 147, R_IWALL_IN = 148, R_IWALL_OUT = 154, R_IRING = 163,
             R_MID = 207, R_MRING = 215, R_OUTER = 252, R_WALL_IN = 253, R_WALL_OUT = 259, R_MOAT_IN = 262, R_MOAT_OUT = 275,
             R_APRON = 285, SLOPE = 24, WALL_H = 24, IWALL_H = 16, AVE = 6, OUT = 390, EDGE = 20;
@@ -109,10 +109,36 @@ public final class CityLayout {
         }
     }
 
+    @Override
+    public int cx() {
+        return cx;
+    }
+
+    @Override
+    public int cz() {
+        return cz;
+    }
+
+    @Override
+    public int base() {
+        return base;
+    }
+
+    @Override
+    public int radius() {
+        return radius;
+    }
+
+    @Override
+    public CityLayout city() {
+        return this;
+    }
+
     public int featureCount() {
         return features.size();
     }
 
+    @Override
     public List<Feature> featuresIn(ChunkPos cp) {
         return byChunk.getOrDefault(cp.toLong(), Collections.emptyList());
     }
@@ -428,6 +454,7 @@ public final class CityLayout {
 
     // ───────────────────────── 기둥 단위 지형 ─────────────────────────
 
+    @Override
     public void buildColumn(Placer p, int x, int z) {
         final int du = x - cx, dn = cz - z, b = base;
         final double r = Math.hypot(du, dn);
@@ -715,6 +742,7 @@ public final class CityLayout {
      * 실내 조명을 깔 높이 범위. 도시 안은 지면 3칸 아래 ~ 158칸 위 (하수도 던전은 일부러 어둡게 남김),
      * 바깥은 건물이 선 평평한 터에서만.
      */
+    @Override
     public int[] lightRange(int x, int z) {
         int du = x - cx, dn = cz - z;
         if (Math.hypot(du, dn) <= R_APRON) return new int[]{base - 3, base + 158};

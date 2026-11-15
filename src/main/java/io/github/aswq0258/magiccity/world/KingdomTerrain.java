@@ -16,9 +16,11 @@ package io.github.aswq0258.magiccity.world;
 public final class KingdomTerrain {
     private KingdomTerrain() {}
 
-    public static final int CX = 250, CZ = 250, SEA = 63, CITY_Y = 63, FLAT_R = 430;
+    public static final int CX = 260, CZ = 260, SEA = 63, CITY_Y = 63, FLAT_R = 430;
+    /** 몰락한 옛 왕도 (마스터플랜의 옛 "마왕성" 자리) 와 연합군 봉쇄 요새 */
+    public static final int OLD_X = -1850, OLD_Z = 1760, OLD_Y = 70, OLD_R = 190, FORT_X = -1640, FORT_Z = 1545;
 
-    public enum Kind { OCEAN, DEEP_OCEAN, FROZEN_OCEAN, BEACH, RIVER, PLAINS, FARMLAND, FOREST, ELF_FOREST, CURSED, SNOW, MEADOW, PEAKS, DWARF, WASTELAND, SWAMP }
+    public enum Kind { OCEAN, DEEP_OCEAN, FROZEN_OCEAN, BEACH, RIVER, PLAINS, FARMLAND, FOREST, ELF_FOREST, CURSED, SNOW, MEADOW, PEAKS, DWARF, WASTELAND, SWAMP, ASH, CORRUPT }
 
     /** 한 기둥: 지면 높이, 물 높이(없으면 Integer.MIN_VALUE), 종류 */
     public record Column(int h, int water, Kind kind, boolean steep) {}
@@ -160,6 +162,13 @@ public final class KingdomTerrain {
         // 남쪽 농경평야: 평평하게
         double farm = ellipse(x, z, 250, 870, 640, 360, 32);
         h = h * (1 - farm * 0.8) + 66 * farm * 0.8;
+        // 몰락한 옛 왕도 터 + 봉쇄 요새 터: 평평 (Y=70)
+        double dOld = Math.hypot(x - OLD_X, z - OLD_Z);
+        double oldFlat = 1 - smooth((dOld - OLD_R) / 70.0);
+        double dFort = Math.max(Math.abs(x - FORT_X), Math.abs(z - FORT_Z));
+        double fortFlat = 1 - smooth((dFort - 30) / 30.0);
+        double siteFlat = Math.max(oldFlat, fortFlat);
+        h = h * (1 - siteFlat) + OLD_Y * siteFlat;
         // 왕성도시 터: 평평 (Y=63)
         double dc = Math.hypot(x - CX, z - CZ);
         double city = 1 - smooth((dc - FLAT_R) / 170.0);
@@ -197,6 +206,10 @@ public final class KingdomTerrain {
             kind = snow > 0.5 ? Kind.SNOW : Kind.MEADOW;
         } else if (snow > 0.5) {
             kind = Kind.SNOW;
+        } else if (dOld < 130) {
+            kind = Kind.CORRUPT;                                                     // 열린 네더 포탈이 퍼뜨린 오염
+        } else if (dOld < OLD_R + 160 || (waste > 0.4 && dOld < 520)) {
+            kind = Kind.ASH;                                                         // 재로 덮인 옛 왕도 들판
         } else if (waste > 0.4) {
             kind = ellipse(x, z, -1200, 1000, 260, 220, 33) > 0.4 ? Kind.CURSED : Kind.WASTELAND;
         } else if (ellipse(x, z, -1200, 1000, 260, 220, 33) > 0.4) {
