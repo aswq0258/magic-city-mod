@@ -1,6 +1,8 @@
 package io.github.aswq0258.magiccity.city.feature;
 
+import io.github.aswq0258.magiccity.build.Placer;
 import net.minecraft.core.Direction;
+import net.minecraft.world.level.block.state.BlockState;
 
 /**
  * 건물 내부 좌표계. 문이 있는 앞벽을 v=0 으로 두고 u 는 오른쪽, v 는 안쪽(뒤)으로 증가합니다.
@@ -36,5 +38,18 @@ public final class Frame {
 
     public int z(int u, int v) {
         return oz + right.getStepZ() * u + back.getStepZ() * v;
+    }
+
+    /** 내부 좌표 (u, 높이 ly, v) 에 블록 놓기 */
+    public void set(Placer p, int base, int u, int ly, int v, BlockState state) {
+        p.set(x(u, v), base + ly, z(u, v), state);
+    }
+
+    public int centerX() {
+        return (minX + maxX) >> 1;
+    }
+
+    public int centerZ() {
+        return (minZ + maxZ) >> 1;
     }
 }

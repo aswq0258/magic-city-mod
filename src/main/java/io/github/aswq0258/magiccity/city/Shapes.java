@@ -90,20 +90,23 @@ public final class Shapes {
         }
     }
 
-    /** 사각형 위에 민트 구리 계단으로 모임지붕(사방 경사)을 얹음 */
-    public static void hipRoof(Placer p, int x0, int z0, int x1, int z1, int y) {
+    /**
+     * 사각형 위에 민트 구리 계단으로 모임지붕(사방 경사)을 얹음.
+     * @return 지붕 꼭대기 층의 y
+     */
+    public static int hipRoof(Placer p, int x0, int z0, int x1, int z1, int y) {
         for (int k = 0; ; k++) {
             int ax0 = x0 + k, az0 = z0 + k, ax1 = x1 - k, az1 = z1 - k;
             int w = ax1 - ax0 + 1, d = az1 - az0 + 1;
-            if (w <= 0 || d <= 0) return;
             int yy = y + k;
+            if (w <= 0 || d <= 0) return yy - 1;
             if (w <= 2 || d <= 2) {
                 for (int x = ax0; x <= ax1; x++) {
                     for (int z = az0; z <= az1; z++) {
                         p.set(x, yy, z, (w == 1 || d == 1) ? MINT_SLAB : MINT_CUT);
                     }
                 }
-                return;
+                return yy;
             }
             for (int x = ax0; x <= ax1; x++) {
                 p.set(x, yy, az0, mintStairs(Direction.SOUTH));
