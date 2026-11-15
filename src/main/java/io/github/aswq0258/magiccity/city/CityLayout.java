@@ -609,20 +609,83 @@ public final class CityLayout {
         return 332 + 8 * Math.sin(dn / 45.0);
     }
 
-    /** 다지기 전의 지형 높이 (도시 지면 기준) */
-    private static double rawH(int du, int dn) {
-        double r = Math.hypot(du, dn);
-        double h = 0.8 * (1.6 * Math.sin(du / 37.0 + 0.7) + 1.4 * Math.cos(dn / 41.0) + 0.9 * Math.sin((du + dn) / 23.0));
-        if (dn > 270) {
-            double m = Math.max(0, Math.min(1, (dn - 295) / 80.0));
-            m = m * m * (3 - 2 * m);
-            double ridge = 48 + 18 * Math.sin(du / 29.0) * Math.cos(du / 53.0 + 1) + 9 * Math.sin(du / 11.0 + dn / 17.0);
-            double pass = 1 - Math.exp(-Math.pow(du / 22.0, 2));
-            double rv = 1 - Math.exp(-Math.pow((du - riverX(dn)) / 26.0, 2));
-            h += m * ridge * (0.12 + 0.88 * pass) * (0.15 + 0.85 * rv);
+    // ── 지형 노이즈 (값 노이즈 + 프랙탈 + 능선 노이즈)
+    private static double rnd(int x, int z, long salt) {
+        long h = x * 341873128712L + z * 132897987541L + salt * 0x9E3779B97F4A7C15L;
+        h ^= h >>> 33;
+        h *= 0xff51afd7ed558ccdL;
+        h ^= h >>> 33;
+        h *= 0xc4ceb9fe1a85ec53L;
+        h ^= h >>> 33;
+        return (h >>> 11) * (1.0 / (1L << 53));
+    }
+
+    private static double vnoise(double x, double z, long salt) {
+        int x0 = (int) Math.floor(x), z0 = (int) Math.floor(z);
+        double fx = x - x0, fz = z - z0, u = fx * fx * (3 - 2 * fx), v = fz * fz * (3 - 2 * fz);
+        double a = rnd(x0, z0, salt), b = rnd(x0 + 1, z0, salt), c = rnd(x0, z0 + 1, salt), d = rnd(x0 + 1, z0 + 1, salt);
+        return (a + (b - a) * u) * (1 - v) + (c + (d - c) * u) * v;
+    }
+
+    private static double fbm(double x, double z, int oct, long salt) {
+        double t = 0, amp = 1, n = 0;
+        for (int i = 0; i < oct; i++) {
+            t += amp * vnoise(x, z, salt + i * 17L);
+            n += amp;
+            amp *= 0.5;
+            x *= 2.03;
+            z *= 2.03;
         }
+        return t / n;
+    }
+
+    private static double ridged(double x, double z, int oct, long salt) {
+        double t = 0, amp = 1, n = 0, w = 1;
+        for (int i = 0; i < oct; i++) {
+            double r = 1 - Math.abs(2 * vnoise(x, z, salt + i * 31L) - 1);
+            r = r * r * w;
+            w = Math.min(1, r * 1.6);
+            t += amp * r;
+            n += amp;
+            amp *= 0.5;
+            x *= 2.1;
+            z *= 2.1;
+        }
+        return t / n;
+    }
+
+    private static double smooth(double t) {
+        t = Math.max(0, Math.min(1, t));
+        return t * t * (3 - 2 * t);
+    }
+
+    /** 북쪽 산맥 높이: 불규칙한 산자락 선, 능선 노이즈로 깎인 봉우리와 골짜기, 가운데 고갯길과 강 계곡은 낮게 */
+    private double mountainH(int du, int dn) {
+        long salt = seed & 0xFFFFL;
+        double edge = 285 + 56 * (fbm(du / 110.0, 0.5, 2, salt) - 0.5);
+        double m = smooth((dn - edge) / 95.0) * (1 - 0.6 * smooth((dn - 352) / 38.0));   // 지도 끝 쪽은 다시 낮아짐
+        if (m <= 0) return 0;
+        double peaks = ridged(du / 62.0, dn / 62.0, 5, salt + 100);
+        double big = fbm(du / 160.0, dn / 160.0, 3, salt + 200);
+        double h = m * (18 + 70 * peaks * (0.55 + 0.9 * big)) + m * m * 10;
+        double pass = 1 - Math.exp(-Math.pow(du / 26.0, 2));
+        double rv = 1 - Math.exp(-Math.pow((du - riverX(dn)) / 30.0, 2));
+        return h * (0.10 + 0.90 * pass) * (0.12 + 0.88 * rv);
+    }
+
+    /** 다지기 전의 지형 높이 (도시 지면 기준) */
+    private double rawH(int du, int dn) {
+        double r = Math.hypot(du, dn);
+        long salt = seed & 0xFFFFL;
+        double h = 7 * (fbm(du / 70.0, dn / 70.0, 3, salt + 300) - 0.5);                   // 완만한 언덕
+        if (dn > 200) h += mountainH(du, dn);
         double s = Math.max(0, Math.min(1, (r - R_APRON) / 22.0));
         return h * s;
+    }
+
+    /** 경사 (주변 높이 차) */
+    private double steepness(int du, int dn) {
+        return (Math.abs(terrainH(du + 2, dn) - terrainH(du - 2, dn)) + Math.abs(terrainH(du, dn + 2) - terrainH(du, dn - 2))) / 4.0;
     }
 
     /** 평평한 터를 반영한 지형 높이 */
@@ -687,7 +750,7 @@ public final class CityLayout {
             t = t * t * (3 - 2 * t);
             target = (int) Math.round(top + (target - top) * t);
         }
-        boolean mountain = dn > 285 && H >= 12;
+        boolean mountain = dn > 240 && H >= 8;
         if (target < top) p.clearAbove(x, z, target + 1);
         else {
             p.clearAbove(x, z, top + 1);
@@ -700,8 +763,20 @@ public final class CityLayout {
         } else if (du > 280 && rd <= 10) {
             surface = Blocks.SAND.defaultBlockState();
         } else if (mountain) {
-            surface = H >= 50 ? Blocks.SNOW_BLOCK.defaultBlockState() : H >= 30 ? (h % 3 == 0 ? Blocks.ANDESITE.defaultBlockState() : Blocks.STONE.defaultBlockState())
-                    : (h % 3 == 0 ? Blocks.STONE.defaultBlockState() : h % 7 == 0 ? Blocks.GRAVEL.defaultBlockState() : GRASS);
+            double st = steepness(du, dn);
+            double snowLine = 50 + 12 * (fbm(du / 9.0, dn / 9.0, 2, seed + 9) - 0.5);
+            if (H > snowLine && st < 1.6) {
+                surface = Blocks.SNOW_BLOCK.defaultBlockState();
+                if (st < 0.6 && h % 3 == 0) plant = Blocks.SNOW.defaultBlockState();
+            } else if (st > 1.2 || H > 34) {                                                 // 가파른 바위 비탈
+                surface = h % 5 == 0 ? Blocks.ANDESITE.defaultBlockState() : h % 7 == 0 ? Blocks.TUFF.defaultBlockState()
+                        : h % 11 == 0 ? Blocks.COBBLESTONE.defaultBlockState() : Blocks.STONE.defaultBlockState();
+            } else if (H > 22) {                                                             // 고산 초지
+                surface = h % 4 == 0 ? Blocks.STONE.defaultBlockState() : h % 6 == 0 ? Blocks.GRAVEL.defaultBlockState() : GRASS;
+            } else {
+                surface = h % 9 == 0 ? Blocks.COARSE_DIRT.defaultBlockState() : GRASS;
+                if (h % 17 == 0) plant = Blocks.SHORT_GRASS.defaultBlockState();
+            }
         } else if (southFields(du, dn) && !inFlat(du, dn, 2)) {
             int col = Math.floorMod(du, 12), row = Math.floorMod(dn, 26);
             if (row == 0) {
@@ -821,8 +896,8 @@ public final class CityLayout {
                     if (southFields(du, dn)) continue;
                     boolean forest = westForest(du, dn);
                     int H = (int) Math.round(terrainH(du, dn));
-                    boolean mountain = dn > 285 && H >= 12;
-                    if (mountain && H >= 34) continue;
+                    boolean mountain = dn > 240 && H >= 8;
+                    if (mountain && (H >= 34 || steepness(du, dn) > 1.3)) continue;
                     int cell = forest ? 5 : mountain ? 9 : 17;
                     int gx = Math.floorDiv(du, cell), gz = Math.floorDiv(dn, cell);
                     int hh = Shapes.hash(gx, 61, gz, seed);
