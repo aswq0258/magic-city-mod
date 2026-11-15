@@ -50,7 +50,7 @@ public class House extends Feature {
 
     @Override
     public void build(Placer p, CityLayout city) {
-        final int b = city.base;
+        final int b = groundY;
         final int W = f.width, D = f.depth;
         final int doorU = W / 2, stairU = W - 2;
 
@@ -218,6 +218,6 @@ public class House extends Feature {
     public void spawn(ServerLevel level, CityLayout city) {
         if (!villager) return;
         int u = f.width / 2;
-        Shapes.spawnVillager(level, f.x(u, 3) + 0.5, city.base + 1, f.z(u, 3) + 0.5);
+        Shapes.spawnVillager(level, f.x(u, 3) + 0.5, groundY + 1, f.z(u, 3) + 0.5);
     }
 }

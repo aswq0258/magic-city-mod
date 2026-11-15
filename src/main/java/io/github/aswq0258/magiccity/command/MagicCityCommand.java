@@ -13,7 +13,7 @@ import net.minecraft.network.chat.Component;
 import net.minecraft.server.level.ServerLevel;
 
 /**
- * /magiccity build [radius]  — 현재 위치를 중심으로 도시 건설 시작 (발밑 블록 높이가 도시 지면)
+ * /magiccity build [radius]  — 현재 위치를 중심으로 도시 건설 시작 (기본 600, 450~700. 발밑 블록 높이가 가장 바깥 단의 지면)
  * /magiccity status          — 진행률 확인
  * /magiccity cancel          — 건설 중단
  */
@@ -24,8 +24,8 @@ public final class MagicCityCommand {
         dispatcher.register(Commands.literal("magiccity")
                 .requires(src -> src.hasPermission(2))
                 .then(Commands.literal("build")
-                        .executes(ctx -> build(ctx, 300))
-                        .then(Commands.argument("radius", IntegerArgumentType.integer(200, 400))
+                        .executes(ctx -> build(ctx, 600))
+                        .then(Commands.argument("radius", IntegerArgumentType.integer(450, 700))
                                 .executes(ctx -> build(ctx, IntegerArgumentType.getInteger(ctx, "radius")))))
                 .then(Commands.literal("status").executes(ctx -> {
                     ctx.getSource().sendSuccess(() -> Component.literal(CityBuildManager.status()), false);
@@ -49,8 +49,9 @@ public final class MagicCityCommand {
         BlockPos feet = BlockPos.containing(src.getPosition());
         int base = feet.getY() - 1; // 발밑 블록 = 도시 지면 높이
 
-        if (base + 140 > level.getMaxBuildHeight()) {
-            src.sendFailure(Component.literal("[마법 도시] 너무 높은 곳입니다. 중앙 탑이 높이 제한을 넘습니다."));
+        if (base + 180 > level.getMaxBuildHeight()) {
+            int maxY = level.getMaxBuildHeight() - 181;
+            src.sendFailure(Component.literal("[마법 도시] 너무 높은 곳입니다. 중앙 대성이 높이 제한을 넘습니다. Y=" + maxY + " 이하에서 실행하세요."));
             return 0;
         }
 

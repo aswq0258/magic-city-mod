@@ -41,6 +41,7 @@ public final class Palette {
     public static final BlockState MINT_CHISELED = Blocks.WAXED_OXIDIZED_CHISELED_COPPER.defaultBlockState();
     public static final BlockState GLASS = Blocks.LIGHT_BLUE_STAINED_GLASS.defaultBlockState();
     public static final BlockState GLASS_PANE = Blocks.LIGHT_BLUE_STAINED_GLASS_PANE.defaultBlockState();
+    public static final BlockState GLASS_WHITE = Blocks.WHITE_STAINED_GLASS.defaultBlockState();
 
     // ── 조명 ──
     public static final BlockState LIGHT = Blocks.SEA_LANTERN.defaultBlockState();

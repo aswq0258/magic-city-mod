@@ -26,7 +26,7 @@ public class Garden extends Feature {
 
     @Override
     public void build(Placer p, CityLayout city) {
-        int b = city.base;
+        int b = groundY;
         boolean big = half >= 9;
         int q = Math.max(3, half / 2 + 1);
 

@@ -42,7 +42,7 @@ public class MageTower extends Feature {
 
     @Override
     public void build(Placer p, CityLayout city) {
-        final int b = city.base;
+        final int b = groundY;
         final int balLy = FH * (floors / 2);
 
         // ── 탑 주변 광장 ──

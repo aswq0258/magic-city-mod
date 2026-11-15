@@ -31,7 +31,7 @@ public class MarketSquare extends Feature {
 
     @Override
     public void build(Placer p, CityLayout city) {
-        final int b = city.base;
+        final int b = groundY;
         p.forColumns(minX, minZ, maxX, maxZ, (x, z) -> {
             boolean border = x == minX || x == maxX || z == minZ || z == maxZ;
             p.set(x, b, z, border ? QUARTZ_BRICKS : (((x + z) & 1) == 0 ? SMOOTH_QUARTZ : CALCITE));
@@ -82,7 +82,7 @@ public class MarketSquare extends Feature {
     @Override
     public void spawn(ServerLevel level, CityLayout city) {
         if (!villagers) return;
-        Shapes.spawnVillager(level, mx + 4.5, city.base + 1, mz + 4.5);
-        Shapes.spawnVillager(level, mx - 3.5, city.base + 1, mz - 3.5);
+        Shapes.spawnVillager(level, mx + 4.5, groundY + 1, mz + 4.5);
+        Shapes.spawnVillager(level, mx - 3.5, groundY + 1, mz - 3.5);
     }
 }

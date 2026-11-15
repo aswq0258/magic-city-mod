@@ -33,7 +33,7 @@ public final class Towers {
     }
 
     /** 반지름 s 정사각 테두리 칸들을 시계 방향 순서로 (연속한 칸은 항상 상하좌우로 맞닿음) */
-    static int[][] ringCells(int s) {
+    public static int[][] ringCells(int s) {
         int[][] cells = new int[8 * s][];
         int i = 0;
         for (int z = -s + 1; z <= s; z++) cells[i++] = new int[]{s, z};

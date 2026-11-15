@@ -37,7 +37,7 @@ public class AcademyHall extends Feature {
 
     @Override
     public void build(Placer p, CityLayout city) {
-        final int b = city.base;
+        final int b = groundY;
 
         // ── 1. 벽, 바닥, 천장 ──
         for (int u = 0; u < W; u++) {

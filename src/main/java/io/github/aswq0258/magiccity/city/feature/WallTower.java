@@ -24,6 +24,6 @@ public class WallTower extends Feature {
 
     @Override
     public void build(Placer p, CityLayout city) {
-        Shapes.roundTower(p, tx, tz, RAD, city.base, HEIGHT, door);
+        Shapes.roundTower(p, tx, tz, RAD, groundY, HEIGHT, door);
     }
 }

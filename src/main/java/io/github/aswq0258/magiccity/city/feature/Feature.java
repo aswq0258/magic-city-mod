@@ -13,6 +13,8 @@ import net.minecraft.world.level.ChunkPos;
 public abstract class Feature {
     /** 이 건물이 블록을 놓는 전체 범위 */
     public final int minX, minZ, maxX, maxZ;
+    /** 이 건물이 서 있는 지면 높이 (계단식 도시의 단 높이). CityLayout 이 정해 줍니다. */
+    public int groundY;
 
     protected Feature(int minX, int minZ, int maxX, int maxZ) {
         this.minX = minX;

@@ -35,7 +35,7 @@ public class Gatehouse extends Feature {
 
     @Override
     public void build(Placer p, CityLayout c) {
-        int b = c.base, H = WALL_HEIGHT;
+        int b = groundY, H = WALL_HEIGHT;
         p.forColumns(minX, minZ, maxX, maxZ, (x, z) -> {
             double dx = x - c.cx, dz = z - c.cz;
             double r = Math.sqrt(dx * dx + dz * dz);

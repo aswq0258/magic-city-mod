@@ -18,7 +18,7 @@ public class FountainSquare extends Feature {
 
     @Override
     public void build(Placer p, CityLayout city) {
-        int b = city.base;
+        int b = groundY;
         p.forColumns(minX, minZ, maxX, maxZ, (x, z) ->
                 p.set(x, b, z, ((x + z) & 1) == 0 ? SMOOTH_QUARTZ : CALCITE));
         Shapes.fountain(p, fx, fz, b);
