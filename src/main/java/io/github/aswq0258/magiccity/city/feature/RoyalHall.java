@@ -33,7 +33,14 @@ public class RoyalHall extends Feature {
     private final Direction front;
     private final int lift, floors, fh;
     private final long seed;
-    private final int hx0, hz0, hx1, hz1;   // 건물 본체 범위 (Feature 범위는 탑 때문에 6칸 넉넉히)
+    private final int hx0, hz0, hx1, hz1;
+    private boolean backDoor = true;
+
+    /** 왕좌의 전당 뒤쪽 +10 회랑 문을 내지 않음 */
+    public RoyalHall noBackDoor() {
+        this.backDoor = false;
+        return this;
+    }   // 건물 본체 범위 (Feature 범위는 탑 때문에 6칸 넉넉히)
 
     public RoyalHall(Kind kind, int x0, int z0, int x1, int z1, Direction front, int lift, long seed) {
         super(Math.min(x0, x1) - 6, Math.min(z0, z1) - 6, Math.max(x0, x1) + 6, Math.max(z0, z1) + 6);
@@ -66,7 +73,7 @@ public class RoyalHall extends Feature {
 
         RoyalBox box = new RoyalBox(hx0, hz0, hx1, hz1, y, floors, fh).roofed()
                 .door(front, doorAlong, kind == Kind.THRONE ? 2 : 1, 1, kind == Kind.THRONE ? 8 : 4);
-        if (kind == Kind.THRONE) box.door(front.getOpposite(), doorAlong, 1, 11, 3);
+        if (kind == Kind.THRONE && backDoor) box.door(front.getOpposite(), doorAlong, 1, 11, 3);
         if (kind == Kind.CHAPEL) box.window(Royal.GOLD_PANE);
         if (floors > 1) box.hole(f.x(0, 1), f.z(0, 1), f.x(1, fh - 1), f.z(1, fh - 1), 1);
         box.build(p);

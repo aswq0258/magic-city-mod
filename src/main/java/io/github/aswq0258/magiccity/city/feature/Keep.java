@@ -25,13 +25,17 @@ import static io.github.aswq0258.magiccity.city.Palette.*;
  *  각 단의 지붕은 금 머리 조각상 난간이 둘린 테라스이고, 1·2단 지붕 모서리에 작은 금 돔 탑.
  */
 public class Keep extends Feature {
-    private static final int LIFT = 18;
-    private static final int A_H = 24, B_H = 18, C_H = 16, SPIRE_H = 28, SPIRE_R = 6;
-    private final int kx, kz;
+    private static final int A_H = 24, B_H = 18, C_H = 16, SPIRE_H = 20, SPIRE_R = 6;
+    private final int kx, kz, LIFT;
     private final long seed;
 
     public Keep(int x0, int z0, int x1, int z1, long seed) {
+        this(x0, z0, x1, z1, seed, 18);
+    }
+
+    public Keep(int x0, int z0, int x1, int z1, long seed, int lift) {
         super(Math.min(x0, x1), Math.min(z0, z1), Math.max(x0, x1), Math.max(z0, z1));
+        this.LIFT = lift;
         this.kx = (minX + maxX) >> 1;
         this.kz = (minZ + maxZ) >> 1;
         this.seed = seed;
@@ -128,7 +132,7 @@ public class Keep extends Feature {
         // ── 판타지: 첨탑을 둘러 떠 있는 금빛 고리와 꼭대기 위 수정
         int spireBase = yS + SPIRE_H + 5;
         Fantasy.halo(p, kx, kz, spireBase + 12, 9.5);
-        Shapes.crystal(p, kx, spireBase + 39, kz, 2);
+        Shapes.crystal(p, kx, spireBase + 37, kz, 1);
     }
 
     private void rooms(Placer p, int x0, int z0, int x1, int z1, int y, int fh, RoyalRooms.Kind[] kinds) {

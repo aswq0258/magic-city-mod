@@ -19,7 +19,7 @@ import java.util.Collections;
 import java.util.List;
 
 /**
- * /magiccity build      — 현재 위치를 중심으로 약 395 x 395 성채 도시 + 다층 왕성 건설.
+ * /magiccity build      — 현재 위치를 중심으로 지름 약 520 의 방사형 이중 성곽 도시 + 동화성 왕성 건설.
  *                          도시 범위의 지형 높이를 재서 가장 알맞은(중간값) 높이를 지면으로 자동 결정
  * /magiccity build here — 자동 대신 발밑 블록 높이를 지면으로 사용
  * /magiccity status          — 진행률 확인
@@ -51,9 +51,10 @@ public final class MagicCityCommand {
         ChunkGenerator gen = level.getChunkSource().getGenerator();
         RandomState rs = level.getChunkSource().randomState();
         List<Integer> hs = new ArrayList<>();
-        int half = 260 - CityLayout.W0;
+        int half = CityLayout.SURVEY_R;
         for (int dx = -half; dx <= half; dx += 12) {
             for (int dz = -half; dz <= half; dz += 12) {
+                if (dx * dx + dz * dz > half * half) continue;
                 hs.add(gen.getBaseHeight(cx + dx, cz + dz, Heightmap.Types.WORLD_SURFACE_WG, level, rs) - 1);
             }
         }
@@ -71,8 +72,8 @@ public final class MagicCityCommand {
         BlockPos feet = BlockPos.containing(src.getPosition());
         int base = here ? feet.getY() - 1 : autoBase(level, feet.getX(), feet.getZ());
 
-        if (base + 152 > level.getMaxBuildHeight()) {
-            int maxY = level.getMaxBuildHeight() - 153;
+        if (base + 156 > level.getMaxBuildHeight()) {
+            int maxY = level.getMaxBuildHeight() - 157;
             src.sendFailure(Component.literal("[마법 도시] 너무 높은 곳입니다. 왕성 첨탑이 높이 제한을 넘습니다. 지면 Y=" + maxY + " 이하에서 실행하세요 (지금 지면 Y=" + base + ")."));
             return 0;
         }
@@ -83,10 +84,10 @@ public final class MagicCityCommand {
         CityBuildManager.start(job);
 
         src.sendSuccess(() -> Component.literal(String.format(
-                "§b[마법 도시] 건설 시작! 중심 (%d, %d), 지면 Y=%d%s, 도시 약 395x395, 건물 %d개, 청크 %d개",
+                "§b[마법 도시] 건설 시작! 중심 (%d, %d), 지면 Y=%d%s, 원형 도시 지름 약 520, 건물 %d개, 청크 %d개",
                 feet.getX(), feet.getZ(), base, here ? "(발밑)" : "(자동)", layout.featureCount(), job.chunkCount())), true);
         src.sendSuccess(() -> Component.literal(
-                "§7진행률은 채팅으로 알려드립니다. 15~30분 정도 걸릴 수 있습니다. 끝날 때까지 서버(게임)를 켜 두세요."), false);
+                "§7진행률은 채팅으로 알려드립니다. 30~60분 정도 걸릴 수 있습니다. 끝날 때까지 서버(게임)를 켜 두세요."), false);
         return 1;
     }
 }

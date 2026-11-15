@@ -42,26 +42,30 @@ public class Sewer extends Feature {
     private final int slumU, slumV, castleU, castleV;
 
     /** 하수로 구간 {u0, v0, u1, v1} (가로 또는 세로 직선, 중심선) */
-    private static final int[][] SEGS = {
-            {100, 205, 200, 205},                              // 슬럼 → 서쪽
-            {200, 205, 200, 315}, {200, 315, 320, 315}, {320, 315, 320, 205}, {200, 205, 320, 205},   // 왕성 아래 순환
-            {260, 205, 260, 242},                              // 납골당
-            {320, 260, 373, 260},                              // 저수조
-            {230, 315, 230, 373},                              // 감옥
-    };
+    private final int[][] SEGS;
     private static final int[] CRYPT = {244, 242, 277, 280};
     private static final int[] CISTERN = {373, 244, 404, 276};
-    private static final int[] PRISON = {212, 373, 250, 393};
+    private static final int[] PRISON = {212, 289, 250, 309};
 
-    public Sewer(CityLayout city, int slumU, int slumV, int castleU, int castleV, long seed) {
-        super(Math.min(city.wx(90), city.wx(410)), Math.min(city.wz(190), city.wz(400)),
-                Math.max(city.wx(90), city.wx(410)), Math.max(city.wz(190), city.wz(400)));
+    private final int castleTop;
+
+    public Sewer(CityLayout city, int slumU, int slumV, int castleU, int castleV, int castleTop, long seed) {
+        super(Math.min(city.wx(Math.min(90, slumU - 6)), city.wx(410)), Math.min(city.wz(Math.min(190, slumV - 6)), city.wz(400)),
+                Math.max(city.wx(Math.min(90, slumU - 6)), city.wx(410)), Math.max(city.wz(Math.min(190, slumV - 6)), city.wz(400)));
         this.c = city;
         this.slumU = slumU;
         this.slumV = slumV;
         this.castleU = castleU;
         this.castleV = castleV;
         this.seed = seed;
+        this.castleTop = castleTop;
+        this.SEGS = new int[][]{
+                {slumU - 2, slumV - 2, slumU - 2, 205}, {slumU - 2, 205, 200, 205},                     // 슬럼 맨홀 → 서쪽
+                {200, 205, 200, 315}, {200, 315, 320, 315}, {320, 315, 320, 205}, {200, 205, 320, 205},   // 왕성 아래 순환
+                {260, 205, 260, 242},                                                         // 납골당
+                {320, 260, 373, 260},                                                         // 저수조
+                {231, 309, 231, 315},                                                         // 감옥 (왕성 북서쪽 아래)
+        };
     }
 
     @Override
@@ -98,20 +102,20 @@ public class Sewer extends Feature {
         // 슬럼가 맨홀 사다리 (지면 → 통로)
         if (hits(p, slumU - 1, slumV - 1, slumU + 1, slumV + 1)) {
             for (int y = F + 1; y <= groundY; y++) {
-                if (y < groundY) put(p, slumU, y, slumV + 1, brick(slumU, y, slumV + 1));
-                put(p, slumU, y, slumV, Palette.ladder(Direction.SOUTH));
+                if (y < groundY) put(p, slumU + 1, y, slumV, brick(slumU + 1, y, slumV));
+                put(p, slumU, y, slumV, Palette.ladder(Direction.WEST));
             }
         }
         // 왕성 비밀 사다리 (1단 테라스 → 통로) + 옆 통로
-        if (hits(p, castleU - 6, castleV - 2, castleU + 1, castleV + 2)) {
-            int top = groundY + RoyalCastle.L1;
+        if (hits(p, 200, castleV - 2, castleU + 1, castleV + 2)) {
+            int top = groundY + castleTop;
             for (int y = F + 1; y <= top; y++) {
                 put(p, castleU, y, castleV + 1, brick(castleU, y, castleV + 1));
                 put(p, castleU, y, castleV, Palette.ladder(Direction.SOUTH));
             }
             put(p, castleU, top + 1, castleV, Blocks.SPRUCE_TRAPDOOR.defaultBlockState()
                     .setValue(net.minecraft.world.level.block.TrapDoorBlock.OPEN, true).setValue(net.minecraft.world.level.block.TrapDoorBlock.FACING, Direction.SOUTH));
-            for (int u = 203; u < castleU; u++) {
+            for (int u = 203; u < castleU; u++) {          // 왕성 아래 순환 하수로(서쪽)까지 비밀 통로
                 for (int dv = -1; dv <= 1; dv++) {
                     put(p, u, F, castleV + dv, brick(u, F, castleV + dv));
                     for (int ly = 1; ly <= 3; ly++) put(p, u, F + ly, castleV + dv, AIR);
