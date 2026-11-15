@@ -115,7 +115,7 @@ public final class KingdomTerrain {
 
     /** 바다까지의 거리 (양수 = 육지 안쪽, 음수 = 바다) */
     private static double seaDist(int x, int z) {
-        double coastX = 1950 + 140 * (fbm(z / 420.0, 3.3, 3, 11) - 0.5) - 650 * smooth((-1750 - z) / 450.0);
+        double coastX = 1950 + 900 * (fbm(z / 420.0, 3.3, 4, 11) - 0.5) - 650 * smooth((-1750 - z) / 450.0);
         double dEast = coastX - x;
         double northZ = -2150 + 160 * (fbm(x / 380.0, 7.7, 3, 12) - 0.5);
         double dNorth = z - northZ;
@@ -142,7 +142,7 @@ public final class KingdomTerrain {
             h += mtn * peaks * (dwarf > band ? 1 : pass);
         }
         // 북쪽 설원: 완만한 기복
-        double snow = smooth((-1330 - z) / 120.0);
+        double snow = smooth((-1330 + 600 * (fbm(x / 260.0, 5.5, 3, 35) - 0.5) - z) / 120.0);
         h += snow * 6 * (fbm(x / 90.0, z / 90.0, 3, 25) - 0.5);
         // 서쪽 엘프 대수림: 둥근 언덕
         double elf = ellipse(x, z, -1300, -300, 760, 660, 26);
@@ -206,7 +206,7 @@ public final class KingdomTerrain {
             if (hi < SEA) water = SEA - 1;
         } else if (elf > 0.45) {
             kind = Kind.ELF_FOREST;
-        } else if (elf > 0.15 || (dc > 520 && x < CX - 250 && Math.abs(z - CZ) < 500)) {
+        } else if (elf > 0.15 || ellipse(x, z, -520, 280, 360, 420, 36) > 0.35) {
             kind = Kind.FOREST;
         } else if (farm > 0.4) {
             kind = Kind.FARMLAND;
