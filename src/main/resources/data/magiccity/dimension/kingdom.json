@@ -1,0 +1,9 @@
+{
+  "type": "minecraft:overworld",
+  "generator": {
+    "type": "magiccity:kingdom",
+    "biome_source": {
+      "type": "magiccity:kingdom"
+    }
+  }
+}

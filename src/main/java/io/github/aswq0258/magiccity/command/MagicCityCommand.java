@@ -22,6 +22,7 @@ import java.util.List;
  * /magiccity build      — 현재 위치를 중심으로 지름 약 520 의 방사형 이중 성곽 도시 + 동화성 왕성 건설.
  *                          도시 범위의 지형 높이를 재서 가장 알맞은(중간값) 높이를 지면으로 자동 결정
  * /magiccity build here — 자동 대신 발밑 블록 높이를 지면으로 사용
+ * /magiccity kingdom    — 왕국 대륙 차원의 왕성도시 터(250, 250) 로 이동
  * /magiccity status          — 진행률 확인
  * /magiccity cancel          — 건설 중단
  */
@@ -34,6 +35,7 @@ public final class MagicCityCommand {
                 .then(Commands.literal("build")
                         .executes(ctx -> build(ctx, false))
                         .then(Commands.literal("here").executes(ctx -> build(ctx, true))))
+                .then(Commands.literal("kingdom").executes(MagicCityCommand::kingdom))
                 .then(Commands.literal("status").executes(ctx -> {
                     ctx.getSource().sendSuccess(() -> Component.literal(CityBuildManager.status()), false);
                     return 1;
@@ -88,6 +90,23 @@ public final class MagicCityCommand {
                 feet.getX(), feet.getZ(), base, here ? "(발밑)" : "(자동)", layout.featureCount(), job.chunkCount())), true);
         src.sendSuccess(() -> Component.literal(
                 "§7진행률은 채팅으로 알려드립니다. 1~2시간 정도 걸릴 수 있습니다. 끝날 때까지 서버(게임)를 켜 두세요."), false);
+        return 1;
+    }
+
+    /** 왕국 대륙 차원의 왕성도시 터(250, 250) 로 이동 */
+    private static int kingdom(CommandContext<CommandSourceStack> ctx) throws com.mojang.brigadier.exceptions.CommandSyntaxException {
+        CommandSourceStack src = ctx.getSource();
+        ServerLevel target = src.getServer().getLevel(io.github.aswq0258.magiccity.world.ModWorldgen.KINGDOM);
+        if (target == null) {
+            src.sendFailure(Component.literal("[마법 도시] 왕국 대륙 차원을 찾을 수 없습니다. 새 월드에서 다시 시도하세요."));
+            return 0;
+        }
+        int x = io.github.aswq0258.magiccity.world.KingdomTerrain.CX, z = io.github.aswq0258.magiccity.world.KingdomTerrain.CZ;
+        target.getChunk(x >> 4, z >> 4);
+        int y = target.getHeight(net.minecraft.world.level.levelgen.Heightmap.Types.MOTION_BLOCKING, x, z);
+        src.getPlayerOrException().teleportTo(target, x + 0.5, y, z + 0.5, 0F, 0F);
+        src.sendSuccess(() -> Component.literal("§b[마법 도시] 왕국 대륙의 왕성도시 터 (" + x + ", " + z + ") 에 도착했습니다. "
+                + "여기서 /magiccity build 를 입력하면 왕성도시와 주변 왕국이 지어집니다."), true);
         return 1;
     }
 }
