@@ -55,10 +55,12 @@ public class RoyalCastle extends Feature {
         });
 
         // 모서리 탑과 성문 탑
-        int[][] corners = {{195, 195}, {195, 325}, {325, 195}, {325, 325}};
-        for (int[] k : corners) Palace.palaceTower(p, c.wx(k[0]), c.wz(k[1]), 8, y0, 48);
-        int[][] gates = {{249, 197}, {272, 197}, {249, 323}, {272, 323}, {197, 249}, {197, 272}, {323, 249}, {323, 272}};
-        for (int[] k : gates) Palace.palaceTower(p, c.wx(k[0]), c.wz(k[1]), 4, y0, 36);
+        // 모서리 탑: 크기·높이를 제각각으로 (북서가 가장 굵고 높고, 남동이 가장 낮음 → 북동 주탑 망루와 대각 균형)
+        int[][] corners = {{195, 195, 8, 44}, {195, 325, 10, 56}, {325, 195, 7, 38}, {325, 325, 8, 48}};
+        for (int[] k : corners) Palace.palaceTower(p, c.wx(k[0]), c.wz(k[1]), k[2], y0, k[3]);
+        int[][] gates = {{249, 197, 4, 36}, {272, 197, 4, 36}, {249, 323, 5, 42}, {272, 323, 5, 42},
+                {197, 249, 4, 34}, {197, 272, 4, 38}, {323, 249, 4, 38}, {323, 272, 4, 34}};
+        for (int[] k : gates) Palace.palaceTower(p, c.wx(k[0]), c.wz(k[1]), k[2], y0, k[3]);
 
         // 앞뜰 분수·조각상
         Shapes.fountain(p, c.wx(260), c.wz(217), y1);

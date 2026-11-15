@@ -4,6 +4,8 @@ import io.github.aswq0258.magiccity.build.Placer;
 import io.github.aswq0258.magiccity.city.Chateau;
 import io.github.aswq0258.magiccity.city.CityLayout;
 import io.github.aswq0258.magiccity.city.Deco;
+import io.github.aswq0258.magiccity.city.Fantasy;
+import io.github.aswq0258.magiccity.city.Palette;
 import io.github.aswq0258.magiccity.city.Royal;
 import io.github.aswq0258.magiccity.city.Shapes;
 import io.github.aswq0258.magiccity.city.Towers;
@@ -49,13 +51,16 @@ public class Keep extends Feature {
         // 1단
         new RoyalBox(minX, minZ, maxX, maxZ, y, 3, 8).core(kx, kz, 2)
                 .door(Direction.SOUTH, kx, 2, 1, 6).door(Direction.WEST, kz, 1, 1, 4).door(Direction.EAST, kz, 1, 1, 4).build(p);
+        // 비대칭 단 배치: 2단은 남서쪽으로, 3단은 서쪽으로 치우침 (나선 계단 축은 그대로)
+        final int bx0 = minX + 4, bz0 = minZ + 8, bx1 = maxX - 10, bz1 = maxZ - 4;
+        final int cx0 = minX + 12, cz0 = minZ + 10, cx1 = maxX - 14, cz1 = maxZ - 14;
         // 2단
-        RoyalBox b = new RoyalBox(minX + 6, minZ + 6, maxX - 6, maxZ - 6, yB, 2, 9).core(kx, kz, 2);
+        RoyalBox b = new RoyalBox(bx0, bz0, bx1, bz1, yB, 2, 9).core(kx, kz, 2);
         for (Direction d : new Direction[]{Direction.NORTH, Direction.SOUTH}) b.door(d, kx, 1, 1, 3);
         for (Direction d : new Direction[]{Direction.WEST, Direction.EAST}) b.door(d, kz, 1, 1, 3);
         b.build(p);
         // 3단
-        RoyalBox c = new RoyalBox(minX + 12, minZ + 12, maxX - 12, maxZ - 12, yC, 2, 8).core(kx, kz, 2).roofed();
+        RoyalBox c = new RoyalBox(cx0, cz0, cx1, cz1, yC, 2, 8).core(kx, kz, 2).roofed();
         for (Direction d : new Direction[]{Direction.NORTH, Direction.SOUTH}) c.door(d, kx, 1, 1, 3);
         for (Direction d : new Direction[]{Direction.WEST, Direction.EAST}) c.door(d, kz, 1, 1, 3);
         c.build(p);
@@ -69,52 +74,61 @@ public class Keep extends Feature {
 
         // 방 꾸미기
         rooms(p, minX, minZ, maxX, maxZ, y, 8, new RoyalRooms.Kind[]{RoyalRooms.Kind.GRAND_HALL, RoyalRooms.Kind.LIBRARY, RoyalRooms.Kind.BANQUET});
-        rooms(p, minX + 6, minZ + 6, maxX - 6, maxZ - 6, yB, 9, new RoyalRooms.Kind[]{RoyalRooms.Kind.BEDCHAMBER, RoyalRooms.Kind.STUDY});
-        rooms(p, minX + 12, minZ + 12, maxX - 12, maxZ - 12, yC, 8, new RoyalRooms.Kind[]{RoyalRooms.Kind.CHAPEL, RoyalRooms.Kind.TREASURY});
+        rooms(p, bx0, bz0, bx1, bz1, yB, 9, new RoyalRooms.Kind[]{RoyalRooms.Kind.BEDCHAMBER, RoyalRooms.Kind.STUDY});
+        rooms(p, cx0, cz0, cx1, cz1, yC, 8, new RoyalRooms.Kind[]{RoyalRooms.Kind.CHAPEL, RoyalRooms.Kind.TREASURY});
 
-        // ── 프랑스 샤토 요소 (샹보르식 지붕 테라스)
-        // 3단: 가파른 슬레이트 모임지붕 (가운데 첨탑 자리는 비움) + 지붕창
-        Chateau.hipRoof(p, minX + 12, minZ + 12, maxX - 12, maxZ - 12, yS + 1, 12, SPIRE_R + 0.5, kx, kz);
-        for (int dx : new int[]{-6, 6}) {
-            Chateau.dormer(p, kx + dx, minZ + 12, yS + 1, Direction.NORTH);
-            Chateau.dormer(p, kx + dx, maxZ - 12, yS + 1, Direction.SOUTH);
+        // ── 3단: 가파른 슬레이트 모임지붕 (첨탑 자리는 비움) + 지붕창
+        Chateau.hipRoof(p, cx0, cz0, cx1, cz1, yS + 1, 12, SPIRE_R + 0.5, kx, kz);
+        Chateau.dormer(p, kx - 7, cz0, yS + 1, Direction.NORTH);
+        Chateau.dormer(p, kx + 6, cz0, yS + 1, Direction.NORTH);
+        Chateau.dormer(p, kx - 8, cz1, yS + 1, Direction.SOUTH);
+        Chateau.dormer(p, cx0, kz, yS + 1, Direction.WEST);
+        Chateau.dormer(p, cx1, kz - 3, yS + 1, Direction.EAST);
+
+        // ── 북동: 가장 높은 둥근 망루(동종탑). 서남쪽의 낮고 굵은 탑과 무게를 맞춤
+        int dtx = maxX - 5, dtz = minZ + 5;
+        Palace.palaceTower(p, dtx, dtz, 5, yB, 46);
+        for (int ly = 1; ly <= 3; ly++) p.set(dtx - 5, yB + ly, dtz + 1, AIR);           // 테라스 쪽 출입구
+        for (int ly = 1; ly < 46; ly++) p.set(dtx + 3, yB + ly, dtz, Palette.ladder(Direction.WEST));
+        Shapes.crystal(p, dtx, yB + 46 + 31, dtz, 1);
+        // ── 남서: 낮고 굵은 탑 (1단에 붙어 테라스까지)
+        Palace.palaceTower(p, minX + 3, maxZ - 3, 4.5, y, 36);
+        // ── 크기가 다른 매달린 작은 탑들 (모서리마다 다르게)
+        Chateau.turret(p, minX, minZ, yB - 9, 15, 2.5);           // 1단 북서
+        Chateau.turret(p, maxX, maxZ, yB - 7, 11, 2.0);           // 1단 남동
+        Chateau.turret(p, bx0, bz0, yC - 8, 13, 2.0);             // 2단 북서
+        Chateau.turret(p, bx1, bz1, yC - 10, 17, 2.5);            // 2단 남동
+
+        // ── 1단 지붕 테라스: 바깥 난간 위 지붕창, 2단 벽에 붙은 굴뚝, 가로등
+        for (int x : new int[]{minX + 9, minX + 18, minX + 27}) Chateau.dormer(p, x, minZ, yB + 1, Direction.NORTH);
+        for (int x : new int[]{minX + 14, minX + 24, maxX - 8}) Chateau.dormer(p, x, maxZ, yB + 1, Direction.SOUTH);
+        for (int z : new int[]{minZ + 12, minZ + 22}) Chateau.dormer(p, minX, z, yB + 1, Direction.WEST);
+        for (int z : new int[]{kz, maxZ - 10}) Chateau.dormer(p, maxX, z, yB + 1, Direction.EAST);
+        Chateau.chimney(p, bx0 + 6, bz0 - 1, yB + 1, yC + 5, Direction.EAST);
+        Chateau.chimney(p, bx0 + 20, bz0 - 1, yB + 1, yC + 7, Direction.EAST);
+        Chateau.chimney(p, bx1 + 1, kz + 6, yB + 1, yC + 4, Direction.SOUTH);
+        Chateau.chimney(p, kx + 5, bz1 + 1, yB + 1, yC + 3, Direction.EAST);
+        for (int x = minX + 6; x <= maxX - 13; x += 10) Royal.lamp(p, x, minZ + 4, yB);
+        for (int z = minZ + 14; z <= maxZ - 6; z += 10) Royal.lamp(p, maxX - 4, z, yB);
+
+        // ── 2단 지붕 테라스: 남쪽의 넓은 정원 테라스, 지붕창, 3단 벽에 붙은 굴뚝
+        for (int x : new int[]{bx0 + 6, kx, bx1 - 6}) Chateau.dormer(p, x, bz1, yC + 1, Direction.SOUTH);
+        for (int z : new int[]{kz - 6, kz + 6}) Chateau.dormer(p, bx0, z, yC + 1, Direction.WEST);
+        Chateau.chimney(p, cx0 + 4, cz1 + 1, yC + 1, yS + 8, Direction.EAST);
+        Chateau.chimney(p, cx1 - 5, cz1 + 1, yC + 1, yS + 10, Direction.EAST);
+        Chateau.chimney(p, cx0 - 1, kz - 4, yC + 1, yS + 6, Direction.SOUTH);
+        for (int x = cx0; x <= cx1; x += 4) {                    // 화분 정원
+            if (Math.abs(x - kx) <= 2) continue;
+            p.set(x, yC + 1, cz1 + 5, Royal.HEDGE);
+            p.set(x + 1, yC + 1, cz1 + 5, Royal.ROYAL_FLOWERS[Math.floorMod(x, 4)]);
         }
-        Chateau.dormer(p, minX + 12, kz, yS + 1, Direction.WEST);
-        Chateau.dormer(p, maxX - 12, kz, yS + 1, Direction.EAST);
-        // 1·2단 모서리: 벽에 매달린 작은 탑(에쇼게트)
-        for (int sx = -1; sx <= 1; sx += 2) {
-            for (int sz = -1; sz <= 1; sz += 2) {
-                Chateau.turret(p, sx < 0 ? minX : maxX, sz < 0 ? minZ : maxZ, yB - 9, 15, 2.5);
-                Chateau.turret(p, sx < 0 ? minX + 6 : maxX - 6, sz < 0 ? minZ + 6 : maxZ - 6, yC - 8, 13, 2.0);
-            }
-        }
-        // 1단 테라스: 바깥 난간 위 지붕창, 2단 벽에 붙은 장식 굴뚝
-        for (int x : new int[]{minX + 10, kx, maxX - 10}) {
-            Chateau.dormer(p, x, minZ, yB + 1, Direction.NORTH);
-            Chateau.dormer(p, x, maxZ, yB + 1, Direction.SOUTH);
-        }
-        for (int dz : new int[]{-8, 8}) {
-            Chateau.dormer(p, minX, kz + dz, yB + 1, Direction.WEST);
-            Chateau.dormer(p, maxX, kz + dz, yB + 1, Direction.EAST);
-        }
-        for (int x : new int[]{kx - 9, kx + 8}) {
-            Chateau.chimney(p, x, minZ + 5, yB + 1, yC + 5, Direction.EAST);
-            Chateau.chimney(p, x, maxZ - 5, yB + 1, yC + 5, Direction.EAST);
-        }
-        // 2단 테라스: 지붕창, 3단 벽에 붙은 굴뚝
-        for (int dx : new int[]{-7, 7}) {
-            Chateau.dormer(p, kx + dx, minZ + 6, yC + 1, Direction.NORTH);
-            Chateau.dormer(p, kx + dx, maxZ - 6, yC + 1, Direction.SOUTH);
-        }
-        for (int x : new int[]{kx - 8, kx + 6}) {
-            Chateau.chimney(p, x, minZ + 11, yC + 1, yS + 8, Direction.EAST);
-            Chateau.chimney(p, x, maxZ - 11, yC + 1, yS + 8, Direction.EAST);
-        }
-        // 1단 지붕 테라스 가로등
-        for (int x = minX + 6; x <= maxX - 6; x += 10) {
-            Royal.lamp(p, x, minZ + 3, yB);
-            Royal.lamp(p, x, maxZ - 3, yB);
-        }
+        Royal.lamp(p, cx0 - 4, cz1 + 7, yC);
+        Royal.lamp(p, cx1 + 2, cz1 + 7, yC);
+
+        // ── 판타지: 첨탑을 둘러 떠 있는 금빛 고리와 꼭대기 위 수정
+        int spireBase = yS + SPIRE_H + 5;
+        Fantasy.halo(p, kx, kz, spireBase + 12, 9.5);
+        Shapes.crystal(p, kx, spireBase + 39, kz, 2);
     }
 
     private void rooms(Placer p, int x0, int z0, int x1, int z1, int y, int fh, RoyalRooms.Kind[] kinds) {

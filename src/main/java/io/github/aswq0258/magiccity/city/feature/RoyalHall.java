@@ -4,10 +4,15 @@ import io.github.aswq0258.magiccity.build.Placer;
 import io.github.aswq0258.magiccity.city.Chateau;
 import io.github.aswq0258.magiccity.city.CityLayout;
 import io.github.aswq0258.magiccity.city.Deco;
+import io.github.aswq0258.magiccity.city.Fantasy;
+import io.github.aswq0258.magiccity.city.Palette;
 import io.github.aswq0258.magiccity.city.Royal;
 import io.github.aswq0258.magiccity.city.Shapes;
 import net.minecraft.core.Direction;
+import net.minecraft.world.level.block.BellBlock;
+import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.state.BlockState;
+import net.minecraft.world.level.block.state.properties.BellAttachType;
 
 import static io.github.aswq0258.magiccity.city.Palette.*;
 
@@ -28,9 +33,14 @@ public class RoyalHall extends Feature {
     private final Direction front;
     private final int lift, floors, fh;
     private final long seed;
+    private final int hx0, hz0, hx1, hz1;   // 건물 본체 범위 (Feature 범위는 탑 때문에 6칸 넉넉히)
 
     public RoyalHall(Kind kind, int x0, int z0, int x1, int z1, Direction front, int lift, long seed) {
-        super(Math.min(x0, x1), Math.min(z0, z1), Math.max(x0, x1), Math.max(z0, z1));
+        super(Math.min(x0, x1) - 6, Math.min(z0, z1) - 6, Math.max(x0, x1) + 6, Math.max(z0, z1) + 6);
+        this.hx0 = Math.min(x0, x1);
+        this.hz0 = Math.min(z0, z1);
+        this.hx1 = Math.max(x0, x1);
+        this.hz1 = Math.max(z0, z1);
         this.kind = kind;
         this.front = front;
         this.lift = lift;
@@ -41,20 +51,20 @@ public class RoyalHall extends Feature {
 
     @Override
     public boolean occupies(int x, int z) {
-        return x >= minX - 2 && x <= maxX + 2 && z >= minZ - 2 && z <= maxZ + 2;
+        return x >= hx0 - 2 && x <= hx1 + 2 && z >= hz0 - 2 && z <= hz1 + 2;
     }
 
     @Override
     public void build(Placer p, CityLayout city) {
-        if (!p.intersects(minX - 12, minZ - 12, maxX + 12, maxZ + 12)) return;
+        if (!p.intersects(hx0 - 12, hz0 - 12, hx1 + 12, hz1 + 12)) return;
         final int y = groundY + lift;
         boolean ns = front == Direction.NORTH || front == Direction.SOUTH;
-        int W = ns ? maxX - minX - 1 : maxZ - minZ - 1;
-        int D = ns ? maxZ - minZ - 1 : maxX - minX - 1;
-        Frame f = new Frame((minX + 1 + maxX - 1) >> 1, (minZ + 1 + maxZ - 1) >> 1, front, W, D);
+        int W = ns ? hx1 - hx0 - 1 : hz1 - hz0 - 1;
+        int D = ns ? hz1 - hz0 - 1 : hx1 - hx0 - 1;
+        Frame f = new Frame((hx0 + 1 + hx1 - 1) >> 1, (hz0 + 1 + hz1 - 1) >> 1, front, W, D);
         int doorAlong = ns ? f.x(W / 2, 0) : f.z(W / 2, 0);
 
-        RoyalBox box = new RoyalBox(minX, minZ, maxX, maxZ, y, floors, fh).roofed()
+        RoyalBox box = new RoyalBox(hx0, hz0, hx1, hz1, y, floors, fh).roofed()
                 .door(front, doorAlong, kind == Kind.THRONE ? 2 : 1, 1, kind == Kind.THRONE ? 8 : 4);
         if (kind == Kind.THRONE) box.door(front.getOpposite(), doorAlong, 1, 11, 3);
         if (kind == Kind.CHAPEL) box.window(Royal.GOLD_PANE);
@@ -108,12 +118,70 @@ public class RoyalHall extends Feature {
         // 프랑스 샤토식 가파른 슬레이트 모임지붕 + 지붕창 + 굴뚝 / 전당·예배당은 고딕 플레슈(가는 첨탑)
         boolean grand = kind == Kind.CHAPEL || kind == Kind.THRONE;
         int roofY = y + floors * fh + 1;
-        int ridge = Chateau.hipRoof(p, minX, minZ, maxX, maxZ, roofY, kind == Kind.THRONE ? 12 : kind == Kind.CHAPEL ? 16 : 10, 0, 0, 0);
-        Chateau.dressRoof(p, minX, minZ, maxX, maxZ, roofY, grand ? -1 : ridge + 3);
-        if (grand) Royal.spire(p, (minX + maxX) >> 1, (minZ + maxZ) >> 1, ridge, 2.5, kind == Kind.CHAPEL ? 24 : 20);
-        if (kind == Kind.THRONE) {
-            for (int cx : new int[]{minX, maxX}) for (int cz : new int[]{minZ, maxZ}) Chateau.turret(p, cx, cz, roofY - 8, 12, 2.5);
+        int ridge = Chateau.hipRoof(p, hx0, hz0, hx1, hz1, roofY, kind == Kind.THRONE ? 12 : kind == Kind.CHAPEL ? 16 : 10, 0, 0, 0);
+        Chateau.dressRoof(p, hx0, hz0, hx1, hz1, roofY, grand ? -1 : ridge + 3);
+        if (grand) Royal.spire(p, (hx0 + hx1) >> 1, (hz0 + hz1) >> 1, ridge, 2.5, kind == Kind.CHAPEL ? 24 : 20);
+        // 건물마다 다른 부속 탑 (같은 모양 반복 없이, 왕성 전체가 비대칭이면서 균형 있게)
+        int bl = f.x(0, D - 1), blz = f.z(0, D - 1), br = f.x(W - 1, D - 1), brz = f.z(W - 1, D - 1);
+        int fl = f.x(0, 0), flz = f.z(0, 0), fr = f.x(W - 1, 0), frz = f.z(W - 1, 0);
+        switch (kind) {
+            case THRONE -> {                                   // 앞 왼쪽 큰 탑, 뒤 오른쪽 작은 탑
+                Chateau.turret(p, fl, flz, roofY - 9, 15, 3.0);
+                Chateau.turret(p, br, brz, roofY - 6, 10, 2.0);
+            }
+            case CHAPEL -> belfry(p, br, brz, y);              // 종탑
+            case ARCANE -> {                                   // 마법사의 탑: 가늘고 높고, 떠 있는 수정과 고리
+                Palace.palaceTower(p, bl, blz, 3, y, 34);
+                Shapes.crystal(p, bl, y + 34 + 22, blz, 2);
+                Fantasy.halo(p, bl, blz, y + 34 + 8, 5.5);
+            }
+            case VAULT -> Palace.palaceTower(p, br, brz, 4, y, 22);        // 낮고 굵은 금고 탑
+            case GUARD -> watchtower(p, bl, blz, y);                      // 사각 망루
+            case COUNCIL -> Chateau.turret(p, fr, frz, roofY - 7, 12, 2.0);
+            case ARMORY -> { }
         }
+    }
+
+    /** 사각 종탑: 흰 벽, 꼭대기 열린 종루와 종, 위에 첨탑 */
+    private void belfry(Placer p, int tx, int tz, int y) {
+        int H = 30;
+        for (int dx = -2; dx <= 2; dx++) {
+            for (int dz = -2; dz <= 2; dz++) {
+                boolean edge = Math.abs(dx) == 2 || Math.abs(dz) == 2, corner = Math.abs(dx) == 2 && Math.abs(dz) == 2;
+                for (int ly = 0; ly <= H; ly++) {
+                    BlockState s = AIR;
+                    if (ly == 0 || ly == H) s = SMOOTH_QUARTZ;
+                    else if (edge) {
+                        if (ly > H - 7) s = corner ? QUARTZ_PILLAR : (ly == H - 1 ? Royal.GOLD : AIR);   // 열린 종루
+                        else s = (ly % 8 == 4 && !corner && (dx == 0 || dz == 0)) ? Royal.GOLD_PANE : ly % 8 == 0 ? CHISELED_QUARTZ : QUARTZ_BRICKS;
+                    } else if (ly % 8 == 0 && ly < H - 7) s = SMOOTH_QUARTZ;
+                    p.set(tx + dx, y + ly, tz + dz, s);
+                }
+            }
+        }
+        for (int ly = 1; ly < H - 6; ly++) p.set(tx + 1, y + ly, tz, Palette.ladder(Direction.WEST));
+        p.set(tx, y + H - 1, tz, Blocks.BELL.defaultBlockState().setValue(BellBlock.ATTACHMENT, BellAttachType.CEILING));
+        Royal.spire(p, tx, tz, y + H + 1, 2.5, 14);
+    }
+
+    /** 사각 망루: 총안 + 붉은 깃발 */
+    private void watchtower(Placer p, int tx, int tz, int y) {
+        int H = 26;
+        for (int dx = -2; dx <= 2; dx++) {
+            for (int dz = -2; dz <= 2; dz++) {
+                boolean edge = Math.abs(dx) == 2 || Math.abs(dz) == 2;
+                for (int ly = 0; ly <= H; ly++) {
+                    BlockState s = AIR;
+                    if (ly == 0 || ly == H) s = SMOOTH_QUARTZ;
+                    else if (edge) s = (ly % 7 == 3 && (dx == 0 || dz == 0)) ? Royal.CLEAR_PANE : ly == H - 2 ? Royal.GOLD : QUARTZ_BRICKS;
+                    p.set(tx + dx, y + ly, tz + dz, s);
+                }
+                if (edge && ((dx + dz) & 1) == 0) p.set(tx + dx, y + H + 1, tz + dz, CHISELED_QUARTZ);
+            }
+        }
+        for (int ly = 1; ly < H; ly++) p.set(tx + 1, y + ly, tz, Palette.ladder(Direction.WEST));
+        for (int ly = H + 1; ly <= H + 6; ly++) p.set(tx, y + ly, tz, Royal.DARK_FENCE);
+        p.set(tx + 1, y + H + 5, tz, Royal.redBanner(Direction.EAST));
     }
 
     /** 왕좌의 전당 내부 */
