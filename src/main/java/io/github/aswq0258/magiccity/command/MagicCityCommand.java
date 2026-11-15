@@ -36,6 +36,7 @@ import java.util.List;
  * /magiccity goto dwarf      — 드워프 교역 마당으로 이동
  * /magiccity site hamlets    — 대륙 곳곳의 테마 촌락 건설 (바닐라 마을 대신)
  * /magiccity hamlets         — 가까운 촌락 목록
+ * /magiccity remove <hamlets|hamlet|roads|worldtree|dwarf|oldcapital> — 왕국 대륙 건축물 철거 (원래 지형으로)
  * /magiccity status          — 진행률 확인
  * /magiccity cancel          — 건설 중단
  */
@@ -54,6 +55,16 @@ public final class MagicCityCommand {
                         .then(Commands.literal("worldtree").executes(MagicCityCommand::worldTree))
                         .then(Commands.literal("dwarf").executes(MagicCityCommand::dwarf))
                         .then(Commands.literal("hamlets").executes(MagicCityCommand::hamlets)))
+                .then(Commands.literal("remove")
+                        .then(Commands.literal("hamlets").executes(ctx -> remove(ctx, io.github.aswq0258.magiccity.site.Restore.hamlets())))
+                        .then(Commands.literal("hamlet").executes(ctx -> {
+                            var src = ctx.getSource();
+                            return remove(ctx, io.github.aswq0258.magiccity.site.Restore.nearestHamlet(src.getPosition().x, src.getPosition().z));
+                        }))
+                        .then(Commands.literal("roads").executes(ctx -> remove(ctx, io.github.aswq0258.magiccity.site.Restore.roads())))
+                        .then(Commands.literal("worldtree").executes(ctx -> remove(ctx, io.github.aswq0258.magiccity.site.Restore.worldTree())))
+                        .then(Commands.literal("dwarf").executes(ctx -> remove(ctx, io.github.aswq0258.magiccity.site.Restore.dwarf())))
+                        .then(Commands.literal("oldcapital").executes(ctx -> remove(ctx, io.github.aswq0258.magiccity.site.Restore.oldCapital()))))
                 .then(Commands.literal("hamlets").executes(ctx -> {
                     var src = ctx.getSource();
                     double px = io.github.aswq0258.magiccity.world.KingdomTerrain.CX, pz = io.github.aswq0258.magiccity.world.KingdomTerrain.CZ;
@@ -323,6 +334,29 @@ public final class MagicCityCommand {
         CityBuildManager.start(job);
         src.sendSuccess(() -> Component.literal(String.format("§b[마법 도시] 촌락 %d곳 건설 시작! 청크 %d개. /magiccity hamlets 로 가까운 촌락 위치를 볼 수 있습니다.",
                 layout.count(), job.chunkCount())), true);
+        return 1;
+    }
+
+    /** 왕국 대륙의 건축물 철거 (원래 지형으로 되돌림) */
+    private static int remove(CommandContext<CommandSourceStack> ctx, io.github.aswq0258.magiccity.site.Restore restore) {
+        CommandSourceStack src = ctx.getSource();
+        if (CityBuildManager.isRunning()) {
+            src.sendFailure(Component.literal("[마법 도시] 이미 건설(철거) 중입니다. /magiccity status 로 확인하세요."));
+            return 0;
+        }
+        ServerLevel k = src.getServer().getLevel(io.github.aswq0258.magiccity.world.ModWorldgen.KINGDOM);
+        if (k == null) {
+            src.sendFailure(Component.literal("[마법 도시] 왕국 대륙 차원을 찾을 수 없습니다."));
+            return 0;
+        }
+        if (restore.areaCount() == 0) {
+            src.sendFailure(Component.literal("[마법 도시] 철거할 대상이 없습니다."));
+            return 0;
+        }
+        CityBuildJob job = new CityBuildJob(k, restore);
+        CityBuildManager.start(job);
+        src.sendSuccess(() -> Component.literal(String.format("§e[마법 도시] %s 철거 시작! %d곳, 청크 %d개를 원래 지형으로 되돌립니다. (나무·풀은 되살아나지 않습니다)",
+                restore.label(), restore.areaCount(), job.chunkCount())), true);
         return 1;
     }
 }

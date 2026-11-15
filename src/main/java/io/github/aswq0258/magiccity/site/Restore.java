@@ -1,0 +1,180 @@
+package io.github.aswq0258.magiccity.site;
+
+import io.github.aswq0258.magiccity.build.BuildLayout;
+import io.github.aswq0258.magiccity.build.Placer;
+import io.github.aswq0258.magiccity.city.CityLayout;
+import io.github.aswq0258.magiccity.city.feature.Feature;
+import io.github.aswq0258.magiccity.world.KingdomChunkGenerator;
+import io.github.aswq0258.magiccity.world.KingdomTerrain;
+import net.minecraft.server.level.ServerLevel;
+import net.minecraft.world.entity.Entity;
+import net.minecraft.world.entity.Mob;
+import net.minecraft.world.level.ChunkPos;
+import net.minecraft.world.level.block.Blocks;
+import net.minecraft.world.level.block.state.BlockState;
+import net.minecraft.world.phys.AABB;
+
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.LinkedHashSet;
+import java.util.List;
+import java.util.Map;
+
+/**
+ * 철거: 왕국 대륙에 지은 건축물 자리를 원래 지형으로 되돌림.
+ * 지형은 계산식(KingdomTerrain) 이라, 각 기둥을 지형 생성기와 똑같이 다시 채우면 원래 땅(길 포함) 이 됨.
+ * 원래 있던 나무·풀 같은 바닐라 장식은 되살아나지 않음. 이름 붙은 주민·정령·골렘, 보스·몬스터 무리도 치움.
+ */
+public final class Restore implements BuildLayout {
+    /** 되돌릴 영역 {x0, z0, x1, z1, y0, y1} */
+    private final List<int[]> areas = new ArrayList<>();
+    private final Map<Long, List<Feature>> byChunk = new HashMap<>();
+    private final List<ChunkPos> chunks = new ArrayList<>();
+    private final String label;
+
+    private Restore(String label) {
+        this.label = label;
+    }
+
+    public String label() {
+        return label;
+    }
+
+    public int areaCount() {
+        return areas.size();
+    }
+
+    private Restore add(int x0, int z0, int x1, int z1, int y0, int y1) {
+        areas.add(new int[]{x0, z0, x1, z1, y0, y1});
+        return this;
+    }
+
+    private Restore done() {
+        LinkedHashSet<Long> keys = new LinkedHashSet<>();
+        for (int[] a : areas) {
+            Feature f = new Cleaner(a);
+            for (int x = a[0] >> 4; x <= a[2] >> 4; x++) {
+                for (int z = a[1] >> 4; z <= a[3] >> 4; z++) {
+                    long k = ChunkPos.asLong(x, z);
+                    keys.add(k);
+                    byChunk.computeIfAbsent(k, q -> new ArrayList<>()).add(f);
+                }
+            }
+        }
+        for (long k : keys) chunks.add(new ChunkPos(k));
+        return this;
+    }
+
+    // ───────────────────────── 대상별 ─────────────────────────
+
+    public static Restore hamlets() {
+        Restore r = new Restore("촌락 전체");
+        for (Hamlets.Spot s : Hamlets.spots()) r.add(s.x() - 35, s.z() - 35, s.x() + 35, s.z() + 35, s.y() - 12, s.y() + 24);
+        return r.done();
+    }
+
+    public static Restore nearestHamlet(double px, double pz) {
+        Hamlets.Spot best = null;
+        for (Hamlets.Spot s : Hamlets.spots()) if (best == null || Math.hypot(s.x() - px, s.z() - pz) < Math.hypot(best.x() - px, best.z() - pz)) best = s;
+        Restore r = new Restore(best == null ? "촌락" : best.name());
+        if (best != null) r.add(best.x() - 35, best.z() - 35, best.x() + 35, best.z() + 35, best.y() - 12, best.y() + 24);
+        return r.done();
+    }
+
+    public static Restore roads() {
+        Restore r = new Restore("길 거점 (쉼터·둥지·결투장)");
+        for (RoadSites.Site s : RoadSites.sites()) {
+            int e = s.kind() == RoadSites.Kind.ARENA ? 17 : 11;
+            r.add(s.x() - e, s.z() - e, s.x() + e, s.z() + e, s.y() - 10, s.y() + 16);
+        }
+        return r.done();
+    }
+
+    public static Restore worldTree() {
+        int b = KingdomTerrain.column(WorldTree.OX, WorldTree.OZ).h();
+        return new Restore("세계수 성역").add(WorldTree.OX - WorldTree.R, WorldTree.OZ - WorldTree.R, WorldTree.OX + WorldTree.R, WorldTree.OZ + WorldTree.R, b - 12, b + 142).done();
+    }
+
+    public static Restore dwarf() {
+        int f = KingdomTerrain.column(DwarfHold.CX, DwarfHold.CZ - 50).h();
+        return new Restore("드워프 광산왕국").add(DwarfHold.CX - 83, DwarfHold.CZ - 225, DwarfHold.CX + 189, DwarfHold.CZ - 17, f - 30, f + 50).done();
+    }
+
+    public static Restore oldCapital() {
+        OldCapital oc = new OldCapital(0);
+        int r = oc.radius() + 2;
+        return new Restore("몰락한 옛 왕도").add(oc.cx() - r, oc.cz() - r, oc.cx() + r, oc.cz() + r, OldCapital.Y - 26, OldCapital.Y + 40).done();
+    }
+
+    // ───────────────────────── 되돌리기 ─────────────────────────
+
+    @Override
+    public void buildColumn(Placer p, int x, int z) {
+        int y0 = Integer.MAX_VALUE, y1 = Integer.MIN_VALUE;
+        for (int[] a : areas) {
+            if (x < a[0] || x > a[2] || z < a[1] || z > a[3]) continue;
+            y0 = Math.min(y0, a[4]);
+            y1 = Math.max(y1, a[5]);
+        }
+        if (y0 == Integer.MAX_VALUE) return;
+        KingdomTerrain.Column c = KingdomTerrain.column(x, z);
+        y1 = Math.max(y1, c.h() + 6);
+        y0 = Math.min(y0, c.h() - 4);
+        // 지형 위에 남은 나무·풀까지 정리
+        if (p.pass() == Placer.Pass.SOLID) {
+            int top = p.level().getHeight(net.minecraft.world.level.levelgen.Heightmap.Types.WORLD_SURFACE, x, z);
+            y1 = Math.max(y1, Math.min(top, y1 + 40));
+        }
+        for (int y = y0; y <= y1; y++) {
+            BlockState s = KingdomChunkGenerator.blockAt(c, x, y, z);
+            p.set(x, y, z, s == null ? Blocks.AIR.defaultBlockState() : s);
+        }
+    }
+
+    /** 영역의 이름 붙은 주민·정령·골렘, 보스·몬스터 무리를 치움 (물 패스 때 한 번) */
+    private static final class Cleaner extends Feature {
+        private final int[] a;
+
+        Cleaner(int[] a) {
+            super(a[0], a[1], a[2], a[3]);
+            this.a = a;
+        }
+
+        @Override
+        public void build(Placer p, CityLayout city) {}
+
+        @Override
+        public boolean needsSpawn() {
+            return true;
+        }
+
+        @Override
+        public void spawn(ServerLevel level, CityLayout city) {
+            AABB box = new AABB(a[0], a[4] - 4, a[1], a[2] + 1, a[5] + 40, a[3] + 1);
+            for (Entity e : level.getEntitiesOfClass(Mob.class, box, m -> m.hasCustomName()
+                    || m.getTags().stream().anyMatch(t -> t.startsWith("magiccity")))) {
+                e.discard();
+            }
+        }
+    }
+
+    @Override public int cx() { return KingdomTerrain.CX; }
+    @Override public int cz() { return KingdomTerrain.CZ; }
+    @Override public int base() { return KingdomTerrain.SEA; }
+    @Override public int radius() { return 0; }
+    @Override public CityLayout city() { return null; }
+    @Override public List<ChunkPos> chunkList() { return chunks; }
+    @Override public int shapeMinY() { return 40; }
+    @Override public int shapeMaxY() { return 220; }
+
+    @Override
+    public List<Feature> featuresIn(ChunkPos cp) {
+        return byChunk.getOrDefault(cp.toLong(), Collections.emptyList());
+    }
+
+    @Override
+    public int[] lightRange(int x, int z) {
+        return null;
+    }
+}

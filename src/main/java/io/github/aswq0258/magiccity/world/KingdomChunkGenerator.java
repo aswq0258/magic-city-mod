@@ -76,7 +76,7 @@ public class KingdomChunkGenerator extends ChunkGenerator {
     private static final BlockState BLACKSTONE = Blocks.BLACKSTONE.defaultBlockState();
 
     /** 기둥의 y 높이 블록 */
-    static BlockState blockAt(KingdomTerrain.Column c, int x, int y, int z) {
+    public static BlockState blockAt(KingdomTerrain.Column c, int x, int y, int z) {
         if (y == MIN_Y) return BEDROCK;
         int h = c.h();
         if (c.road() > 0) {
