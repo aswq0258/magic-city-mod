@@ -232,6 +232,8 @@ public final class CityLayout {
         mansion(-100, 57, Direction.EAST, rand);
         mansion(-101, -47, Direction.EAST, rand);
         mansion(-66, -94, Direction.NORTH, rand);
+        mansion(-125, 20, Direction.EAST, rand);
+        mansion(25, -125, Direction.NORTH, rand);
         features.add(new Garden(this, lotRel(-45, -127, -16, -98, Direction.NORTH), rand));        // 귀족 정원
         take(-45, -127, -16, -98);
         features.add(new FountainSquare(this, lotRel(33, 86, 59, 112, Direction.SOUTH)));         // 내성 분수 광장
@@ -280,9 +282,9 @@ public final class CityLayout {
     // ───────────────────────── 불규칙한 주거 ─────────────────────────
 
     private void addHouses(RandomSource rand) {
-        scatter(rand, R_CRING + 4, R_INNER - 2, 8, 600, 3);          // 내성: 넉넉하게
-        scatter(rand, R_IRING + 1, R_MID - 1, 45, 3000, 2);          // 중간 시가지
-        scatter(rand, R_MRING + 1, R_OUTER - 1, 125, 6000, 1);       // 외곽: 촘촘하게
+        scatter(rand, R_CRING + 4, R_INNER - 2, 14, 3000, 3);        // 내성: 넉넉하게
+        scatter(rand, R_IRING + 1, R_MID - 1, 70, 12000, 2);         // 중간 시가지
+        scatter(rand, R_MRING + 1, R_OUTER - 1, 150, 20000, 1);      // 외곽: 촘촘하게
     }
 
     /** 고리 영역 [r0, r1] 에 집을 흩뿌림: 도로·다른 건물과 겹치지 않고, 정면은 가장 가까운 길 쪽 */
@@ -291,7 +293,7 @@ public final class CityLayout {
         for (int t = 0; t < attempts && placed < count; t++) {
             double a = rand.nextDouble() * Math.PI * 2, r = r0 + rand.nextDouble() * (r1 - r0);
             int du = (int) Math.round(Math.cos(a) * r), dn = (int) Math.round(Math.sin(a) * r);
-            int w = 13 + rand.nextInt(3), d = 13;
+            int w = 11 + rand.nextInt(3), d = 11;
             int du0 = du - w / 2, dn0 = dn - d / 2, du1 = du0 + w - 1, dn1 = dn0 + d - 1;
             if (!rectFree(du0, dn0, du1, dn1, r0, r1, gap)) continue;
             Direction front = nearestRoad(du, dn);
