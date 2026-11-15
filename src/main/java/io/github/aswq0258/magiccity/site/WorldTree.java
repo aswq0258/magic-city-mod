@@ -188,49 +188,63 @@ public final class WorldTree implements BuildLayout {
     /** 높이 y 에서 줄기 반지름 */
     private static double trunkR(double y) {
         double t = Math.max(0, Math.min(1, y / TRUNK_H));
-        return 4 + 6 * Math.pow(1 - t, 1.5) + (y < 12 ? (12 - y) * 0.45 : 0);
+        return 5 + 8 * Math.pow(1 - t, 1.4) + (y < 14 ? (14 - y) * 0.4 : 0);
     }
 
+    /** 큰 가지 끝·중간·곁가지 끝 (잎 덩어리 위치) — branches 보다 먼저 만들어져야 함 */
+    private final List<double[]> tips = new ArrayList<>();
     /** 가지·뿌리 선분 {x0,y0,z0,x1,y1,z1,r0,r1} (중심 기준 상대 좌표) */
     private final double[][] branches = makeBranches();
     private final double[][] roots = makeRoots();
     /** 잎 덩어리 {x,y,z,rx,ry} */
     private final double[][] crowns = makeCrowns();
 
+    /**
+     * 큰 가지 9개: 줄기에서 비스듬히 솟았다가(굵기 5) 거의 수평으로 멀리 뻗고(55~77칸) 끝이 다시 하늘로 휨.
+     * 큰 가지마다 곁가지 2개.
+     */
     private double[][] makeBranches() {
         java.util.Random r = new java.util.Random(seed ^ 0xB4A9);
-        double[][] out = new double[14][];
-        for (int i = 0; i < 7; i++) {
-            double a = Math.PI * 2 * i / 7 + r.nextDouble() * 0.5, y0 = 66 + r.nextInt(26), len = 24 + r.nextInt(12);
-            double mx = Math.cos(a) * len * 0.55, mz = Math.sin(a) * len * 0.55, my = y0 + 8 + r.nextInt(6);
-            double ex = Math.cos(a + 0.25) * len, ez = Math.sin(a + 0.25) * len, ey = my + 6 + r.nextInt(8);
-            out[i * 2] = new double[]{Math.cos(a) * 3, y0, Math.sin(a) * 3, mx, my, mz, 3.2, 2.2};
-            out[i * 2 + 1] = new double[]{mx, my, mz, ex, ey, ez, 2.2, 1.2};
+        List<double[]> out = new ArrayList<>();
+        for (int i = 0; i < 9; i++) {
+            double a = Math.PI * 2 * i / 9 + r.nextDouble() * 0.35;
+            double y0 = 52 + r.nextInt(30), L = 55 + r.nextInt(23);
+            double sx = Math.cos(a) * trunkR(y0) * 0.5, sz = Math.sin(a) * trunkR(y0) * 0.5;
+            double p1x = Math.cos(a) * L * 0.35, p1z = Math.sin(a) * L * 0.35, p1y = y0 + 10 + r.nextInt(5);
+            double p2x = Math.cos(a + 0.12) * L * 0.7, p2z = Math.sin(a + 0.12) * L * 0.7, p2y = p1y + 3 + r.nextInt(5);
+            double p3x = Math.cos(a + 0.2) * L, p3z = Math.sin(a + 0.2) * L, p3y = p2y + 8 + r.nextInt(8);
+            out.add(new double[]{sx, y0, sz, p1x, p1y, p1z, 5.0, 3.6});
+            out.add(new double[]{p1x, p1y, p1z, p2x, p2y, p2z, 3.6, 2.5});
+            out.add(new double[]{p2x, p2y, p2z, p3x, p3y, p3z, 2.5, 1.3});
+            double s1x = p1x + Math.cos(a + 0.75) * 22, s1z = p1z + Math.sin(a + 0.75) * 22, s1y = p1y + 10;
+            double s2x = p2x + Math.cos(a - 0.65) * 20, s2z = p2z + Math.sin(a - 0.65) * 20, s2y = p2y + 8;
+            out.add(new double[]{p1x, p1y, p1z, s1x, s1y, s1z, 2.3, 1.0});
+            out.add(new double[]{p2x, p2y, p2z, s2x, s2y, s2z, 1.9, 0.9});
+            tips.add(new double[]{p3x, p3y + 4, p3z, 19 + r.nextInt(4), 9});
+            tips.add(new double[]{p2x, p2y + 6, p2z, 15, 8});
+            tips.add(new double[]{s1x, s1y + 3, s1z, 12, 7});
+            tips.add(new double[]{s2x, s2y + 3, s2z, 11, 6});
         }
-        return out;
+        return out.toArray(new double[0][]);
     }
 
     private double[][] makeRoots() {
         java.util.Random r = new java.util.Random(seed ^ 0x2007);
         double[][] out = new double[18][];
         for (int i = 0; i < 9; i++) {
-            double a = Math.PI * 2 * i / 9 + r.nextDouble() * 0.4, len = 24 + r.nextInt(12);
+            double a = Math.PI * 2 * i / 9 + r.nextDouble() * 0.4, len = 32 + r.nextInt(14);
             double mx = Math.cos(a) * len * 0.5, mz = Math.sin(a) * len * 0.5;
             double ex = Math.cos(a - 0.3) * len, ez = Math.sin(a - 0.3) * len;
-            out[i * 2] = new double[]{Math.cos(a) * 7, 7, Math.sin(a) * 7, mx, 2.5, mz, 3.4, 2.2};
-            out[i * 2 + 1] = new double[]{mx, 2.5, mz, ex, -1.5, ez, 2.2, 1.0};
+            out[i * 2] = new double[]{Math.cos(a) * 10, 9, Math.sin(a) * 10, mx, 3, mz, 4.6, 3.0};
+            out[i * 2 + 1] = new double[]{mx, 3, mz, ex, -1.5, ez, 3.0, 1.3};
         }
         return out;
     }
 
     private double[][] makeCrowns() {
         List<double[]> c = new ArrayList<>();
-        c.add(new double[]{0, 112, 0, 26, 15});
-        for (int i = 0; i < 7; i++) {
-            double[] b = branches[i * 2 + 1];
-            c.add(new double[]{b[3], b[4] + 3, b[5], 13 + (i % 3) * 2, 8});
-            c.add(new double[]{b[0] * 0.6 + b[3] * 0.4, b[1] + 6, b[2] * 0.6 + b[5] * 0.4, 10, 6});
-        }
+        c.add(new double[]{0, 118, 0, 30, 15});
+        c.addAll(tips);
         return c.toArray(new double[0][]);
     }
 
@@ -244,7 +258,7 @@ public final class WorldTree implements BuildLayout {
 
     public final class Tree extends Feature {
         Tree() {
-            super(OX - 58, OZ - 58, OX + 58, OZ + 58);
+            super(OX - 104, OZ - 104, OX + 104, OZ + 104);
             groundY = base;
         }
 
@@ -262,7 +276,7 @@ public final class WorldTree implements BuildLayout {
                     else if (d > 22 && d < PLAZA_R - 3 && k % 13 == 0) p.set(x, b + 1, z, Blocks.MOSS_CARPET.defaultBlockState());
                 }
                 int lowestLeaf = Integer.MAX_VALUE;
-                for (int y = -3; y <= 130; y++) {
+                for (int y = -3; y <= 136; y++) {
                     BlockState s = null;
                     // 줄기
                     if (y >= -2 && y <= TRUNK_H) {
@@ -278,7 +292,9 @@ public final class WorldTree implements BuildLayout {
                         }
                     }
                     // 가지
-                    if (s == null && y >= 60) for (double[] seg : branches) {
+                    if (s == null && y >= 45) for (double[] seg : branches) {
+                        if (dx < Math.min(seg[0], seg[3]) - seg[6] - 1 || dx > Math.max(seg[0], seg[3]) + seg[6] + 1
+                                || dz < Math.min(seg[2], seg[5]) - seg[6] - 1 || dz > Math.max(seg[2], seg[5]) + seg[6] + 1) continue;
                         double dd = segDist3(dx, y, dz, seg, t);
                         if (dd <= seg[6] + (seg[7] - seg[6]) * t[0]) {
                             s = BARK;
@@ -286,7 +302,8 @@ public final class WorldTree implements BuildLayout {
                         }
                     }
                     // 수관
-                    if (s == null && y >= 70) for (double[] c : crowns) {
+                    if (s == null && y >= 50) for (double[] c : crowns) {
+                        if (Math.abs(dx - c[0]) > c[3] * 1.2 || Math.abs(dz - c[2]) > c[3] * 1.2 || Math.abs(y - c[1]) > c[4] * 1.2) continue;
                         double ex = (dx - c[0]) / c[3], ey = (y - c[1]) / c[4], ez = (dz - c[2]) / c[3];
                         double e = ex * ex + ey * ey + ez * ez;
                         double n = 0.18 * Math.sin(dx / 3.0 + y / 4.0) * Math.cos(dz / 3.5 - y / 5.0);
