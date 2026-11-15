@@ -23,6 +23,7 @@ public final class RoyalBox {
     private int coreX = Integer.MIN_VALUE, coreZ, coreR;
     private int holeX0 = Integer.MIN_VALUE, holeZ0, holeX1, holeZ1, holeFloor;
     private BlockState window = Royal.CLEAR_PANE;
+    private boolean roofed = false;
 
     public RoyalBox(int x0, int z0, int x1, int z1, int y, int floors, int fh) {
         this.x0 = Math.min(x0, x1);
@@ -56,6 +57,12 @@ public final class RoyalBox {
         this.holeX1 = Math.max(hx0, hx1);
         this.holeZ1 = Math.max(hz0, hz1);
         this.holeFloor = floorK;
+        return this;
+    }
+
+    /** 평지붕 난간 대신 위에 모임지붕을 얹을 예정 (난간·피너클 생략) */
+    public RoyalBox roofed() {
+        this.roofed = true;
         return this;
     }
 
@@ -105,7 +112,9 @@ public final class RoyalBox {
                     int dp = doorPart(x, z, ly);
                     p.set(x, y + ly, z, dp == 1 ? AIR : dp == 2 ? CHISELED_QUARTZ : dp == 3 ? Royal.GOLD : exterior(idx, ly, corner));
                 }
-                if (corner) {
+                if (roofed) {
+                    // 지붕이 덮음
+                } else if (corner) {
                     Royal.pinnacle(p, x, z, y + H + 1, 5);              // 모서리: 높은 침탑
                 } else if (idx % 10 == 5) {
                     Royal.pinnacle(p, x, z, y + H + 1, 2);              // 난간 기둥: 짧은 침탑
@@ -143,7 +152,7 @@ public final class RoyalBox {
         int m = idx % 6;
         if (m >= 2 && m <= 4) {
             int top = Math.max(3, fh - 3);
-            if (local >= 2 && local <= top) return window;
+            if (local >= 2 && local <= top) return (m == 3 && local != top) ? QUARTZ_PILLAR : window;   // 가운데 멀리언(창 세로살)
             if (local == top + 1) return m == 3 ? window : CHISELED_QUARTZ;
             if (local == top + 2 && m == 3 && local < fh) return Royal.GOLD;
         }

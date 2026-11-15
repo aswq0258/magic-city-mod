@@ -133,7 +133,7 @@ public final class Royal {
     }
 
     /**
-     * 뾰족한 원뿔 첨탑: 흰 석영 + 금 갈비뼈 8줄 + 금 띠, 꼭대기 금 침과 엔드 막대.
+     * 뾰족한 원뿔 첨탑: 슬레이트(Chateau.ROOF) + 금 갈비뼈 8줄 + 금 띠, 꼭대기 금 침과 엔드 막대.
      * baseY 층이 원뿔 밑면(반지름 r), 높이 h 만큼 좁아집니다.
      */
     public static void spire(Placer p, int cx, int cz, int baseY, double r, int h) {
@@ -149,7 +149,7 @@ public final class Royal {
                 if (d > rk) break;
                 boolean shell = d > rk - 1.25 || k == 0;
                 if (!shell) continue;
-                BlockState st = (k > 0 && k % 7 == 3) ? GOLD : (rib && d > 0.8) ? GOLD : Palette.SMOOTH_QUARTZ;
+                BlockState st = (k > 0 && k % 7 == 3) ? GOLD : (rib && d > 0.8) ? GOLD : Chateau.ROOF;
                 if (k == 0) st = d > r - 0.5 ? Palette.CHISELED_QUARTZ : Palette.SMOOTH_QUARTZ;
                 p.set(x, baseY + k, z, st);
             }

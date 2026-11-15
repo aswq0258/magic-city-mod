@@ -1,6 +1,7 @@
 package io.github.aswq0258.magiccity.city.feature;
 
 import io.github.aswq0258.magiccity.build.Placer;
+import io.github.aswq0258.magiccity.city.Chateau;
 import io.github.aswq0258.magiccity.city.CityLayout;
 import io.github.aswq0258.magiccity.city.Deco;
 import io.github.aswq0258.magiccity.city.Royal;
@@ -53,7 +54,7 @@ public class RoyalHall extends Feature {
         Frame f = new Frame((minX + 1 + maxX - 1) >> 1, (minZ + 1 + maxZ - 1) >> 1, front, W, D);
         int doorAlong = ns ? f.x(W / 2, 0) : f.z(W / 2, 0);
 
-        RoyalBox box = new RoyalBox(minX, minZ, maxX, maxZ, y, floors, fh)
+        RoyalBox box = new RoyalBox(minX, minZ, maxX, maxZ, y, floors, fh).roofed()
                 .door(front, doorAlong, kind == Kind.THRONE ? 2 : 1, 1, kind == Kind.THRONE ? 8 : 4);
         if (kind == Kind.THRONE) box.door(front.getOpposite(), doorAlong, 1, 11, 3);
         if (kind == Kind.CHAPEL) box.window(Royal.GOLD_PANE);
@@ -104,11 +105,14 @@ public class RoyalHall extends Feature {
         p.set(f.x(cu - off + 1, -1), y + 6, f.z(cu - off + 1, -1), Royal.redBanner(front));
         p.set(f.x(cu + off - 1, -1), y + 6, f.z(cu + off - 1, -1), Royal.redBanner(front));
 
-        if (kind == Kind.CHAPEL || kind == Kind.THRONE) {
-            int r = kind == Kind.THRONE ? 8 : 6;
-            dome(p, (minX + maxX) >> 1, (minZ + maxZ) >> 1, y + floors * fh + 1, r);
-        } else {
-            Royal.spire(p, (minX + maxX) >> 1, (minZ + maxZ) >> 1, y + floors * fh + 1, 2.5, 14);   // 지붕 가운데 뾰족탑
+        // 프랑스 샤토식 가파른 슬레이트 모임지붕 + 지붕창 + 굴뚝 / 전당·예배당은 고딕 플레슈(가는 첨탑)
+        boolean grand = kind == Kind.CHAPEL || kind == Kind.THRONE;
+        int roofY = y + floors * fh + 1;
+        int ridge = Chateau.hipRoof(p, minX, minZ, maxX, maxZ, roofY, kind == Kind.THRONE ? 12 : kind == Kind.CHAPEL ? 16 : 10, 0, 0, 0);
+        Chateau.dressRoof(p, minX, minZ, maxX, maxZ, roofY, grand ? -1 : ridge + 3);
+        if (grand) Royal.spire(p, (minX + maxX) >> 1, (minZ + maxZ) >> 1, ridge, 2.5, kind == Kind.CHAPEL ? 24 : 20);
+        if (kind == Kind.THRONE) {
+            for (int cx : new int[]{minX, maxX}) for (int cz : new int[]{minZ, maxZ}) Chateau.turret(p, cx, cz, roofY - 8, 12, 2.5);
         }
     }
 
