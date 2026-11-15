@@ -114,6 +114,10 @@ public final class KingdomMap {
             };
             MapItemSavedData.addTargetDecoration(stack, new BlockPos(s.x(), 0, s.z()), "site" + n++, type);
         }
+        for (io.github.aswq0258.magiccity.site.Hamlets.Spot h : io.github.aswq0258.magiccity.site.Hamlets.spots()) {
+            if (Math.abs(h.x() - fresh.centerX) > 1000 || Math.abs(h.z() - fresh.centerZ) > 1000) continue;
+            MapItemSavedData.addTargetDecoration(stack, new BlockPos(h.x(), 0, h.z()), "hamlet" + n++, MapDecorationTypes.PLAINS_VILLAGE);
+        }
         for (Object[] p : PLAN_SITES) {
             int x = KingdomTerrain.worldX((Integer) p[2]), z = KingdomTerrain.worldZ((Integer) p[3]);
             if (Math.abs(x - fresh.centerX) > 1000 || Math.abs(z - fresh.centerZ) > 1000) continue;
@@ -134,6 +138,9 @@ public final class KingdomMap {
             int x = KingdomTerrain.worldX((Integer) p[2]), z = KingdomTerrain.worldZ((Integer) p[3]);
             dot(data, (x - x0) / step, (z - z0) / step, "B1".equals(p[0]) ? MapColor.COLOR_RED.getPackedId(MapColor.Brightness.LOW)
                     : MapColor.SNOW.getPackedId(MapColor.Brightness.HIGH), 1);
+        }
+        for (io.github.aswq0258.magiccity.site.Hamlets.Spot h : io.github.aswq0258.magiccity.site.Hamlets.spots()) {
+            dot(data, (h.x() - x0) / step, (h.z() - z0) / step, MapColor.GOLD.getPackedId(MapColor.Brightness.HIGH), 0);
         }
         for (RoadSites.Site s : RoadSites.sites()) {
             if (s.kind() == RoadSites.Kind.ARENA) dot(data, (s.x() - x0) / step, (s.z() - z0) / step, MapColor.COLOR_RED.getPackedId(MapColor.Brightness.HIGH), 0);

@@ -34,6 +34,8 @@ import java.util.List;
  * /magiccity goto worldtree  — 세계수 광장으로 이동
  * /magiccity site dwarf      — 드워프 광산왕국 (산의 문·대전당·옥좌실·대장간·광산) 건설
  * /magiccity goto dwarf      — 드워프 교역 마당으로 이동
+ * /magiccity site hamlets    — 대륙 곳곳의 테마 촌락 건설 (바닐라 마을 대신)
+ * /magiccity hamlets         — 가까운 촌락 목록
  * /magiccity status          — 진행률 확인
  * /magiccity cancel          — 건설 중단
  */
@@ -50,7 +52,20 @@ public final class MagicCityCommand {
                 .then(Commands.literal("site").then(Commands.literal("oldcapital").executes(MagicCityCommand::oldCapital))
                         .then(Commands.literal("roads").executes(MagicCityCommand::roads))
                         .then(Commands.literal("worldtree").executes(MagicCityCommand::worldTree))
-                        .then(Commands.literal("dwarf").executes(MagicCityCommand::dwarf)))
+                        .then(Commands.literal("dwarf").executes(MagicCityCommand::dwarf))
+                        .then(Commands.literal("hamlets").executes(MagicCityCommand::hamlets)))
+                .then(Commands.literal("hamlets").executes(ctx -> {
+                    var src = ctx.getSource();
+                    double px = io.github.aswq0258.magiccity.world.KingdomTerrain.CX, pz = io.github.aswq0258.magiccity.world.KingdomTerrain.CZ;
+                    if (src.getEntity() != null && src.getLevel().dimension() == io.github.aswq0258.magiccity.world.ModWorldgen.KINGDOM) {
+                        px = src.getPosition().x;
+                        pz = src.getPosition().z;
+                    }
+                    String msg = "§b[마법 도시] 촌락 " + io.github.aswq0258.magiccity.site.Hamlets.spots().size() + "곳 중 가까운 곳:"
+                            + io.github.aswq0258.magiccity.site.Hamlets.describe(px, pz, 8);
+                    src.sendSuccess(() -> Component.literal(msg), false);
+                    return 1;
+                }))
                 .then(Commands.literal("goto").then(Commands.literal("dwarf").executes(ctx -> {
                     ServerLevel k = ctx.getSource().getServer().getLevel(io.github.aswq0258.magiccity.world.ModWorldgen.KINGDOM);
                     if (k == null) return 0;
@@ -288,6 +303,26 @@ public final class MagicCityCommand {
         src.sendSuccess(() -> Component.literal(String.format("§6[마법 도시] 드워프 광산왕국 건설 시작! 산의 문 (%d, %d, %d), 청크 %d개. "
                 + "/magiccity goto dwarf 로 갈 수 있습니다.", io.github.aswq0258.magiccity.site.DwarfHold.CX, site.floorY() + 1,
                 io.github.aswq0258.magiccity.site.DwarfHold.CZ - 95, job.chunkCount())), true);
+        return 1;
+    }
+
+    /** 대륙 곳곳의 테마 촌락 건설 */
+    private static int hamlets(CommandContext<CommandSourceStack> ctx) {
+        CommandSourceStack src = ctx.getSource();
+        if (CityBuildManager.isRunning()) {
+            src.sendFailure(Component.literal("[마법 도시] 이미 건설 중입니다. /magiccity status 로 확인하세요."));
+            return 0;
+        }
+        ServerLevel k = src.getServer().getLevel(io.github.aswq0258.magiccity.world.ModWorldgen.KINGDOM);
+        if (k == null) {
+            src.sendFailure(Component.literal("[마법 도시] 왕국 대륙 차원을 찾을 수 없습니다."));
+            return 0;
+        }
+        io.github.aswq0258.magiccity.site.Hamlets layout = new io.github.aswq0258.magiccity.site.Hamlets();
+        CityBuildJob job = new CityBuildJob(k, layout);
+        CityBuildManager.start(job);
+        src.sendSuccess(() -> Component.literal(String.format("§b[마법 도시] 촌락 %d곳 건설 시작! 청크 %d개. /magiccity hamlets 로 가까운 촌락 위치를 볼 수 있습니다.",
+                layout.count(), job.chunkCount())), true);
         return 1;
     }
 }

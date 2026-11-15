@@ -166,6 +166,13 @@ public class KingdomChunkGenerator extends ChunkGenerator {
         return CompletableFuture.completedFuture(chunk);
     }
 
+    /** 왕국 대륙에는 바닐라 구조물(마을·전초기지·폐허 포탈 등)을 만들지 않음 — 대신 모드 촌락(site.Hamlets) */
+    @Override
+    public void createStructures(net.minecraft.core.RegistryAccess registryAccess, net.minecraft.world.level.chunk.ChunkGeneratorStructureState structureState,
+                                 StructureManager structureManager, ChunkAccess chunk,
+                                 net.minecraft.world.level.levelgen.structure.templatesystem.StructureTemplateManager templateManager) {
+    }
+
     @Override
     public void applyCarvers(WorldGenRegion level, long seed, RandomState randomState, BiomeManager biomeManager,
                              StructureManager structureManager, ChunkAccess chunk, GenerationStep.Carving step) {
