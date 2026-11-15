@@ -28,6 +28,8 @@ import java.util.List;
  * /magiccity boss reset      — 심연의 문지기 재도전 (마계문 닫힘)
  * /magiccity site roads      — 길 10개의 쉼터·몬스터 둥지·필드보스 결투장 건설
  * /magiccity roads           — 길(지역) 목록과 필드보스 위치
+ * /magiccity map [x z]       — 가 보지 않은 곳까지 그려진 지역 지도 (2048 x 2048)
+ * /magiccity map world       — 대륙 전도
  * /magiccity status          — 진행률 확인
  * /magiccity cancel          — 건설 중단
  */
@@ -43,6 +45,13 @@ public final class MagicCityCommand {
                 .then(Commands.literal("kingdom").executes(MagicCityCommand::kingdom))
                 .then(Commands.literal("site").then(Commands.literal("oldcapital").executes(MagicCityCommand::oldCapital))
                         .then(Commands.literal("roads").executes(MagicCityCommand::roads)))
+                .then(Commands.literal("map")
+                        .executes(ctx -> giveMap(ctx, null))
+                        .then(Commands.literal("world").executes(ctx -> giveWorldMap(ctx)))
+                        .then(Commands.argument("x", com.mojang.brigadier.arguments.IntegerArgumentType.integer())
+                                .then(Commands.argument("z", com.mojang.brigadier.arguments.IntegerArgumentType.integer())
+                                        .executes(ctx -> giveMap(ctx, new int[]{com.mojang.brigadier.arguments.IntegerArgumentType.getInteger(ctx, "x"),
+                                                com.mojang.brigadier.arguments.IntegerArgumentType.getInteger(ctx, "z")})))))
                 .then(Commands.literal("roads").executes(ctx -> {
                     StringBuilder sb = new StringBuilder("§b[마법 도시] 길(지역) 과 필드보스:");
                     for (int i = 0; i < io.github.aswq0258.magiccity.world.KingdomRoads.ROADS.length; i++) {
@@ -178,6 +187,43 @@ public final class MagicCityCommand {
         CityBuildManager.start(job);
         src.sendSuccess(() -> Component.literal(String.format("§b[마법 도시] 길 거점 건설 시작! 쉼터·몬스터 둥지·필드보스 결투장 %d곳, 청크 %d개. "
                 + "/magiccity roads 로 위치를 볼 수 있습니다.", layout.featureCount(), job.chunkCount())), true);
+        return 1;
+    }
+
+    /** 가 보지 않은 곳까지 그려진 지역 지도 (2048 x 2048). 왕국 대륙에 있으면 내 위치 중심, 아니면 왕성 중심 */
+    private static int giveMap(CommandContext<CommandSourceStack> ctx, int[] at) throws com.mojang.brigadier.exceptions.CommandSyntaxException {
+        CommandSourceStack src = ctx.getSource();
+        net.minecraft.server.level.ServerPlayer player = src.getPlayerOrException();
+        ServerLevel k = src.getServer().getLevel(io.github.aswq0258.magiccity.world.ModWorldgen.KINGDOM);
+        if (k == null) return 0;
+        int x, z;
+        if (at != null) {
+            x = at[0];
+            z = at[1];
+        } else if (player.level().dimension() == io.github.aswq0258.magiccity.world.ModWorldgen.KINGDOM) {
+            x = player.getBlockX();
+            z = player.getBlockZ();
+        } else {
+            x = io.github.aswq0258.magiccity.world.KingdomTerrain.CX;
+            z = io.github.aswq0258.magiccity.world.KingdomTerrain.CZ;
+        }
+        net.minecraft.world.item.ItemStack map = io.github.aswq0258.magiccity.world.KingdomMap.region(k, x, z);
+        if (!player.getInventory().add(map)) player.drop(map, false);
+        src.sendSuccess(() -> Component.literal("§b[마법 도시] 왕국 대륙 지도를 받았습니다 (2048 x 2048). "
+                + "§9파란 표시§b = 쉼터, §c빨간 표시§b = 몬스터 둥지, §c✕§b = 필드보스, §f흰 점§b = 마스터플랜 지역"), false);
+        return 1;
+    }
+
+    /** 대륙 전체가 한 장에 그려진 전도 */
+    private static int giveWorldMap(CommandContext<CommandSourceStack> ctx) throws com.mojang.brigadier.exceptions.CommandSyntaxException {
+        CommandSourceStack src = ctx.getSource();
+        net.minecraft.server.level.ServerPlayer player = src.getPlayerOrException();
+        ServerLevel k = src.getServer().getLevel(io.github.aswq0258.magiccity.world.ModWorldgen.KINGDOM);
+        if (k == null) return 0;
+        net.minecraft.world.item.ItemStack map = io.github.aswq0258.magiccity.world.KingdomMap.world(k);
+        if (!player.getInventory().add(map)) player.drop(map, false);
+        src.sendSuccess(() -> Component.literal("§6[마법 도시] 왕국 대륙 전도를 받았습니다. 흰 점 = 마스터플랜 지역, 빨간 점 = 필드보스, 검붉은 점 = 몰락한 옛 왕도 "
+                + "(전도에는 내 위치가 표시되지 않습니다. 내 위치는 /magiccity map)"), false);
         return 1;
     }
 }
