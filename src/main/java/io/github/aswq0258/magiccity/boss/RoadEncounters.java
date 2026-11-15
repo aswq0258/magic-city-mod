@@ -64,6 +64,7 @@ public final class RoadEncounters {
     private static boolean nearSafe(ServerPlayer p) {
         if (Math.hypot(p.getX() - KingdomTerrain.OLD_X, p.getZ() - KingdomTerrain.OLD_Z) < 260) return true;
         if (Math.hypot(p.getX() - KingdomTerrain.CX, p.getZ() - KingdomTerrain.CZ) < 480) return true;
+        if (Math.hypot(p.getX() - io.github.aswq0258.magiccity.site.WorldTree.OX, p.getZ() - io.github.aswq0258.magiccity.site.WorldTree.OZ) < io.github.aswq0258.magiccity.site.WorldTree.R + 20) return true;
         for (RoadSites.Site s : RoadSites.sites()) {
             if (s.kind() == RoadSites.Kind.REST && Math.hypot(p.getX() - s.x(), p.getZ() - s.z()) < 64) return true;
         }

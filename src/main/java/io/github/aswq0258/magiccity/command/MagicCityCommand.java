@@ -30,6 +30,8 @@ import java.util.List;
  * /magiccity roads           — 길(지역) 목록과 필드보스 위치
  * /magiccity map [x z]       — 가 보지 않은 곳까지 그려진 지역 지도 (2048 x 2048)
  * /magiccity map world       — 대륙 전도
+ * /magiccity site worldtree  — 세계수 성역 (세계수·정령호·엘프 나무집 마을) 건설
+ * /magiccity goto worldtree  — 세계수 광장으로 이동
  * /magiccity status          — 진행률 확인
  * /magiccity cancel          — 건설 중단
  */
@@ -44,7 +46,16 @@ public final class MagicCityCommand {
                         .then(Commands.literal("here").executes(ctx -> build(ctx, true))))
                 .then(Commands.literal("kingdom").executes(MagicCityCommand::kingdom))
                 .then(Commands.literal("site").then(Commands.literal("oldcapital").executes(MagicCityCommand::oldCapital))
-                        .then(Commands.literal("roads").executes(MagicCityCommand::roads)))
+                        .then(Commands.literal("roads").executes(MagicCityCommand::roads))
+                        .then(Commands.literal("worldtree").executes(MagicCityCommand::worldTree)))
+                .then(Commands.literal("goto").then(Commands.literal("worldtree").executes(ctx -> {
+                    ServerLevel k = ctx.getSource().getServer().getLevel(io.github.aswq0258.magiccity.world.ModWorldgen.KINGDOM);
+                    if (k == null) return 0;
+                    int x = io.github.aswq0258.magiccity.site.WorldTree.OX, z = io.github.aswq0258.magiccity.site.WorldTree.OZ + 46;
+                    int y = io.github.aswq0258.magiccity.world.KingdomTerrain.column(x, z).h() + 2;
+                    ctx.getSource().getPlayerOrException().teleportTo(k, x + 0.5, y, z + 0.5, 180F, 0F);
+                    return 1;
+                })))
                 .then(Commands.literal("map")
                         .executes(ctx -> giveMap(ctx, null))
                         .then(Commands.literal("world").executes(ctx -> giveWorldMap(ctx)))
@@ -224,6 +235,26 @@ public final class MagicCityCommand {
         if (!player.getInventory().add(map)) player.drop(map, false);
         src.sendSuccess(() -> Component.literal("§6[마법 도시] 왕국 대륙 전도를 받았습니다. 흰 점 = 마스터플랜 지역, 빨간 점 = 필드보스, 검붉은 점 = 몰락한 옛 왕도 "
                 + "(전도에는 내 위치가 표시되지 않습니다. 내 위치는 /magiccity map)"), false);
+        return 1;
+    }
+
+    /** 세계수 성역 건설 */
+    private static int worldTree(CommandContext<CommandSourceStack> ctx) {
+        CommandSourceStack src = ctx.getSource();
+        if (CityBuildManager.isRunning()) {
+            src.sendFailure(Component.literal("[마법 도시] 이미 건설 중입니다. /magiccity status 로 확인하세요."));
+            return 0;
+        }
+        ServerLevel k = src.getServer().getLevel(io.github.aswq0258.magiccity.world.ModWorldgen.KINGDOM);
+        if (k == null) {
+            src.sendFailure(Component.literal("[마법 도시] 왕국 대륙 차원을 찾을 수 없습니다."));
+            return 0;
+        }
+        io.github.aswq0258.magiccity.site.WorldTree site = new io.github.aswq0258.magiccity.site.WorldTree(k.getSeed() ^ 0x5E1F7EEL);
+        CityBuildJob job = new CityBuildJob(k, site);
+        CityBuildManager.start(job);
+        src.sendSuccess(() -> Component.literal(String.format("§a[마법 도시] 세계수 성역 건설 시작! 중심 (%d, %d), 건물 %d개, 청크 %d개. "
+                + "/magiccity goto worldtree 로 갈 수 있습니다.", site.cx(), site.cz(), site.featureCount(), job.chunkCount())), true);
         return 1;
     }
 }
