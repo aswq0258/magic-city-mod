@@ -50,17 +50,6 @@ public class WallWalk extends Feature {
     @Override
     public boolean occupies(int x, int z) {
         int uu = c.u(x), vv = c.v(z);
-        // 성벽 바깥 민트 깃발 (탑 자리는 피함)
-        Direction[] outward = {Direction.WEST, Direction.EAST, Direction.SOUTH, Direction.NORTH};
-        int[] towers = {66, 160, 244, 277, 360, 454};
-        for (int side = 0; side < 4; side++) {
-            for (int lat = CityLayout.W0 + 12; lat <= CityLayout.W1 - 12; lat += 12) {
-                boolean clear = true;
-                for (int tw : towers) if (Math.abs(lat - tw) <= 12) clear = false;
-                if (!clear) continue;
-                put(p, side, -1, lat, LEN - 5, Royal.mintBanner(outward[side]));
-            }
-        }
         for (int side = 0; side < 4; side++) {
             for (int s : STARTS) {
                 int t = side == 0 ? uu - CityLayout.W0 : side == 1 ? CityLayout.W1 - uu : side == 2 ? vv - CityLayout.W0 : CityLayout.W1 - vv;
