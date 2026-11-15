@@ -24,6 +24,8 @@ public final class Royal {
     public static final BlockState RED_WOOL = Blocks.RED_WOOL.defaultBlockState();
     public static final BlockState CLEAR_PANE = Blocks.GLASS_PANE.defaultBlockState();
     public static final BlockState CLEAR_GLASS = Blocks.GLASS.defaultBlockState();
+    public static final BlockState GOLD_PANE = Blocks.YELLOW_STAINED_GLASS_PANE.defaultBlockState();
+    public static final BlockState WHITE_PANE = Blocks.WHITE_STAINED_GLASS_PANE.defaultBlockState();
     public static final BlockState DARK_PLANKS = Blocks.DARK_OAK_PLANKS.defaultBlockState();
     public static final BlockState DARK_FENCE = Blocks.DARK_OAK_FENCE.defaultBlockState();
     public static final BlockState DARK_PLATE = Blocks.DARK_OAK_PRESSURE_PLATE.defaultBlockState();

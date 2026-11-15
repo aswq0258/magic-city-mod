@@ -1,7 +1,6 @@
 package io.github.aswq0258.magiccity.command;
 
 import com.mojang.brigadier.CommandDispatcher;
-import com.mojang.brigadier.arguments.IntegerArgumentType;
 import com.mojang.brigadier.context.CommandContext;
 import io.github.aswq0258.magiccity.build.CityBuildJob;
 import io.github.aswq0258.magiccity.build.CityBuildManager;
@@ -13,7 +12,7 @@ import net.minecraft.network.chat.Component;
 import net.minecraft.server.level.ServerLevel;
 
 /**
- * /magiccity build [diameter] — 현재 위치를 중심으로 성곽 도시 건설 (성벽 지름 기본 2000, 1600~2400. 발밑 블록 높이가 지면)
+ * /magiccity build — 현재 위치를 중심으로 520 x 520 성채 도시 + 다층 왕성 건설 (발밑 블록 높이가 지면)
  * /magiccity status          — 진행률 확인
  * /magiccity cancel          — 건설 중단
  */
@@ -24,9 +23,7 @@ public final class MagicCityCommand {
         dispatcher.register(Commands.literal("magiccity")
                 .requires(src -> src.hasPermission(2))
                 .then(Commands.literal("build")
-                        .executes(ctx -> build(ctx, 2000))
-                        .then(Commands.argument("diameter", IntegerArgumentType.integer(1600, 2400))
-                                .executes(ctx -> build(ctx, IntegerArgumentType.getInteger(ctx, "diameter")))))
+                        .executes(MagicCityCommand::build))
                 .then(Commands.literal("status").executes(ctx -> {
                     ctx.getSource().sendSuccess(() -> Component.literal(CityBuildManager.status()), false);
                     return 1;
@@ -39,7 +36,7 @@ public final class MagicCityCommand {
                 })));
     }
 
-    private static int build(CommandContext<CommandSourceStack> ctx, int diameter) {
+    private static int build(CommandContext<CommandSourceStack> ctx) {
         CommandSourceStack src = ctx.getSource();
         if (CityBuildManager.isRunning()) {
             src.sendFailure(Component.literal("[마법 도시] 이미 건설 중입니다. /magiccity status 로 확인하세요."));
@@ -49,22 +46,22 @@ public final class MagicCityCommand {
         BlockPos feet = BlockPos.containing(src.getPosition());
         int base = feet.getY() - 1; // 발밑 블록 = 도시 지면 높이
 
-        if (base + 120 > level.getMaxBuildHeight()) {
-            int maxY = level.getMaxBuildHeight() - 121;
+        if (base + 140 > level.getMaxBuildHeight()) {
+            int maxY = level.getMaxBuildHeight() - 141;
             src.sendFailure(Component.literal("[마법 도시] 너무 높은 곳입니다. 중앙 대성이 높이 제한을 넘습니다. Y=" + maxY + " 이하에서 실행하세요."));
             return 0;
         }
 
         long seed = level.getSeed() ^ (feet.asLong() * 0x9E3779B97F4A7C15L);
-        CityLayout layout = new CityLayout(feet.getX(), feet.getZ(), base, diameter, seed);
+        CityLayout layout = new CityLayout(feet.getX(), feet.getZ(), base, seed);
         CityBuildJob job = new CityBuildJob(level, layout);
         CityBuildManager.start(job);
 
         src.sendSuccess(() -> Component.literal(String.format(
-                "§b[마법 도시] 건설 시작! 중심 (%d, %d), 지면 Y=%d, 성벽 지름 %d, 건물 %d개, 청크 %d개",
-                feet.getX(), feet.getZ(), base, diameter, layout.featureCount(), job.chunkCount())), true);
+                "§b[마법 도시] 건설 시작! 중심 (%d, %d), 지면 Y=%d, 도시 520x520, 건물 %d개, 청크 %d개",
+                feet.getX(), feet.getZ(), base, layout.featureCount(), job.chunkCount())), true);
         src.sendSuccess(() -> Component.literal(
-                "§7진행률은 채팅으로 알려드립니다. 규모가 커서 1시간 이상 걸릴 수 있습니다. 끝날 때까지 서버(게임)를 켜 두세요."), false);
+                "§7진행률은 채팅으로 알려드립니다. 20~40분 정도 걸릴 수 있습니다. 끝날 때까지 서버(게임)를 켜 두세요."), false);
         return 1;
     }
 }

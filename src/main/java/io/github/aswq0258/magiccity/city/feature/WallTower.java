@@ -5,21 +5,27 @@ import io.github.aswq0258.magiccity.city.CityLayout;
 import io.github.aswq0258.magiccity.city.Shapes;
 import net.minecraft.core.Direction;
 
-/** 외성벽 위의 원형 탑 */
+/** 외성벽 위의 원형 탑 (모서리 큰 탑 / 중간 탑 / 성문 탑) */
 public class WallTower extends Feature {
-    private static final int RAD = 7, HEIGHT = 40;
-    private final int tx, tz;
+    private final int tx, tz, height;
+    private final double rad;
     private final Direction door;
 
     public WallTower(CityLayout city, int tx, int tz) {
-        super(tx - RAD - 3, tz - RAD - 3, tx + RAD + 3, tz + RAD + 3);
+        this(city, tx, tz, 7, 40);
+    }
+
+    public WallTower(CityLayout city, int tx, int tz, double rad, int height) {
+        super(tx - (int) Math.ceil(rad) - 3, tz - (int) Math.ceil(rad) - 3, tx + (int) Math.ceil(rad) + 3, tz + (int) Math.ceil(rad) + 3);
         this.tx = tx;
         this.tz = tz;
+        this.rad = rad;
+        this.height = height;
         this.door = city.facingToCenter(tx, tz);
     }
 
     @Override
     public void build(Placer p, CityLayout city) {
-        Shapes.roundTower(p, tx, tz, RAD, groundY, HEIGHT, door);
+        Shapes.roundTower(p, tx, tz, rad, groundY, height, door);
     }
 }

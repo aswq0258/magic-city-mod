@@ -16,7 +16,8 @@ import static io.github.aswq0258.magiccity.city.Palette.*;
  * 내부: 아치 열주, 신도석, 민트 카펫 통로, 계단식 제단(금 장식·촛불·독서대), 샹들리에
  */
 public class Cathedral extends Feature {
-    private static final int LEN = 50, HALF = 15, H = 24, APSE_R = 15, DOME_A = 34, DOME_R = 9;
+    private final int LEN, HALF, H, APSE_R, DOME_A, DOME_R, COL, TOW_LAT;
+    private final double TOW_R;
     private final int ox, oz;           // 정면 중앙
     private final int fx, fz, lx, lz;   // 앞 방향, 옆 방향
     private final Direction front;
@@ -30,8 +31,15 @@ public class Cathedral extends Feature {
         this.fz = front.getStepZ();
         this.lx = -fz;
         this.lz = fx;
-        this.ox = cx + fx * 32;
-        this.oz = cz + fz * 32;
+        int width = (front.getAxis() == Direction.Axis.Z) ? x1 - x0 + 1 : z1 - z0 + 1;
+        if (width >= 42) {          // 원래 크기
+            LEN = 50; HALF = 15; H = 24; APSE_R = 15; DOME_A = 34; DOME_R = 9; COL = 8; TOW_LAT = HALF + 5; TOW_R = 5.0;
+        } else {                    // 좁은 구획용 (폭 28)
+            LEN = 40; HALF = 9; H = 22; APSE_R = 9; DOME_A = 26; DOME_R = 6; COL = 5; TOW_LAT = HALF + 1; TOW_R = 3.0;
+        }
+        int off = (LEN + APSE_R) / 2;
+        this.ox = cx + fx * off;
+        this.oz = cz + fz * off;
         this.seed = seed;
     }
 
@@ -111,8 +119,8 @@ public class Cathedral extends Feature {
                 for (int ly = 1; ly <= H; ly++) {
                     BlockState s = ly == 12 ? MINT_CUT : QUARTZ_BRICKS;
                     if (al == HALF) s = QUARTZ_PILLAR;
-                    int r2 = al * al + (ly - 17) * (ly - 17);
-                    if (r2 <= 16) s = (lat == 0 || ly == 17) ? CALCITE : stained(x, ly, z);
+                    int r2 = al * al + (ly - (H - 7)) * (ly - (H - 7));
+                    if (r2 <= 16) s = (lat == 0 || ly == H - 7) ? CALCITE : stained(x, ly, z);
                     else if (r2 <= 25) s = MINT_CHISELED;
                     if (al <= 3) {
                         double top = 8 + 3 * Math.sqrt(Math.max(0, 1 - (al / 3.5) * (al / 3.5)));
@@ -131,9 +139,9 @@ public class Cathedral extends Feature {
                     if (m == 3) s = (ly == 12 || ly == H) ? CHISELED_QUARTZ : QUARTZ_PILLAR;
                     else if (ly <= 2) s = QUARTZ_BRICKS;
                     else if (ly == H) s = SMOOTH_QUARTZ;
-                    else if ((m == 0) && ly >= 4 && ly <= 19) s = stained(x, ly, z);
-                    else if ((m == 5 || m == 1) && ly >= 6 && ly <= 17) s = stained(x, ly, z);
-                    else if (m == 0 && ly == 20) s = CHISELED_QUARTZ;
+                    else if ((m == 0) && ly >= 4 && ly <= H - 5) s = stained(x, ly, z);
+                    else if ((m == 5 || m == 1) && ly >= 6 && ly <= H - 7) s = stained(x, ly, z);
+                    else if (m == 0 && ly == H - 4) s = CHISELED_QUARTZ;
                     else s = QUARTZ_BRICKS;
                     p.set(x, b + ly, z, s);
                 }
@@ -145,19 +153,19 @@ public class Cathedral extends Feature {
             for (int ly = 1; ly <= H; ly++) {
                 BlockState s = AIR;
                 if (ly == H) s = (a % 6 == 0 && al % 6 == 0) ? LIGHT : SMOOTH_QUARTZ;
-                else if (al == 8 && a % 6 == 3) s = (ly == 1 || ly == 12 || ly == H - 1) ? CHISELED_QUARTZ : QUARTZ_PILLAR;
-                else if (al == 8 && ly >= 18) s = QUARTZ_BRICKS;
+                else if (al == COL && a % 6 == 3) s = (ly == 1 || ly == 12 || ly == H - 1) ? CHISELED_QUARTZ : QUARTZ_PILLAR;
+                else if (al == COL && ly >= H - 6) s = QUARTZ_BRICKS;
                 p.set(x, b + ly, z, s);
             }
-            if (al <= 1 && a >= 1 && a <= 44) p.set(x, b + 1, z, Deco.CARPET_MINT);
-            else if (al >= 2 && al <= 6 && a % 2 == 0 && a >= 6 && a <= 40) p.set(x, b + 1, z, Deco.chair(toFront));
+            if (al <= 1 && a >= 1 && a <= LEN - 6) p.set(x, b + 1, z, Deco.CARPET_MINT);
+            else if (al >= 2 && al <= 6 && a % 2 == 0 && a >= 6 && a <= LEN - 10 && al != COL) p.set(x, b + 1, z, Deco.chair(toFront));
             if (lat == 0 && a % 6 == 3 && a >= 6) Deco.chandelier(p, x, b + H, z, 6);
-            if (al == 12 && a % 12 == 6) Deco.chandelier(p, x, b + H, z, 2);
+            if (al == HALF - 3 && a % 12 == 6) Deco.chandelier(p, x, b + H, z, 2);
         });
 
         // 제단 (후진 쪽)
         int altarA = LEN + 4;
-        for (int a = LEN - 4; a <= LEN + 10; a++) {
+        for (int a = LEN - 4; a <= LEN + APSE_R - 5; a++) {
             for (int lat = -7; lat <= 7; lat++) {
                 int step = (a >= LEN - 2 && Math.abs(lat) <= 6) ? 1 : 0;
                 if (a >= LEN && Math.abs(lat) <= 5) step = 2;
@@ -171,8 +179,8 @@ public class Cathedral extends Feature {
             p.set(wx(altarA, lat), b + 4, wz(altarA, lat), Deco.candles(4));
         }
         p.set(wx(altarA - 2, 0), b + 3, wz(altarA - 2, 0), Deco.lectern(toFront));
-        for (int y = b + 3; y <= b + 14; y++) p.set(wx(LEN + 12, 0), y, wz(LEN + 12, 0), y == b + 14 ? Royal.GOLD : QUARTZ_PILLAR);
-        p.set(wx(LEN + 12, 0), b + 15, wz(LEN + 12, 0), END_ROD);
+        for (int y = b + 3; y <= b + 14; y++) p.set(wx(LEN + APSE_R - 3, 0), y, wz(LEN + APSE_R - 3, 0), y == b + 14 ? Royal.GOLD : QUARTZ_PILLAR);
+        p.set(wx(LEN + APSE_R - 3, 0), b + 15, wz(LEN + APSE_R - 3, 0), END_ROD);
 
         // 교차부 돔 (드럼 + 반구 + 꼭대기 랜턴)
         int dcx = wx(DOME_A, 0), dcz = wz(DOME_A, 0);
@@ -194,8 +202,8 @@ public class Cathedral extends Feature {
 
         // 정면 쌍탑
         for (int s : new int[]{-1, 1}) {
-            int tx = wx(3, s * (HALF + 5)), tz = wz(3, s * (HALF + 5));
-            Shapes.roundTower(p, tx, tz, 5.0, b, 54, front);
+            int tx = wx(3, s * TOW_LAT), tz = wz(3, s * TOW_LAT);
+            Shapes.roundTower(p, tx, tz, TOW_R, b, H + 30, front);
         }
     }
 }

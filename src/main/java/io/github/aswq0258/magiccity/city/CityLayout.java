@@ -1,26 +1,27 @@
 package io.github.aswq0258.magiccity.city;
 
 import io.github.aswq0258.magiccity.build.Placer;
+import io.github.aswq0258.magiccity.city.feature.AcademyHall;
 import io.github.aswq0258.magiccity.city.feature.Cathedral;
-import io.github.aswq0258.magiccity.city.feature.CityGate;
 import io.github.aswq0258.magiccity.city.feature.Feature;
 import io.github.aswq0258.magiccity.city.feature.FountainSquare;
 import io.github.aswq0258.magiccity.city.feature.Garden;
 import io.github.aswq0258.magiccity.city.feature.House;
+import io.github.aswq0258.magiccity.city.feature.Keep;
+import io.github.aswq0258.magiccity.city.feature.MageTower;
 import io.github.aswq0258.magiccity.city.feature.MarketPlaza;
 import io.github.aswq0258.magiccity.city.feature.MarketSquare;
 import io.github.aswq0258.magiccity.city.feature.Mausoleum;
-import io.github.aswq0258.magiccity.city.feature.Palace;
 import io.github.aswq0258.magiccity.city.feature.RoleBuilding;
 import io.github.aswq0258.magiccity.city.feature.RoleBuilding.Role;
+import io.github.aswq0258.magiccity.city.feature.RoyalCastle;
+import io.github.aswq0258.magiccity.city.feature.RoyalHall;
 import io.github.aswq0258.magiccity.city.feature.TrainingGround;
 import io.github.aswq0258.magiccity.city.feature.WallTower;
 import net.minecraft.core.Direction;
 import net.minecraft.util.RandomSource;
 import net.minecraft.world.level.ChunkPos;
 import net.minecraft.world.level.block.Blocks;
-import net.minecraft.world.level.block.CropBlock;
-import net.minecraft.world.level.block.FarmBlock;
 import net.minecraft.world.level.block.state.BlockState;
 
 import java.util.ArrayList;
@@ -32,50 +33,94 @@ import java.util.Map;
 import static io.github.aswq0258.magiccity.city.Palette.*;
 
 /**
- * 성곽 대도시 설계도 (기본 지름 2000)
+ * 520 x 520 판타지 성채 도시 (사용자 도면 그대로, 도면 좌표 X/Z 0~520)
  *
- *                       북문
- *          ┌──────────────┼──────────────┐
- *          │ 모험가 길드  │ 병영·훈련장 │ 군수창고 │ 귀족 저택 │
- *          │ ·여관 구역   │             │          │           │
- *     서문 ├ 공방 ────── [ 해자 + 중앙 왕성 (지름 500) ] ────── 귀족 저택 ┤ 동문
- *          │ 대장간       │                                  │ 대성당     │
- *          │ 창고·마구간  │ 시장 광장   │ 상점·여관 │ 주거지 │
- *          └──────────────┼──────────────┘
- *                       남문
- *  - 둥근 사각형 성벽(높이 30) + 해자, 동서남북 성문에서 왕성까지 폭 15 대로, 80칸 간격 골목길
- *  - 성벽 밖: 농지 띠, 북동쪽에 공동묘지(묘비·영묘·영혼 랜턴)
+ *  도면 좌표 (u, v): u = 도면 X (동쪽 +), v = 도면 Z (북쪽 +)
+ *  월드 좌표: x = cx + (u - 260),  z = cz - (v - 260)   ← 마인크래프트의 북쪽은 -Z 이므로 뒤집음
+ *
+ *  - 외성벽(u/v 9~15, 504~510, 높이 24) + 모서리 큰 탑, 중간 탑, 성문 탑 / 동서남북 성문
+ *  - 외곽 순환로(70~81, 440~451), 왕성 순환로(165~176, 345~356), 성문 대로 4개, 보조 도로 8개
+ *  - 구획 N01~N12(북: 군사·마법), W01~W04(서: 장인), E01~E04(동: 귀족·종교), S01~S11(남: 시장·상업·모험가),
+ *    P01~P16(성벽 안쪽 둘레: 주거·공공·물류)
+ *  - 해자 + 다층 왕성 (RoyalCastle + RoyalHall + Keep)
+ *  - 북문 밖 공동묘지
  */
 public final class CityLayout {
-    public static final double AVENUE_HALF = 7.5;
-    public static final int WALL_HEIGHT = 30, CORNER_R = 220, STREET = 80, BELT = 100;
-    private static final int MOAT_IN = 256, MOAT_OUT = 272, CRING_OUT = 288, DISTRICT_IN = 292;
+    public static final int SIZE = 520, WALL_H = 24;
 
-    public enum District { BARRACKS, ARMORY, NOBLE, CATHEDRAL, SHOPS, RESIDENTIAL, MARKET, BLACKSMITH, WAREHOUSE, WORKSHOP, GUILD }
+    public enum Style { MILITARY, MAGIC, CRAFT, NOBLE, PUBLIC, COMMERCE, RESIDENT, LOGISTIC }
 
-    public final int cx, cz, base, half, extent, radius;
+    /** 도면 구획 (u0, v0) ~ (u1, v1) */
+    public record Parcel(String id, int u0, int v0, int u1, int v1, Style style) {
+        boolean contains(int u, int v) {
+            return u >= u0 && u <= u1 && v >= v0 && v <= v1;
+        }
+    }
+
+    public static final Parcel[] PARCELS = {
+            new Parcel("N01", 184, 356, 243, 388, Style.MILITARY), new Parcel("N02", 184, 403, 243, 436, Style.MILITARY),
+            new Parcel("N03", 134, 356, 160, 387, Style.MILITARY), new Parcel("N04", 85, 356, 118, 387, Style.MILITARY),
+            new Parcel("N05", 85, 403, 118, 436, Style.MILITARY), new Parcel("N06", 134, 403, 160, 436, Style.MILITARY),
+            new Parcel("N07", 278, 356, 339, 389, Style.MAGIC), new Parcel("N08", 278, 404, 336, 436, Style.MAGIC),
+            new Parcel("N09", 359, 356, 387, 386, Style.MAGIC), new Parcel("N10", 405, 356, 435, 387, Style.MAGIC),
+            new Parcel("N11", 359, 406, 387, 436, Style.MAGIC), new Parcel("N12", 405, 405, 435, 436, Style.PUBLIC),
+            new Parcel("W01", 85, 282, 116, 336, Style.CRAFT), new Parcel("W02", 134, 282, 160, 325, Style.CRAFT),
+            new Parcel("W03", 85, 185, 116, 235, Style.CRAFT), new Parcel("W04", 134, 185, 160, 235, Style.CRAFT),
+            new Parcel("E01", 360, 275, 387, 336, Style.NOBLE), new Parcel("E02", 405, 290, 435, 336, Style.PUBLIC),
+            new Parcel("E03", 360, 185, 387, 236, Style.NOBLE), new Parcel("E04", 405, 185, 435, 236, Style.NOBLE),
+            new Parcel("S01", 182, 85, 246, 160, Style.PUBLIC), new Parcel("S02", 135, 85, 160, 116, Style.COMMERCE),
+            new Parcel("S03", 135, 135, 160, 160, Style.COMMERCE), new Parcel("S04", 85, 85, 116, 116, Style.COMMERCE),
+            new Parcel("S05", 85, 135, 116, 160, Style.COMMERCE), new Parcel("S06", 276, 125, 341, 160, Style.COMMERCE),
+            new Parcel("S07", 276, 85, 341, 115, Style.COMMERCE), new Parcel("S08", 360, 85, 387, 115, Style.COMMERCE),
+            new Parcel("S09", 360, 135, 387, 160, Style.COMMERCE), new Parcel("S10", 405, 135, 435, 160, Style.COMMERCE),
+            new Parcel("S11", 405, 85, 435, 115, Style.COMMERCE),
+            new Parcel("P01", 26, 350, 64, 394, Style.RESIDENT), new Parcel("P02", 26, 298, 64, 338, Style.PUBLIC),
+            new Parcel("P03", 26, 188, 64, 241, Style.RESIDENT), new Parcel("P04", 26, 281, 64, 295, Style.LOGISTIC),
+            new Parcel("P05", 457, 355, 496, 435, Style.PUBLIC), new Parcel("P06", 457, 298, 496, 338, Style.PUBLIC),
+            new Parcel("P07", 457, 185, 496, 236, Style.RESIDENT), new Parcel("P08", 457, 277, 496, 292, Style.LOGISTIC),
+            new Parcel("P09", 85, 455, 156, 494, Style.RESIDENT), new Parcel("P10", 184, 455, 243, 494, Style.MILITARY),
+            new Parcel("P11", 278, 455, 338, 494, Style.LOGISTIC), new Parcel("P12", 359, 455, 434, 494, Style.LOGISTIC),
+            new Parcel("P13", 85, 26, 160, 65, Style.RESIDENT), new Parcel("P14", 182, 26, 243, 65, Style.LOGISTIC),
+            new Parcel("P15", 278, 26, 338, 65, Style.PUBLIC), new Parcel("P16", 359, 26, 434, 65, Style.LOGISTIC),
+    };
+
+    /** 도로 사각형 (u0, v0, u1, v1) */
+    private static final int[][] ROADS = {
+            // 성벽 안쪽 순환로
+            {16, 16, 503, 25}, {16, 494 + 1, 503, 503}, {16, 16, 25, 503}, {494 + 1, 16, 503, 503},
+            // 외곽 순환로
+            {70, 70, 451, 81}, {70, 440, 451, 451}, {70, 70, 81, 451}, {440, 70, 451, 451},
+            // 왕성 순환로
+            {165, 165, 356, 176}, {165, 345, 356, 356}, {165, 165, 176, 356}, {345, 165, 356, 356},
+            // 성문 대로
+            {254, 357, 267, 503}, {254, 16, 267, 164}, {16, 254, 164, 267}, {357, 254, 503, 267},
+            // 보조 도로
+            {121, 80, 130, 166}, {121, 355, 130, 441}, {391, 80, 400, 166}, {391, 355, 400, 441},
+            {80, 121, 166, 130}, {355, 121, 441, 130}, {80, 391, 166, 400}, {355, 391, 441, 400},
+            // 묘지 가는 길
+            {254, 504, 267, 534}, {268, 529, 292, 534},
+    };
+
+    public final int cx, cz, base, radius;
     public final long seed;
 
     private final List<Feature> features = new ArrayList<>();
     private final Map<Long, List<Feature>> byChunk = new HashMap<>();
-    private int villagerBudget = 300;
+    private int villagerBudget = 160;
 
-    /** @param diameter 성벽 바깥 지름 */
-    public CityLayout(int cx, int cz, int base, int diameter, long seed) {
+    public CityLayout(int cx, int cz, int base, long seed) {
         this.cx = cx;
         this.cz = cz;
         this.base = base;
-        this.half = diameter / 2;
-        this.extent = half + BELT;
-        this.radius = extent;
+        this.radius = 330;
         this.seed = seed;
 
         RandomSource rand = RandomSource.create(seed);
-        features.add(new Palace(this));
-        for (int k = 0; k < 4; k++) features.add(new CityGate(this, k));
+        for (Parcel pc : PARCELS) features.add(new ParcelDecor(pc));
+        addCastle(rand);
         addWallTowers();
         addCemetery();
-        packCity(rand);
+        fillParcels(rand);
 
         for (Feature f : features) {
             f.groundY = base;
@@ -101,37 +146,33 @@ public final class CityLayout {
         }
     }
 
-    // ───────────────────────── 형태 ─────────────────────────
+    // ───────────────────────── 좌표 변환 ─────────────────────────
 
-    /** 둥근 사각형까지의 부호 거리 (안쪽이 음수) */
-    public static double roundedSD(double ax, double az, double h, double r) {
-        double qx = ax - (h - r), qz = az - (h - r);
-        double outside = Math.hypot(Math.max(qx, 0), Math.max(qz, 0));
-        double inside = Math.min(Math.max(qx, qz), 0);
-        return outside + inside - r;
+    public int wx(int u) {
+        return cx + (u - 260);
     }
 
-    /** 성벽 바깥면 기준 부호 거리 */
-    private double wallSD(int dx, int dz) {
-        return roundedSD(Math.abs(dx), Math.abs(dz), half, CORNER_R);
+    public int wz(int v) {
+        return cz - (v - 260);
     }
 
-    public District districtAt(int dx, int dz) {
-        double a = Math.abs(dx), c = Math.abs(dz);
-        boolean north = dz < 0, east = dx > 0;
-        boolean vBand = a < c * 0.5, hBand = c < a * 0.5;
-        if (north && !east) return vBand ? District.BARRACKS : hBand ? District.WORKSHOP : District.GUILD;
-        if (north) return vBand ? District.ARMORY : District.NOBLE;
-        if (east) return vBand ? District.SHOPS : hBand ? District.CATHEDRAL : District.RESIDENTIAL;
-        return vBand ? District.MARKET : hBand ? District.BLACKSMITH : District.WAREHOUSE;
+    public int u(int x) {
+        return x - cx + 260;
     }
 
-    private boolean isStreet(int dx, int dz) {
-        return (Math.floorMod(dx - 38, STREET) < 5 && Math.abs(dx) > 7) || (Math.floorMod(dz - 38, STREET) < 5 && Math.abs(dz) > 7);
+    public int v(int z) {
+        return cz - z + 260;
     }
 
-    private boolean inCemetery(int dx, int dz, double sd) {
-        return sd > 18 && dx > 300 && dz < -300;
+    /** 도면 사각형 → 월드 Lot */
+    private Lot lot(int u0, int v0, int u1, int v1, Direction front) {
+        int x0 = wx(u0), x1 = wx(u1), z0 = wz(v1), z1 = wz(v0);
+        return new Lot((x0 + x1) >> 1, (z0 + z1) >> 1, x0, z0, x1, z1, front);
+    }
+
+    /** 도면 중심 + 크기 → 월드 Lot */
+    private Lot lotAt(int uc, int vc, int L, Direction front) {
+        return lot(uc - L / 2, vc - L / 2, uc - L / 2 + L - 1, vc - L / 2 + L - 1, front);
     }
 
     public Direction facingToCenter(int x, int z) {
@@ -140,134 +181,91 @@ public final class CityLayout {
         return dz > 0 ? Direction.SOUTH : Direction.NORTH;
     }
 
+    // ───────────────────────── 왕성 ─────────────────────────
+
+    private void addCastle(RandomSource rand) {
+        features.add(new RoyalCastle(this));
+        Object[][] halls = {
+                {RoyalHall.Kind.THRONE, 234, 294, 287, 319, Direction.NORTH},
+                {RoyalHall.Kind.COUNCIL, 204, 268, 230, 290, Direction.EAST},
+                {RoyalHall.Kind.CHAPEL, 291, 268, 317, 290, Direction.WEST},
+                {RoyalHall.Kind.VAULT, 204, 294, 230, 318, Direction.EAST},
+                {RoyalHall.Kind.ARCANE, 291, 294, 317, 318, Direction.WEST},
+                {RoyalHall.Kind.GUARD, 204, 210, 230, 238, Direction.EAST},
+                {RoyalHall.Kind.ARMORY, 291, 210, 317, 238, Direction.WEST},
+        };
+        for (Object[] h : halls) {
+            int u0 = (Integer) h[1], v0 = (Integer) h[2], u1 = (Integer) h[3], v1 = (Integer) h[4];
+            features.add(new RoyalHall((RoyalHall.Kind) h[0], wx(u0), wz(v1), wx(u1), wz(v0), (Direction) h[5], RoyalCastle.L1, rand.nextLong()));
+        }
+        features.add(new Keep(wx(238), wz(286), wx(283), wz(247), rand.nextLong()));
+    }
+
     // ───────────────────────── 성벽 탑 · 묘지 ─────────────────────────
 
     private void addWallTowers() {
-        int straight = half - CORNER_R, line = half - 5;
-        for (int t = -straight; t <= straight; t += 140) {
-            if (Math.abs(t) < 60) continue;
-            features.add(new WallTower(this, cx + line, cz + t));
-            features.add(new WallTower(this, cx - line, cz + t));
-            features.add(new WallTower(this, cx + t, cz + line));
-            features.add(new WallTower(this, cx + t, cz - line));
-        }
-        for (int sx = -1; sx <= 1; sx += 2) {
-            for (int sz = -1; sz <= 1; sz += 2) {
-                for (double a : new double[]{Math.PI / 12, Math.PI / 4, Math.PI * 5 / 12}) {
-                    int x = cx + sx * (straight + (int) Math.round(Math.cos(a) * (CORNER_R - 5)));
-                    int z = cz + sz * (straight + (int) Math.round(Math.sin(a) * (CORNER_R - 5)));
-                    features.add(new WallTower(this, x, z));
-                }
+        int[] ends = {12, 508};
+        for (int a : ends) for (int b : ends) features.add(new WallTower(this, wx(a), wz(b), 10, 44));
+        for (int t : ends) {
+            for (int m : new int[]{125, 395}) {
+                features.add(new WallTower(this, wx(t), wz(m), 7, 36));
+                features.add(new WallTower(this, wx(m), wz(t), 7, 36));
+            }
+            for (int g : new int[]{244, 277}) {
+                features.add(new WallTower(this, wx(t), wz(g), 8, 40));
+                features.add(new WallTower(this, wx(g), wz(t), 8, 40));
             }
         }
+    }
+
+    private static boolean inCemetery(int u, int v) {
+        return u >= 292 && u <= 500 && v >= 522 && v <= 585;
     }
 
     private void addCemetery() {
-        for (int dx = 7; dx < extent; dx += 14) {
-            for (int dz = -7; dz > -extent; dz -= 14) {
-                int i = dx / 14, j = -dz / 14;
-                if ((i + 2 * j) % 5 != 0) continue;
-                boolean ok = true;
-                for (int ox = -5; ox <= 5 && ok; ox += 10) {
-                    for (int oz = -5; oz <= 5 && ok; oz += 10) {
-                        double sd = wallSD(dx + ox, dz + oz);
-                        if (!inCemetery(dx + ox, dz + oz, sd) || sd > BELT - 3 || sd < 22) ok = false;
-                    }
-                }
-                if (ok) features.add(new Mausoleum(cx + dx, cz + dz, Direction.SOUTH));
+        for (int u = 310; u <= 490; u += 30) {
+            for (int v = 540; v <= 575; v += 30) {
+                features.add(new Mausoleum(wx(u), wz(v), Direction.SOUTH));
             }
         }
     }
 
-    // ───────────────────────── 구획 배치 ─────────────────────────
+    // ───────────────────────── 구획 채우기 ─────────────────────────
 
-    /** 도로 선: {중심 좌표, 반폭} (대로 0, 골목 ±40, ±120, ...) */
-    private List<int[]> lines() {
-        List<int[]> l = new ArrayList<>();
-        for (int p = -half; p <= half; p++) {
-            if (p == 0) l.add(new int[]{0, 7});
-            else if (Math.floorMod(p - 40, STREET) == 0) l.add(new int[]{p, 2});
-        }
-        return l;
+    private interface Maker {
+        Feature make(Lot lot, int index, RandomSource rand);
     }
 
-    private int lotSize(District d) {
-        return switch (d) {
-            case BARRACKS, ARMORY, WAREHOUSE -> 27;
-            case NOBLE -> 37;
-            case GUILD, SHOPS -> 21;
-            default -> 17;
-        };
+    private Parcel parcel(String id) {
+        for (Parcel p : PARCELS) if (p.id().equals(id)) return p;
+        throw new IllegalArgumentException(id);
     }
 
-    private boolean lotValid(int x0, int z0, int x1, int z1) {
-        int[][] corners = {{x0, z0}, {x1, z0}, {x0, z1}, {x1, z1}};
-        for (int[] c : corners) {
-            int dx = c[0] - cx, dz = c[1] - cz;
-            if (Math.max(Math.abs(dx), Math.abs(dz)) < DISTRICT_IN) return false;
-            if (wallSD(dx, dz) > -27) return false;
-        }
-        return true;
-    }
-
-    private void packCity(RandomSource rand) {
-        List<int[]> lines = lines();
-        int[][] special = {{580, 160}, {-160, 560}, {-560, -560}};   // 대성당, 시장 광장, 모험가 길드
-        for (int i = 0; i + 1 < lines.size(); i++) {
-            int bx0 = lines.get(i)[0] + lines.get(i)[1] + 2, bx1 = lines.get(i + 1)[0] - lines.get(i + 1)[1] - 2;
-            for (int j = 0; j + 1 < lines.size(); j++) {
-                int bz0 = lines.get(j)[0] + lines.get(j)[1] + 2, bz1 = lines.get(j + 1)[0] - lines.get(j + 1)[1] - 2;
-                if (bx1 - bx0 < 12 || bz1 - bz0 < 12) continue;
-                int mx = (bx0 + bx1) / 2, mz = (bz0 + bz1) / 2;
-                District d = districtAt(mx, mz);
-                int X0 = cx + bx0, Z0 = cz + bz0, X1 = cx + bx1, Z1 = cz + bz1;
-                boolean whole = lotValid(X0, Z0, X1, Z1);
-
-                if (whole && bx1 - bx0 >= 60 && bz1 - bz0 >= 60) {
-                    if (inside(special[0], bx0, bz0, bx1, bz1)) {
-                        features.add(new Cathedral(X0, Z0, X1, Z1, Direction.NORTH, rand.nextLong()));
-                        continue;
-                    }
-                    if (inside(special[1], bx0, bz0, bx1, bz1)) {
-                        features.add(new MarketPlaza(X0, Z0, X1, Z1, rand.nextLong()));
-                        continue;
-                    }
-                    if (inside(special[2], bx0, bz0, bx1, bz1)) {
-                        int gx = cx + mx, gz = cz + mz;
-                        features.add(new RoleBuilding(new Lot(gx, gz, gx - 18, gz - 18, gx + 18, gz + 18, Direction.SOUTH), Role.GUILD, rand, true));
-                        continue;
-                    }
-                }
-                if (whole && d == District.BARRACKS && Math.floorMod(i * 7 + j * 3, 4) == 0) {
-                    features.add(new TrainingGround(X0, Z0, X1, Z1, rand.nextLong()));
-                    continue;
-                }
-
-                int L = lotSize(d), gap = 3;
-                int nx = (bx1 - bx0 + 1 + gap) / (L + gap), nz = (bz1 - bz0 + 1 + gap) / (L + gap);
-                if (nx <= 0 || nz <= 0) continue;
-                int ox = bx0 + (bx1 - bx0 + 1 - (nx * L + (nx - 1) * gap)) / 2;
-                int oz = bz0 + (bz1 - bz0 + 1 - (nz * L + (nz - 1) * gap)) / 2;
-                for (int a = 0; a < nx; a++) {
-                    for (int c = 0; c < nz; c++) {
-                        int lx0 = cx + ox + a * (L + gap), lz0 = cz + oz + c * (L + gap);
-                        int lx1 = lx0 + L - 1, lz1 = lz0 + L - 1;
-                        if (!lotValid(lx0, lz0, lx1, lz1)) continue;
-                        int lcx = (lx0 + lx1) / 2, lcz = (lz0 + lz1) / 2;
-                        int dW = lcx - X0, dE = X1 - lcx, dN = lcz - Z0, dS = Z1 - lcz;
-                        int min = Math.min(Math.min(dW, dE), Math.min(dN, dS));
-                        Direction front = min == dN ? Direction.NORTH : min == dS ? Direction.SOUTH : min == dW ? Direction.WEST : Direction.EAST;
-                        Lot lot = new Lot(lcx, lcz, lx0, lz0, lx1, lz1, front);
-                        Feature f = create(districtAt(lcx - cx, lcz - cz), lot, rand);
-                        if (f != null) features.add(f);
-                    }
-                }
+    /** 구획을 L x L 칸으로 나눠 채움. 각 칸의 정면은 가장 가까운 구획 가장자리(= 도로) 쪽 */
+    private void pack(Parcel pc, int u0, int u1, int L, int gap, Maker maker, RandomSource rand) {
+        int v0 = pc.v0(), v1 = pc.v1();
+        int w = u1 - u0 + 1, d = v1 - v0 + 1;
+        int nu = (w + gap) / (L + gap), nv = (d + gap) / (L + gap);
+        if (nu <= 0 || nv <= 0) return;
+        int ou = u0 + (w - (nu * L + (nu - 1) * gap)) / 2;
+        int ov = v0 + (d - (nv * L + (nv - 1) * gap)) / 2;
+        int idx = 0;
+        for (int a = 0; a < nu; a++) {
+            for (int c = 0; c < nv; c++) {
+                int lu0 = ou + a * (L + gap), lv0 = ov + c * (L + gap);
+                int uc = lu0 + L / 2, vc = lv0 + L / 2;
+                int dW = uc - pc.u0(), dE = pc.u1() - uc, dS = vc - pc.v0(), dN = pc.v1() - vc;
+                int min = Math.min(Math.min(dW, dE), Math.min(dS, dN));
+                Direction front = min == dS ? Direction.SOUTH : min == dN ? Direction.NORTH : min == dW ? Direction.WEST : Direction.EAST;
+                Feature f = maker.make(lot(lu0, lv0, lu0 + L - 1, lv0 + L - 1, front), idx++, rand);
+                if (f != null) features.add(f);
             }
         }
     }
 
-    private static boolean inside(int[] pt, int x0, int z0, int x1, int z1) {
-        return pt[0] >= x0 && pt[0] <= x1 && pt[1] >= z0 && pt[1] <= z1;
+    private void pack(String id, int L, int gap, Maker maker, RandomSource rand) {
+        Parcel pc = parcel(id);
+        pack(pc, pc.u0(), pc.u1(), L, gap, maker, rand);
     }
 
     private boolean villager(float chance, RandomSource rand) {
@@ -279,183 +277,340 @@ public final class CityLayout {
     }
 
     private Feature role(Lot lot, Role r, RandomSource rand) {
-        return new RoleBuilding(lot, r, rand, villager(0.2F, rand));
+        return new RoleBuilding(lot, r, rand, villager(0.25F, rand));
     }
 
-    private Feature create(District d, Lot lot, RandomSource rand) {
-        float x = rand.nextFloat();
-        return switch (d) {
-            case BARRACKS -> x < 0.6F ? role(lot, Role.BARRACKS, rand) : x < 0.8F ? role(lot, Role.ARMORY, rand) : new House(this, lot, rand, villager(0.15F, rand));
-            case ARMORY -> x < 0.5F ? role(lot, Role.ARMORY, rand) : x < 0.8F ? role(lot, Role.WAREHOUSE, rand) : role(lot, Role.BARRACKS, rand);
-            case WAREHOUSE -> x < 0.45F ? role(lot, Role.WAREHOUSE, rand) : x < 0.85F ? role(lot, Role.STABLE, rand) : role(lot, Role.ARMORY, rand);
-            case NOBLE -> x < 0.7F ? role(lot, Role.MANSION, rand) : x < 0.85F ? new Garden(this, lot, rand) : new FountainSquare(this, lot);
-            case GUILD -> x < 0.5F ? role(lot, Role.INN, rand) : x < 0.7F ? role(lot, Role.SHOP, rand) : x < 0.9F ? new House(this, lot, rand, villager(0.15F, rand)) : new MarketSquare(this, lot, rand, false);
-            case SHOPS -> x < 0.5F ? role(lot, Role.SHOP, rand) : x < 0.8F ? role(lot, Role.INN, rand) : x < 0.9F ? new MarketSquare(this, lot, rand, villager(0.3F, rand)) : new House(this, lot, rand, false);
-            case MARKET -> x < 0.4F ? new MarketSquare(this, lot, rand, villager(0.3F, rand)) : x < 0.75F ? role(lot, Role.SHOP, rand) : new House(this, lot, rand, villager(0.15F, rand));
-            case BLACKSMITH -> x < 0.55F ? role(lot, Role.SMITHY, rand) : x < 0.8F ? role(lot, Role.WORKSHOP, rand) : new House(this, lot, rand, villager(0.15F, rand));
-            case WORKSHOP -> x < 0.6F ? role(lot, Role.WORKSHOP, rand) : x < 0.75F ? role(lot, Role.SMITHY, rand) : new House(this, lot, rand, villager(0.15F, rand));
-            case CATHEDRAL -> x < 0.6F ? new House(this, lot, rand, villager(0.15F, rand)) : x < 0.85F ? new Garden(this, lot, rand) : new FountainSquare(this, lot);
-            case RESIDENTIAL -> x < 0.72F ? new House(this, lot, rand, villager(0.15F, rand)) : x < 0.82F ? new Garden(this, lot, rand)
-                    : x < 0.9F ? new FountainSquare(this, lot) : new MarketSquare(this, lot, rand, villager(0.3F, rand));
-        };
+    private Feature house(Lot lot, RandomSource rand) {
+        return new House(this, lot, rand, villager(0.25F, rand));
     }
 
-    private boolean isOccupied(int x, int z) {
+    private Feature whole(String id, java.util.function.Function<Lot, Feature> make) {
+        Parcel pc = parcel(id);
+        return make.apply(lot(pc.u0(), pc.v0(), pc.u1(), pc.v1(), Direction.SOUTH));
+    }
+
+    private void squareIn(String id, int L, java.util.function.Function<Lot, Feature> make) {
+        Parcel pc = parcel(id);
+        int uc = (pc.u0() + pc.u1()) / 2, vc = (pc.v0() + pc.v1()) / 2;
+        features.add(make.apply(lotAt(uc, vc, L, Direction.SOUTH)));
+    }
+
+    private void fillParcels(RandomSource rand) {
+        // ── 북쪽: 군사 구역
+        pack("N01", 25, 3, (l, i, r) -> role(l, Role.BARRACKS, r), rand);                 // 기사단 본부
+        features.add(whole("N02", l -> new TrainingGround(l.minX(), l.minZ(), l.maxX(), l.maxZ(), rand.nextLong())));
+        pack("N03", 23, 3, (l, i, r) -> role(l, Role.ARMORY, r), rand);
+        pack("N04", 25, 3, (l, i, r) -> role(l, Role.BARRACKS, r), rand);
+        pack("N05", 25, 3, (l, i, r) -> role(l, Role.STABLE, r), rand);
+        pack("N06", 25, 3, (l, i, r) -> role(l, Role.WAREHOUSE, r), rand);
+        Parcel p10 = parcel("P10");                                                        // 수비대 주둔지
+        features.add(new TrainingGround(wx(184), wz(494), wx(210), wz(455), rand.nextLong()));
+        pack(p10, 214, 243, 25, 3, (l, i, r) -> role(l, Role.BARRACKS, r), rand);
+
+        // ── 북동: 마법 구역
+        pack("N07", 25, 3, (l, i, r) -> new AcademyHall(this, l, r), rand);
+        pack("N08", 23, 3, (l, i, r) -> new MageTower(this, l, r), rand);
+        pack("N09", 23, 3, (l, i, r) -> new MageTower(this, l, r), rand);
+        pack("N10", 23, 3, (l, i, r) -> new MageTower(this, l, r), rand);
+        pack("N11", 14, 1, (l, i, r) -> role(l, Role.SHOP, r), rand);
+        squareIn("N12", 30, l -> new Garden(this, l, rand));
+
+        // ── 서쪽: 장인 구역 (대장간·공방)
+        Maker craft = (l, i, r) -> role(l, (i % 3 == 1) ? Role.WORKSHOP : Role.SMITHY, r);
+        Maker craft2 = (l, i, r) -> role(l, (i % 3 == 1) ? Role.SMITHY : Role.WORKSHOP, r);
+        pack("W01", 15, 2, craft, rand);
+        pack("W02", 15, 2, craft2, rand);
+        pack("W03", 15, 2, craft2, rand);
+        pack("W04", 15, 2, craft, rand);
+
+        // ── 동쪽: 귀족·종교 구역
+        Parcel e01 = parcel("E01");
+        features.add(new Cathedral(wx(e01.u0()), wz(e01.v1()), wx(e01.u1()), wz(e01.v0()), Direction.SOUTH, rand.nextLong()));
+        squareIn("E02", 31, l -> new Garden(this, l, rand));
+        for (String id : new String[]{"E03", "E04"}) {
+            Parcel pc = parcel(id);
+            int uc = pc.u1() - 7;                                // 저택 깊이 15, 서쪽 앞뜰 13
+            for (int vc : new int[]{pc.v0() + 12, pc.v0() + 38}) {
+                features.add(new RoleBuilding(lot(uc - 7, vc - 12, uc + 7, vc + 12, Direction.WEST), Role.MANSION, rand, villager(0.5F, rand)));
+            }
+        }
+
+        // ── 남쪽: 시장·상업·모험가 구역
+        features.add(whole("S01", l -> new MarketPlaza(l.minX(), l.minZ(), l.maxX(), l.maxZ(), rand.nextLong())));
+        pack("S02", 13, 0, (l, i, r) -> role(l, Role.SHOP, r), rand);
+        pack("S03", 19, 3, (l, i, r) -> role(l, Role.INN, r), rand);
+        squareIn("S04", 32, l -> new MarketSquare(this, l, rand, villager(0.6F, rand)));
+        pack("S05", 19, 3, (l, i, r) -> role(l, Role.INN, r), rand);
+        // S06: 모험가 길드 본관 + 길드 여관
+        features.add(new RoleBuilding(lot(277, 138, 309, 160, Direction.NORTH), Role.GUILD, rand, true));
+        features.add(new RoleBuilding(lot(322, 141, 340, 159, Direction.NORTH), Role.INN, rand, true));
+        pack("S07", 19, 3, (l, i, r) -> role(l, Role.INN, r), rand);
+        pack("S08", 14, 1, (l, i, r) -> role(l, Role.SHOP, r), rand);
+        pack("S09", 14, 1, (l, i, r) -> role(l, Role.SHOP, r), rand);
+        squareIn("S10", 26, l -> new MarketSquare(this, l, rand, villager(0.6F, rand)));
+        pack("S11", 14, 1, (l, i, r) -> role(l, i == 0 ? Role.INN : Role.SHOP, r), rand);
+
+        // ── 둘레: 주거·공공·물류
+        Maker homes = (l, i, r) -> house(l, r);
+        pack("P01", 15, 2, homes, rand);
+        squareIn("P02", 39, l -> new Garden(this, l, rand));
+        pack("P03", 15, 2, homes, rand);
+        Parcel p05 = parcel("P05");
+        features.add(new Garden(this, lot(457, 355, 496, 394, Direction.SOUTH), rand));
+        features.add(new FountainSquare(this, lot(457, 396, 496, 435, Direction.SOUTH)));
+        squareIn("P06", 39, l -> new FountainSquare(this, l));
+        pack("P07", 15, 2, homes, rand);
+        pack("P09", 15, 2, homes, rand);
+        Maker logi = (l, i, r) -> role(l, i % 2 == 0 ? Role.WAREHOUSE : Role.STABLE, r);
+        pack("P11", 25, 3, logi, rand);
+        pack("P12", 25, 0, logi, rand);
+        pack("P13", 15, 2, homes, rand);
+        pack("P14", 25, 3, logi, rand);
+        features.add(whole("P15", l -> new MarketPlaza(l.minX(), l.minZ(), l.maxX(), l.maxZ(), rand.nextLong())));
+        pack("P16", 25, 0, logi, rand);
+    }
+
+    // ───────────────────────── 조회 ─────────────────────────
+
+    /** 건물(구획 장식 제외)이 이 칸을 차지하는지 */
+    public boolean isOccupied(int x, int z) {
         List<Feature> list = byChunk.get(ChunkPos.asLong(x >> 4, z >> 4));
         if (list == null) return false;
-        for (Feature f : list) if (f.occupies(x, z)) return true;
+        for (Feature f : list) if (!(f instanceof ParcelDecor) && f.occupies(x, z)) return true;
         return false;
+    }
+
+    private boolean occupiedNear(int x, int z, int r) {
+        return isOccupied(x - r, z - r) || isOccupied(x + r, z - r) || isOccupied(x - r, z + r) || isOccupied(x + r, z + r) || isOccupied(x, z);
+    }
+
+    private static boolean isRoad(int u, int v) {
+        for (int[] r : ROADS) if (u >= r[0] && u <= r[2] && v >= r[1] && v <= r[3]) return true;
+        return false;
+    }
+
+    private static Parcel parcelAt(int u, int v) {
+        for (Parcel p : PARCELS) if (p.contains(u, v)) return p;
+        return null;
+    }
+
+    /** 왕성 바깥 해자 영역까지의 거리 (0 이하 = 왕성 성벽 안) */
+    private static int castleRing(int u, int v) {
+        return Math.max(Math.max(195 - u, u - 325), Math.max(195 - v, v - 325));
     }
 
     // ───────────────────────── 기둥 단위 지형 ─────────────────────────
 
     public void buildColumn(Placer p, int x, int z) {
-        final int dx = x - cx, dz = z - cz, adx = Math.abs(dx), adz = Math.abs(dz);
-        final double sd = wallSD(dx, dz);
-        if (sd > BELT) return;
-        final int m = Math.max(adx, adz);
-        final int sy = base;
-        boolean nsAve = adx <= 7, ewAve = adz <= 7;
-        boolean avenue = (nsAve || ewAve) && m > Palace.OUT;
+        final int u = u(x), v = v(z), b = base;
+        if (inCemetery(u, v)) {
+            p.clearAbove(x, z, b + 1);
+            cemetery(p, x, z, u, v);
+            p.foundation(x, z, b - 1, 32);
+            return;
+        }
+        boolean road = isRoad(u, v);
+        if (!road && (u < 0 || u > SIZE || v < 0 || v > SIZE)) return;   // 바깥은 자연 지형 그대로
 
-        p.clearAbove(x, z, sy + 1);
-        BlockState surface = null;
-        int lowest = sy;
-        boolean lampOk = false;
+        p.clearAbove(x, z, b + 1);
+        BlockState surface;
+        int lowest = b;
 
-        if (m <= Palace.OUT) {
-            surface = GRASS;                                         // 왕성이 위에 지음
-        } else if (avenue) {
-            int lat = nsAve ? dx : dz, along = nsAve ? dz : dx, alat = Math.abs(lat);
-            surface = alat == 7 ? MINT_CUT : lat == 0 ? CALCITE : SMOOTH_QUARTZ;
-            boolean bridge = (m > MOAT_IN && m <= MOAT_OUT) || (sd > 2 && sd <= 16);
-            if (bridge) {
-                for (int i = 1; i <= 4; i++) p.set(x, sy - i, z, WATER);
-                p.set(x, sy - 5, z, CALCITE);
-                lowest = sy - 5;
-                if (alat == 7) {
-                    surface = QUARTZ_BRICKS;
-                    p.set(x, sy + 1, z, GLASS_PANE);
+        if (u < 9 || u > 510 || v < 9 || v > 510) {                       // 성벽 바깥 잔디 띠
+            surface = road ? roadBlock(u, v) : GRASS;
+            if (!road && (u == 4 || u == 516 || v == 4 || v == 516) && Math.floorMod(u + v, 24) == 0) Shapes.lampPost(p, x, z, b);
+        } else if (u <= 15 || u >= 504 || v <= 15 || v >= 504) {          // 외성벽
+            p.set(x, b, z, QUARTZ_BRICKS);
+            wallColumn(p, x, z, u, v);
+            p.foundation(x, z, b - 1, 48);
+            return;
+        } else if (castleRing(u, v) <= 18) {                               // 왕성 + 해자
+            int r = castleRing(u, v);
+            boolean lane = (u >= 254 && u <= 267) || (v >= 254 && v <= 267);
+            if (r <= 0) {
+                castleGround(p, x, z, u, v);
+                p.foundation(x, z, b - 1, 48);
+                return;
+            } else if (lane) {
+                surface = QUARTZ_BRICKS;
+            } else if (r >= 4 && r <= 14) {                                // 해자
+                boolean edge = r == 4 || r == 14;
+                if (edge) {
+                    surface = SMOOTH_QUARTZ;
+                    for (int i = 1; i <= 5; i++) p.set(x, b - i, z, QUARTZ_BRICKS);
+                    if (r == 14) p.set(x, b + 1, z, GLASS_PANE);
+                } else {
+                    surface = AIR;
+                    for (int i = 1; i <= 4; i++) p.set(x, b - i, z, WATER);
+                    p.set(x, b - 5, z, CALCITE);
                 }
-            } else if (alat == 6 && Math.floorMod(along, 16) == 8 && (sd < -12 || sd > 18)) {
-                Shapes.lampPost(p, x, z, sy);
-            }
-        } else if (m <= MOAT_IN) {
-            surface = GRASS;
-        } else if (m <= MOAT_OUT) {                                 // 왕성 해자
-            if (m == MOAT_IN + 1 || m == MOAT_OUT) {
-                surface = SMOOTH_QUARTZ;
-                for (int i = 1; i <= 5; i++) p.set(x, sy - i, z, QUARTZ_BRICKS);
-                if (m == MOAT_OUT) p.set(x, sy + 1, z, GLASS_PANE);
+                lowest = b - 5;
             } else {
-                p.set(x, sy, z, AIR);
-                for (int i = 1; i <= 4; i++) p.set(x, sy - i, z, WATER);
-                p.set(x, sy - 5, z, CALCITE);
-            }
-            lowest = sy - 5;
-        } else if (m <= CRING_OUT) {                                // 왕성 순환도로
-            surface = (m == MOAT_OUT + 1 || m == CRING_OUT) ? MINT_CUT : SMOOTH_QUARTZ;
-        } else if (sd <= -24) {                                     // 구역
-            if (isStreet(dx, dz)) {
-                boolean xLine = Math.floorMod(dx - 38, STREET) < 5 && adx > 7;
-                int off = Math.floorMod(xLine ? dx - 38 : dz - 38, STREET);
-                surface = (off == 0 || off == 4) ? CALCITE : SMOOTH_QUARTZ;
-            } else {
-                surface = (Math.floorMod(dx, 9) == 0 || Math.floorMod(dz, 9) == 0) ? SMOOTH_QUARTZ : WHITE_CONCRETE;
-                lampOk = true;
-            }
-        } else if (sd <= -10) {                                     // 성벽 안 순환도로
-            surface = (sd > -11 || sd <= -23) ? MINT_CUT : SMOOTH_QUARTZ;
-        } else if (sd <= 0) {                                       // 성벽
-            wallColumn(p, x, z, dx, dz, sd);
-        } else if (sd <= 2) {
-            surface = GRASS;
-        } else if (sd <= 16) {                                      // 바깥 해자
-            if (sd <= 4 || sd > 14) {
-                surface = SMOOTH_QUARTZ;
-                for (int i = 1; i <= 5; i++) p.set(x, sy - i, z, QUARTZ_BRICKS);
-            } else {
-                p.set(x, sy, z, AIR);
-                for (int i = 1; i <= 4; i++) p.set(x, sy - i, z, WATER);
-                p.set(x, sy - 5, z, CALCITE);
-            }
-            lowest = sy - 5;
-        } else if (inCemetery(dx, dz, sd)) {
-            cemetery(p, x, z, dx, dz, sd);
-        } else {                                                    // 농지
-            int u = Math.floorMod(dx, 13), v = Math.floorMod(dz, 13);
-            if (u == 12 || v == 12) {
                 surface = GRASS;
-                if (u == 12 && v == 12) Shapes.lampPost(p, x, z, sy);
-            } else if (v == 6) {
-                p.set(x, sy, z, WATER);
-                p.set(x, sy - 1, z, CALCITE);
-                lowest = sy - 1;
-            } else {
-                surface = Blocks.FARMLAND.defaultBlockState().setValue(FarmBlock.MOISTURE, 7);
-                int plot = Shapes.hash(Math.floorDiv(dx, 13), 0, Math.floorDiv(dz, 13), seed) % 3;
-                CropBlock crop = (CropBlock) (plot == 0 ? Blocks.WHEAT : plot == 1 ? Blocks.CARROTS : Blocks.POTATOES);
-                p.set(x, sy + 1, z, crop.getStateForAge(Shapes.hash(x, 0, z, seed) % 8));
+                if (r >= 15 && Shapes.hash(x, 3, z, seed) % 9 == 0) p.set(x, b + 1, z, Royal.ROYAL_FLOWERS[Shapes.hash(x, 4, z, seed) % 4]);
+            }
+        } else if (road) {
+            surface = roadBlock(u, v);
+            if (surface == MINT_CUT && Math.floorMod(u + v, 14) == 0 && !isOccupied(x, z)) Shapes.lampPost(p, x, z, b);
+        } else {
+            Parcel pc = parcelAt(u, v);
+            if (pc != null) {
+                surface = parcelGround(pc, u, v);
+            } else {                                                       // 빈 광장 포장
+                surface = (Math.floorMod(u, 9) == 0 || Math.floorMod(v, 9) == 0) ? SMOOTH_QUARTZ : WHITE_CONCRETE;
+                if (Math.floorMod(u, 10) == 5 && Math.floorMod(v, 10) == 5 && !isOccupied(x, z)) Shapes.lampPost(p, x, z, b);
             }
         }
-
-        if (surface != null) p.set(x, sy, z, surface);
+        p.set(x, b, z, surface);
         p.foundation(x, z, lowest - 1, 48);
-
-        if (lampOk && Math.floorMod(dx, 10) == 5 && Math.floorMod(dz, 10) == 5 && !isOccupied(x, z)) {
-            Shapes.lampPost(p, x, z, sy);
-        }
     }
 
-    private void wallColumn(Placer p, int x, int z, int dx, int dz, double sd) {
-        int b = base, H = WALL_HEIGHT;
-        boolean outer = sd > -1;
-        int idx = Math.floorMod(dx + dz, 12);
-        for (int y = b; y <= b + H; y++) {
-            int ly = y - b;
+    private static BlockState roadBlock(int u, int v) {
+        boolean edge = !isRoad(u + 1, v) || !isRoad(u - 1, v) || !isRoad(u, v + 1) || !isRoad(u, v - 1);
+        return edge ? MINT_CUT : (Math.floorMod(u * 3 + v * 7, 11) == 0 ? CALCITE : SMOOTH_QUARTZ);
+    }
+
+    private BlockState parcelGround(Parcel pc, int u, int v) {
+        boolean border = u == pc.u0() || u == pc.u1() || v == pc.v0() || v == pc.v1();
+        if (border) return QUARTZ_BRICKS;
+        int lu = u - pc.u0(), lv = v - pc.v0();
+        return switch (pc.style()) {
+            case MILITARY -> (lu % 7 == 0 || lv % 7 == 0) ? SMOOTH_QUARTZ : CALCITE;
+            case MAGIC -> (lu % 8 == 0 || lv % 8 == 0) ? MINT_CUT : GRASS;
+            case CRAFT -> ((lu + lv) & 1) == 0 ? CALCITE : WHITE_CONCRETE;
+            case NOBLE, PUBLIC -> (lu % 10 == 5 || lv % 10 == 5) ? CALCITE : GRASS;
+            case COMMERCE -> ((lu / 2 + lv / 2) & 1) == 0 ? SMOOTH_QUARTZ : CALCITE;
+            case RESIDENT -> (lu % 9 == 4 || lv % 9 == 4) ? CALCITE : GRASS;
+            case LOGISTIC -> (lu % 6 == 0) ? SMOOTH_QUARTZ : WHITE_CONCRETE;
+        };
+    }
+
+    /** 왕성 성벽 안쪽의 단 채우기: 1단 +8, 2단 +18 (성벽·계단·건물은 RoyalCastle 등이 지음) */
+    private void castleGround(Placer p, int x, int z, int u, int v) {
+        int b = base;
+        p.set(x, b, z, QUARTZ_BRICKS);
+        if (u < 200 || u > 320 || v < 200 || v > 320) return;            // 왕성 성벽 띠
+        int top = b + (RoyalCastle.inL2(u, v) ? RoyalCastle.L2 : RoyalCastle.L1);
+        for (int y = b + 1; y < top; y++) p.set(x, y, z, QUARTZ_BRICKS);
+        boolean inlay = Math.floorMod(u - 260, 10) == 0 || Math.floorMod(v - 260, 10) == 0;
+        p.set(x, top, z, inlay ? CHISELED_QUARTZ : Royal.marble(x, z));
+    }
+
+    /** 외성벽: 높이 24, 민트 띠, 총안, 성문 아치 (가로 254~267) */
+    private void wallColumn(Placer p, int x, int z, int u, int v) {
+        int b = base, H = WALL_H;
+        boolean uBand = u <= 15 || u >= 504, vBand = v <= 15 || v >= 504;
+        int t = uBand ? (u <= 15 ? u - 9 : 510 - u) : (v <= 15 ? v - 9 : 510 - v);   // 0 = 바깥면
+        int lat = uBand ? v : u;
+        boolean gate = !(uBand && vBand) && lat >= 254 && lat <= 267;
+        double open = gate ? 9 + 3 * Math.sqrt(Math.max(0, 1 - Math.pow((lat - 260.5) / 7.0, 2))) : -1;
+        for (int ly = 1; ly <= H; ly++) {
             BlockState s = QUARTZ_BRICKS;
             if (ly == H) s = SMOOTH_QUARTZ;
             else if (ly == H - 4) s = MINT_CUT;
-            else if (outer && ly == 16 && idx == 0) s = GLASS;
-            p.set(x, y, z, s);
+            else if (t == 0 && ly >= 14 && ly <= 15 && Math.floorMod(lat, 8) == 0) s = GLASS;
+            if (gate) {
+                if (ly <= open) s = AIR;
+                else if (ly <= open + 1) s = (lat == 260 || lat == 261) ? MINT_CHISELED : CHISELED_QUARTZ;
+            }
+            p.set(x, b + ly, z, s);
         }
-        if (outer) {
-            if (Math.floorMod(dx + dz, 4) < 2) p.set(x, b + H + 1, z, CALCITE);
-        } else if (sd <= -9) {
-            p.set(x, b + H + 1, z, SMOOTH_QUARTZ_SLAB);
-        }
+        if (gate) p.set(x, b, z, (lat == 254 || lat == 267) ? MINT_CUT : SMOOTH_QUARTZ);
+        if (t == 0 && Math.floorMod(lat, 4) < 2) p.set(x, b + H + 1, z, CALCITE);
+        if (t == 6) p.set(x, b + H + 1, z, SMOOTH_QUARTZ_SLAB);
     }
 
     /** 공동묘지: 방해석 길, 묘비(조각 석영 + 촛불), 꽃 핀 무덤, 영혼 랜턴 기둥, 낮은 담 */
-    private void cemetery(Placer p, int x, int z, int dx, int dz, double sd) {
+    private void cemetery(Placer p, int x, int z, int u, int v) {
         int b = base;
-        int u = Math.floorMod(dx, 14), v = Math.floorMod(dz, 14);
-        boolean path = u <= 1 || v <= 1;
-        boolean border = sd <= 19.5 || sd > BELT - 1 || dx <= 301 || dz >= -301;
+        int a = Math.floorMod(u - 292, 14), c = Math.floorMod(v - 522, 14);
+        boolean path = a <= 1 || c <= 1;
+        boolean border = u == 292 || u == 500 || v == 522 || v == 585;
+        boolean entrance = u == 292 && v >= 529 && v <= 534;
         int h = Shapes.hash(x, 21, z, seed);
-        p.set(x, b, z, path ? CALCITE : GRASS);
+        p.set(x, b, z, path || entrance ? CALCITE : GRASS);
         if (border) {
-            if (!path) {
+            if (!entrance) {
                 p.set(x, b + 1, z, CALCITE);
                 p.set(x, b + 2, z, SMOOTH_QUARTZ_SLAB);
             }
             return;
         }
-        if (u == 0 && v == 0) {
+        if (a == 0 && c == 0) {
             p.set(x, b + 1, z, QUARTZ_PILLAR);
             p.set(x, b + 2, z, QUARTZ_PILLAR);
             p.set(x, b + 3, z, Blocks.SOUL_LANTERN.defaultBlockState());
             return;
         }
-        if (path) return;
-        if (u >= 3 && u <= 12 && u % 3 == 0) {
-            if (v % 5 == 3) {
+        if (path || isOccupied(x, z)) return;
+        if (a >= 3 && a <= 12 && a % 3 == 0) {
+            if (c % 5 == 3) {
                 p.set(x, b + 1, z, CHISELED_QUARTZ);
                 if (h % 3 == 0) p.set(x, b + 2, z, Deco.candles(1 + h % 4));
-            } else if (v % 5 == 4) {
+            } else if (c % 5 == 4) {
                 p.set(x, b, z, Blocks.COARSE_DIRT.defaultBlockState());
                 if (h % 2 == 0) p.set(x, b + 1, z, (h >> 2) % 2 == 0 ? Blocks.LILY_OF_THE_VALLEY.defaultBlockState() : Blocks.WHITE_TULIP.defaultBlockState());
             }
         }
+    }
+
+    // ───────────────────────── 구획 장식 ─────────────────────────
+
+    /**
+     * 구획의 빈 땅을 채우는 소품: 자작나무, 가로등, 꽃, 구역별 소품(군사: 건초·과녁·통 / 장인: 통·장작·모루 /
+     * 물류: 건초 더미·통·상자 / 상업: 노점 화분·통 / 마법: 자수정·책장·촛불)
+     * 건물보다 먼저 지어지고, 건물이 차지한 칸은 피합니다.
+     */
+    private final class ParcelDecor extends Feature {
+        private final Parcel pc;
+
+        ParcelDecor(Parcel pc) {
+            super(wx(pc.u0()), wz(pc.v1()), wx(pc.u1()), wz(pc.v0()));
+            this.pc = pc;
+        }
+
+        @Override
+        public boolean occupies(int x, int z) {
+            return false;
+        }
+
+        @Override
+        public void build(Placer p, CityLayout city) {
+            final int b = groundY;
+            final boolean green = pc.style() == Style.MAGIC || pc.style() == Style.NOBLE || pc.style() == Style.PUBLIC || pc.style() == Style.RESIDENT;
+            p.forColumns(minX + 1, minZ + 1, maxX - 1, maxZ - 1, (x, z) -> {
+                int lu = u(x) - pc.u0(), lv = v(z) - pc.v0();
+                if (lu <= 1 || lv <= 1 || u(x) >= pc.u1() - 1 || v(z) >= pc.v1() - 1) return;
+                int h = Shapes.hash(x, 13, z, seed) % 1000;
+                if (green && lu % 11 == 6 && lv % 11 == 6) {
+                    if (!occupiedNear(x, z, 3)) Shapes.birchTree(p, x, z, b, 5 + h % 3);
+                    return;
+                }
+                if (lu % 12 == 3 && lv % 12 == 9) {
+                    if (!occupiedNear(x, z, 1)) Shapes.lampPost(p, x, z, b);
+                    return;
+                }
+                if (isOccupied(x, z) || occupiedNear(x, z, 1)) return;
+                if (p.get(x, b, z) != GRASS && green) return;
+                BlockState prop = prop(pc.style(), h, x, z);
+                if (prop != null) p.set(x, b + 1, z, prop);
+                if (prop == HAY && h % 3 == 0) p.set(x, b + 2, z, HAY);
+            });
+        }
+    }
+
+    private static final BlockState HAY = Blocks.HAY_BLOCK.defaultBlockState();
+
+    private BlockState prop(Style s, int h, int x, int z) {
+        return switch (s) {
+            case MILITARY -> h < 6 ? HAY : h < 10 ? Deco.BARREL : h < 12 ? Blocks.TARGET.defaultBlockState() : null;
+            case CRAFT -> h < 8 ? Deco.BARREL : h < 12 ? Blocks.STRIPPED_BIRCH_LOG.defaultBlockState() : h < 13 ? Blocks.ANVIL.defaultBlockState()
+                    : h < 15 ? Blocks.GRINDSTONE.defaultBlockState() : null;
+            case LOGISTIC -> h < 12 ? HAY : h < 22 ? Deco.BARREL : h < 26 ? Deco.chest(Direction.NORTH) : null;
+            case COMMERCE -> h < 5 ? Deco.BARREL : h < 9 ? Deco.pot(h) : null;
+            case MAGIC -> h < 30 ? FLOWERS[h % FLOWERS.length] : h < 32 ? Blocks.AMETHYST_CLUSTER.defaultBlockState() : null;
+            case NOBLE -> h < 25 ? Royal.ROYAL_FLOWERS[h % 4] : h < 30 ? Royal.HEDGE : null;
+            case PUBLIC, RESIDENT -> h < 40 ? FLOWERS[h % FLOWERS.length] : null;
+        };
     }
 }
