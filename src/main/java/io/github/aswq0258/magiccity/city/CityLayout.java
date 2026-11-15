@@ -233,10 +233,7 @@ public final class CityLayout {
         place(86, 72, 25, l -> new RoleBuilding(l, Role.STABLE, rand, false));                     // 왕실 마구간
         features.add(new Temple(cx + 97, cz - 54, cx + 127, cz - 8, Direction.SOUTH, rand.nextLong()));
         take(97, 8, 127, 54);                                                                      // 별빛의 신전
-        features.add(new GrandCathedral(cx + 32, cz + 93, rand.nextLong()));                       // 왕국 대성당 (쾰른식)
-        take(16, -112, 94, -74);
-        features.add(new Outskirts.Graveyard(cx + 95, cz + 50, cx + 122, cz + 72, rand.nextLong()));   // 성당 묘지
-        take(95, -72, 122, -50);
+
         mansion(-100, 57, Direction.EAST, rand);
         mansion(-101, -47, Direction.EAST, rand);
         mansion(-66, -94, Direction.NORTH, rand);
@@ -267,6 +264,11 @@ public final class CityLayout {
         place(180, -48, 19, l -> new RoleBuilding(l, Role.INN, rand, true));                       // 동문 여관
         place(-161, -93, 17, l -> new RoleBuilding(l, Role.SMITHY, rand, true));                   // 대장간
         place(-93, -161, 17, l -> new RoleBuilding(l, Role.WORKSHOP, rand, true));                 // 공방
+        // 왕국 대성당 (쾰른식): 모험가 길드의 정반대편(남쪽 대로 서쪽), 정면은 왕성(북쪽)을 바라봄
+        features.add(new GrandCathedral(cx - 26, cz + 175, Direction.NORTH, rand.nextLong()));
+        take(-47, -240, -5, -158);
+        features.add(new Outskirts.Graveyard(cx - 95, cz + 180, cx - 70, cz + 205, rand.nextLong()));   // 성당 묘지
+        take(-97, -207, -68, -178);
         features.add(new MarketSquare(this, lotRel(11, -199, 37, -173, Direction.NORTH), rand, villager(0.6F, rand)));   // 남문 광장
         take(11, -199, 37, -173);
 

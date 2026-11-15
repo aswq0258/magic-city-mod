@@ -21,7 +21,7 @@ import static io.github.aswq0258.magiccity.city.Palette.*;
  *  - 신랑(높이 40) + 양옆 측랑(20) + 플라잉 버트레스, 십자 교차부 녹청 첨탑, 장미창 달린 익랑, 반원 후진
  *  - 내부: 아케이드 기둥, 신도석, 붉은 카펫, 금 제단, 영혼 랜턴 샹들리에
  *  - 정문 앞 성수 분수
- * 정면은 서쪽 고정. (x0, zc) = 정면 서쪽 끝 x, 가운데 z.
+ * 정면 방향은 생성자에서 정함 (기본 설계는 서쪽 정면).
  */
 public class GrandCathedral extends Feature {
     public static final int LEN = 61, HALF = 17;
@@ -38,24 +38,42 @@ public class GrandCathedral extends Feature {
     };
     private final int x0, zc;
     private final long seed;
+    private final Direction front, in, left;   // 정면 방향, 안쪽(정면→후진), lat + 방향
+    private final int dx, dz, lx, lz;
 
-    public GrandCathedral(int x0, int zc, long seed) {
-        super(x0 - 16, zc - HALF - 2, x0 + LEN + 1, zc + HALF + 2);
+    /** (x0, zc) = 정면 가운데. front = 정면이 바라보는 방향 */
+    public GrandCathedral(int x0, int zc, Direction front, long seed) {
+        super(Math.min(x0 + -front.getStepX() * -16 + front.getStepZ() * 19, x0 + -front.getStepX() * (LEN + 1) - front.getStepZ() * 19) - 2,
+                Math.min(zc + -front.getStepZ() * -16 - front.getStepX() * 19, zc + -front.getStepZ() * (LEN + 1) + front.getStepX() * 19) - 2,
+                Math.max(x0 + -front.getStepX() * -16 + front.getStepZ() * 19, x0 + -front.getStepX() * (LEN + 1) - front.getStepZ() * 19) + 2,
+                Math.max(zc + -front.getStepZ() * -16 - front.getStepX() * 19, zc + -front.getStepZ() * (LEN + 1) + front.getStepX() * 19) + 2);
         this.x0 = x0;
         this.zc = zc;
         this.seed = seed;
+        this.front = front;
+        this.in = front.getOpposite();
+        this.dx = in.getStepX();
+        this.dz = in.getStepZ();
+        this.lx = dz;          // 서쪽 정면일 때 lat + = 북쪽
+        this.lz = -dx;
+        this.left = Direction.fromDelta(lx, 0, lz);
     }
 
-    private int X(int a) {
-        return x0 + a;
+    private int wx(int a, int lat) {
+        return x0 + dx * a + lx * lat;
     }
 
-    private int Z(int lat) {
-        return zc - lat;
+    private int wz(int a, int lat) {
+        return zc + dz * a + lz * lat;
+    }
+
+    /** lat 쪽에서 가운데로 올라가는 계단 방향 */
+    private Direction towardCenter(int lat) {
+        return lat > 0 ? left.getOpposite() : left;
     }
 
     private void set(Placer p, int a, int ly, int lat, BlockState s) {
-        p.set(X(a), groundY + ly, Z(lat), s);
+        p.set(wx(a, lat), groundY + ly, wz(a, lat), s);
     }
 
     private static BlockState glass(int a, int ly, int lat) {
@@ -67,27 +85,29 @@ public class GrandCathedral extends Feature {
     public void build(Placer p, CityLayout city) {
         if (!p.intersects(minX, minZ, maxX, maxZ)) return;
         final int b = groundY;
-        p.forColumns(X(0), Z(HALF + 1), X(LEN), Z(-HALF - 1), (x, z) -> {
-            int a = x - x0, lat = zc - z, al = Math.abs(lat);
+        int ax = wx(0, HALF + 1), bx = wx(LEN, -HALF - 1), az = wz(0, HALF + 1), bz = wz(LEN, -HALF - 1);
+        p.forColumns(Math.min(ax, bx), Math.min(az, bz), Math.max(ax, bx), Math.max(az, bz), (x, z) -> {
+            int rx = x - x0, rz = z - zc;
+            int a = rx * dx + rz * dz, lat = rx * lx + rz * lz, al = Math.abs(lat);
             column(p, a, lat, al, b);
         });
         // 쌍탑 투각 첨탑 + 피너클
         for (int s = -1; s <= 1; s += 2) {
             int tcLat = s * 12, tcA = 5;
-            Royal.spire(p, X(tcA), Z(tcLat), b + TH + 1, 5.5, SPIRE, DARK_TILE, WHITE);
+            Royal.spire(p, wx(tcA, tcLat), wz(tcA, tcLat), b + TH + 1, 5.5, SPIRE, DARK_TILE, WHITE);
             for (int[] o : new int[][]{{0, -5}, {10, -5}, {0, 5}, {10, 5}}) {
-                Royal.spire(p, X(o[0]), Z(tcLat + o[1]), b + TH + 1, 1.0, 9, DARK_TILE, WHITE);
+                Royal.spire(p, wx(o[0], tcLat + o[1]), wz(o[0], tcLat + o[1]), b + TH + 1, 1.0, 9, DARK_TILE, WHITE);
             }
-            Royal.spire(p, X(tcA), Z(tcLat), b + TH + SPIRE + 6, 0.6, 3, Royal.GOLD, Royal.GOLD);
+            Royal.spire(p, wx(tcA, tcLat), wz(tcA, tcLat), b + TH + SPIRE + 6, 0.6, 3, Royal.GOLD, Royal.GOLD);
         }
         // 교차부 녹청 첨탑
-        Royal.spire(p, X(46), Z(0), b + NH + 9, 3.0, 24, MINT_BLOCK, Royal.GOLD);
+        Royal.spire(p, wx(46, 0), wz(46, 0), b + NH + 9, 3.0, 24, MINT_BLOCK, Royal.GOLD);
         // 반원 후진 둘레 피너클
         for (int i = 0; i <= 6; i++) {
             double ang = -Math.PI / 2 + Math.PI * i / 6;
             int a = 52 + (int) Math.round(Math.cos(ang) * 9), lat = (int) Math.round(Math.sin(ang) * 9);
             for (int ly = 1; ly <= 30; ly++) set(p, a, ly, lat, ly > 26 ? WHITE : DARK);
-            Royal.spire(p, X(a), Z(lat), b + 31, 0.8, 6, DARK_TILE, WHITE);
+            Royal.spire(p, wx(a, lat), wz(a, lat), b + 31, 0.8, 6, DARK_TILE, WHITE);
         }
         interior(p, b);
         holyFountain(p, b);
@@ -133,7 +153,7 @@ public class GrandCathedral extends Feature {
             return;
         }
         if (a <= 10 && al <= 6) {                      // 현관(두 탑 사이)
-            set(p, a, 0, lat, Royal.marble(X(a), Z(lat)));
+            set(p, a, 0, lat, Royal.marble(wx(a, lat), wz(a, lat)));
             for (int ly = 1; ly <= NH; ly++) set(p, a, ly, lat, ly == NH ? DARK_TILE : AIR);
             return;
         }
@@ -144,7 +164,7 @@ public class GrandCathedral extends Feature {
                 if (d <= 10.5 && al <= 12) { set(p, a, 0, lat, DARK2); }
                 return;
             }
-            set(p, a, 0, lat, Royal.marble(X(a), Z(lat)));
+            set(p, a, 0, lat, Royal.marble(wx(a, lat), wz(a, lat)));
             boolean wall = d > 7.5;
             for (int ly = 1; ly <= NH; ly++) {
                 BlockState s = AIR;
@@ -164,7 +184,7 @@ public class GrandCathedral extends Feature {
         if (!transept && al >= 15 && al <= 16) {
             if (a % 6 == 0 && a >= 12) {
                 for (int ly = 0; ly <= 26; ly++) set(p, a, ly, lat, ly > 22 ? WHITE : DARK);
-                if (al == 15) Royal.spire(p, X(a), Z(lat), groundY + 27, 0.7, 6, DARK_TILE, WHITE);
+                if (al == 15) Royal.spire(p, wx(a, lat), wz(a, lat), groundY + 27, 0.7, 6, DARK_TILE, WHITE);
             }
             return;
         }
@@ -178,7 +198,7 @@ public class GrandCathedral extends Feature {
         // ── 익랑 (a 41~51, |lat| ≤ 17)
         if (transept) {
             if (al > 17) return;
-            set(p, a, 0, lat, Royal.marble(X(a), Z(lat)));
+            set(p, a, 0, lat, Royal.marble(wx(a, lat), wz(a, lat)));
             boolean endWall = al == 17, sideWall = (a == 41 || a == 51) && al >= 7;
             for (int ly = 1; ly <= NH; ly++) {
                 BlockState s = AIR;
@@ -196,13 +216,13 @@ public class GrandCathedral extends Feature {
             // 익랑 지붕 (용마루가 남북 방향)
             int da = Math.abs(a - 46);
             for (int k = 0; k <= 6 - da; k++) set(p, a, NH + 1 + k, lat, k == 6 - da ? MINT_BLOCK
-                    : (da == 6 - k ? Palette.mintStairs(a < 46 ? Direction.EAST : Direction.WEST) : MINT_BLOCK));
+                    : (da == 6 - k ? Palette.mintStairs(a < 46 ? in : front) : MINT_BLOCK));
             if (endWall) for (int k = 1; k <= 6 - da; k++) set(p, a, NH + k, lat, (a + k) % 2 == 0 ? WHITE : DARK);   // 박공
             return;
         }
         // ── 신랑 + 측랑 (a 11~52, |lat| ≤ 12)
         if (al > 12) return;
-        set(p, a, 0, lat, al <= 1 ? Royal.marble(X(a), Z(lat)) : ((a + lat) & 1) == 0 ? CALCITE : DARK2);
+        set(p, a, 0, lat, al <= 1 ? Royal.marble(wx(a, lat), wz(a, lat)) : ((a + lat) & 1) == 0 ? CALCITE : DARK2);
         boolean outerWall = al == 12 || (a == 52 && al >= 7), arcade = al == 6 && a < 52;
         int segment = Math.floorMod(a - 12, 6);
         for (int ly = 1; ly <= NH; ly++) {
@@ -227,7 +247,7 @@ public class GrandCathedral extends Feature {
         // 측랑 외쪽 경사 지붕
         if (al > 6) {
             int k = 12 - al;                                                          // 0 (바깥) .. 5 (안)
-            set(p, a, AH + 1 + k, lat, Palette.mintStairs(lat > 0 ? Direction.SOUTH : Direction.NORTH));
+            set(p, a, AH + 1 + k, lat, Palette.mintStairs(towardCenter(lat)));
             if (outerWall && segment == 0) {
                 set(p, a, AH + 1, lat, WHITE);
                 set(p, a, AH + 2, lat, END_ROD);
@@ -240,7 +260,7 @@ public class GrandCathedral extends Feature {
         // 신랑 맞배지붕
         if (al <= 7) {
             int k = 7 - al;
-            set(p, a, NH + 1 + k, lat, al == 0 ? MINT_BLOCK : Palette.mintStairs(lat > 0 ? Direction.SOUTH : Direction.NORTH));
+            set(p, a, NH + 1 + k, lat, al == 0 ? MINT_BLOCK : Palette.mintStairs(towardCenter(lat)));
             if (al == 0 && a % 4 == 0) set(p, a, NH + 9, lat, Royal.GOLD);
         }
     }
@@ -251,10 +271,10 @@ public class GrandCathedral extends Feature {
             for (int lat = -5; lat <= 5; lat++) {
                 int al = Math.abs(lat);
                 if (al <= 1) set(p, a, 1, lat, Royal.RED_CARPET);
-                else if (a % 2 == 0 && a <= 37) set(p, a, 1, lat, Royal.chair(Direction.WEST));
+                else if (a % 2 == 0 && a <= 37) set(p, a, 1, lat, Royal.chair(front));
             }
             if (a % 6 == 3) {
-                Royal.chandelier(p, X(a), b + NH, Z(0), 10);
+                Royal.chandelier(p, wx(a, 0), b + NH, wz(a, 0), 10);
                 for (int s = -1; s <= 1; s += 2) {
                     set(p, a, AH - 1, s * 9, Blocks.SOUL_LANTERN.defaultBlockState().setValue(LanternBlock.HANGING, true));
                     set(p, a, 1, s * 10, Deco.candles(3));
@@ -268,7 +288,7 @@ public class GrandCathedral extends Feature {
                 int al = Math.abs(lat);
                 int step = a >= 50 ? 2 : a >= 48 ? 1 : 0;
                 for (int ly = 1; ly <= step; ly++) set(p, a, ly, lat, ly == step && (a == 48 || a == 50) ?
-                        Blocks.POLISHED_DEEPSLATE_STAIRS.defaultBlockState().setValue(StairBlock.FACING, Direction.EAST) : DARK2);
+                        Blocks.POLISHED_DEEPSLATE_STAIRS.defaultBlockState().setValue(StairBlock.FACING, in) : DARK2);
                 if (step == 2 && al <= 1 && a <= 52) set(p, a, 3, lat, Royal.RED_CARPET);
             }
         }
@@ -276,11 +296,11 @@ public class GrandCathedral extends Feature {
             set(p, 54, 3, lat, Math.abs(lat) == 3 ? WHITE : Royal.GOLD);
             set(p, 54, 4, lat, Deco.candles(4));
         }
-        set(p, 51, 3, 0, Deco.lectern(Direction.WEST));
+        set(p, 51, 3, 0, Deco.lectern(front));
         for (int ly = 3; ly <= 14; ly++) set(p, 57, ly, 0, ly == 14 ? Royal.GOLD : WHITE);   // 금 십자가 기둥
         for (int lat = -2; lat <= 2; lat++) set(p, 57, 11, lat, Royal.GOLD);
         set(p, 57, 15, 0, END_ROD);
-        Royal.chandelier(p, X(46), b + NH, Z(0), 14);
+        Royal.chandelier(p, wx(46, 0), b + NH, wz(46, 0), 14);
         // 종 (양 탑 안)
         for (int s = -1; s <= 1; s += 2) {
             set(p, 5, 50, s * 12, Blocks.BELL.defaultBlockState().setValue(net.minecraft.world.level.block.BellBlock.ATTACHMENT,
@@ -291,7 +311,7 @@ public class GrandCathedral extends Feature {
 
     /** 정문 앞 성수 분수 (방해석 수반 + 금 + 빛) */
     private void holyFountain(Placer p, int b) {
-        int fx = X(-8), fz = Z(0);
+        int fx = wx(-8, 0), fz = wz(-8, 0);
         p.forColumns(fx - 7, fz - 7, fx + 7, fz + 7, (x, z) -> {
             double d = Math.hypot(x - fx, z - fz);
             if (d > 7.5) return;
