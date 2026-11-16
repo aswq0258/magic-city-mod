@@ -32,6 +32,8 @@ public final class Restore implements BuildLayout {
     private final Map<Long, List<Feature>> byChunk = new HashMap<>();
     private final List<ChunkPos> chunks = new ArrayList<>();
     private final String label;
+    /** true = 왕국 대륙 (계산식 지형), false = 다른 차원 (지형 생성기의 기본 지형 + 흙·풀 표면) */
+    private boolean formula = true;
 
     private Restore(String label) {
         this.label = label;
@@ -101,6 +103,25 @@ public final class Restore implements BuildLayout {
         return new Restore("드워프 광산왕국").add(DwarfHold.CX - 83, DwarfHold.CZ - 225, DwarfHold.CX + 189, DwarfHold.CZ - 17, f - 30, f + 50).done();
     }
 
+    /**
+     * 왕성도시 (원형 구시가지 + 신시가지 + 외곽 생활권). 높이 범위는 중심에 가까울수록 높게
+     * (왕성 첨탑 지면+156, 대성당·떠다니는 섬 +110, 신시가지 +62, 하수도 지면-30).
+     */
+    public static Restore city(int cx, int cz, int base, boolean kingdom) {
+        int e = io.github.aswq0258.magiccity.city.CityLayout.EXP + 2;
+        Restore r = new Restore("왕성도시 (구시가지 + 신시가지)");
+        r.formula = kingdom;
+        r.add(cx - e, cz - e, cx + e, cz + e, base - 14, base + 62);
+        r.add(cx - 292, cz - 292, cx + 292, cz + 292, base - 32, base + 112);
+        r.add(cx - 112, cz - 112, cx + 112, cz + 112, base - 32, base + 172);
+        return r.done();
+    }
+
+    /** 왕국 대륙에 지은 것 전부 (촌락·길 거점·세계수·드워프·옛 왕도) — 왕성도시는 따로 */
+    public static List<Restore> allSites() {
+        return List.of(hamlets(), roads(), worldTree(), dwarf(), oldCapital());
+    }
+
     public static Restore oldCapital() {
         OldCapital oc = new OldCapital(0);
         int r = oc.radius() + 2;
@@ -118,6 +139,10 @@ public final class Restore implements BuildLayout {
             y1 = Math.max(y1, a[5]);
         }
         if (y0 == Integer.MAX_VALUE) return;
+        if (!formula) {
+            restoreGeneric(p, x, z, y0, y1);
+            return;
+        }
         KingdomTerrain.Column c = KingdomTerrain.column(x, z);
         y1 = Math.max(y1, c.h() + 6);
         y0 = Math.min(y0, c.h() - 4);
@@ -129,6 +154,39 @@ public final class Restore implements BuildLayout {
         for (int y = y0; y <= y1; y++) {
             BlockState s = KingdomChunkGenerator.blockAt(c, x, y, z);
             p.set(x, y, z, s == null ? Blocks.AIR.defaultBlockState() : s);
+        }
+    }
+
+    /**
+     * 왕국 대륙이 아닌 곳: 지형 생성기의 기본 지형(돌·물·공기)을 다시 채우고, 맨 위를 흙·풀(물가는 모래)로 덮음.
+     * 원래 바이옴 표면(눈·모래사막 등)과 나무는 되살아나지 않음.
+     */
+    private void restoreGeneric(Placer p, int x, int z, int y0, int y1) {
+        ServerLevel level = p.level();
+        var gen = level.getChunkSource().getGenerator();
+        var rs = level.getChunkSource().randomState();
+        net.minecraft.world.level.NoiseColumn col = gen.getBaseColumn(x, z, level, rs);
+        if (p.pass() == Placer.Pass.SOLID) {
+            int top = level.getHeight(net.minecraft.world.level.levelgen.Heightmap.Types.WORLD_SURFACE, x, z);
+            y1 = Math.max(y1, Math.min(top, y1 + 40));
+        }
+        int surface = Integer.MIN_VALUE;
+        for (int y = Math.min(y1 + 40, level.getMaxBuildHeight() - 1); y >= y0; y--) {
+            BlockState s = col.getBlock(y);
+            if (!s.isAir() && s.getFluidState().isEmpty()) {
+                surface = y;
+                break;
+            }
+        }
+        int sea = gen.getSeaLevel();
+        for (int y = y0; y <= y1; y++) {
+            BlockState s = col.getBlock(y);
+            if (surface != Integer.MIN_VALUE && !s.isAir() && s.getFluidState().isEmpty() && y > surface - 4) {
+                boolean wet = surface < sea;
+                s = y == surface ? (wet || surface <= sea + 1 ? Blocks.SAND.defaultBlockState() : Blocks.GRASS_BLOCK.defaultBlockState())
+                        : (wet ? Blocks.SAND.defaultBlockState() : Blocks.DIRT.defaultBlockState());
+            }
+            p.set(x, y, z, s);
         }
     }
 
