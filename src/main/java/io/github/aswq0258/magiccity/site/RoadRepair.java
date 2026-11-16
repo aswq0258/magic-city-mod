@@ -89,6 +89,17 @@ public final class RoadRepair implements BuildLayout {
             TreeClearer.clearColumn(acc, x, z, y0, top, edge[0], offset);
             top = p.level().getHeight(Heightmap.Types.WORLD_SURFACE, x, z);
         }
+        if (!near && ri >= 0 && edge[0] <= 3) {                                        // 먼 길: 길과 길가 장식만 다시 깖 (새 지선·군용로 포함)
+            for (int y = c.h() - 3; y <= c.h() + 4; y++) {
+                BlockState s = KingdomChunkGenerator.blockAt(c, x, y, z);
+                p.set(x, y, z, s == null ? Blocks.AIR.defaultBlockState() : s);
+            }
+            if (c.water() != Integer.MIN_VALUE && c.water() >= c.h()) for (int y = c.h() + 5; y <= c.water() + 4; y++) {
+                BlockState s = KingdomChunkGenerator.blockAt(c, x, y, z);
+                p.set(x, y, z, s == null ? Blocks.AIR.defaultBlockState() : s);
+            }
+            return;
+        }
         if (near && (ri >= 0 && edge[0] <= BAND || river)) {                           // 띠 전체를 지형째 다시 깖
             int y1 = Math.max(c.h() + 8, Math.min(top, c.h() + 48));
             for (int y = c.h() - 8; y <= y1; y++) {

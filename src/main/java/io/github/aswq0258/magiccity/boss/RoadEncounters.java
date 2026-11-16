@@ -49,10 +49,14 @@ public final class RoadEncounters {
             if (KingdomRoads.excluded(p.getX(), p.getZ())) ri = -1;
             Integer prev = lastRegion.put(p.getUUID(), ri);
             if (ri >= 0 && (prev == null || prev != ri)) {
-                RoadTheme t = RoadTheme.THEMES[ri];
-                p.displayClientMessage(Component.literal("§e" + KingdomRoads.ROADS[ri].name() + " §7— §f" + t.region() + " §8(" + t.desc() + ")"), true);
+                if (ri < KingdomRoads.REGIONS) {
+                    RoadTheme t = RoadTheme.THEMES[ri];
+                    p.displayClientMessage(Component.literal("§e" + KingdomRoads.ROADS[ri].name() + " §7— §f" + t.region() + " §8(" + t.desc() + ")"), true);
+                } else {
+                    p.displayClientMessage(Component.literal("§e" + KingdomRoads.ROADS[ri].name()), true);
+                }
             }
-            if (ri < 0 || p.isCreative() || level.getDifficulty() == Difficulty.PEACEFUL) continue;
+            if (ri < 0 || ri >= KingdomRoads.REGIONS || p.isCreative() || level.getDifficulty() == Difficulty.PEACEFUL) continue;
             if (tick % 200 != 0 || level.random.nextFloat() > 0.45F) continue;
             if (nearSafe(p)) continue;
             int count = level.getEntitiesOfClass(Mob.class, new AABB(p.blockPosition()).inflate(64), m -> m.getTags().contains(TAG)).size();

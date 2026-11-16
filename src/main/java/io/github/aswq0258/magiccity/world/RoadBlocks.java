@@ -41,6 +41,7 @@ final class RoadBlocks {
             if (wet) {                                                              // 다리
                 int deck = c.water() + 1;
                 boolean edge = c.roadEdge() > -0.9;
+                if (road.type() == 3 && k % 3 == 0) return y == deck + 1 ? KEEP_AIR : null;   // 무너진 다리 (군데군데 빠진 판자)
                 if (y == deck) return road.type() == 1 ? (edge ? b(Blocks.STONE_BRICKS) : b(Blocks.POLISHED_ANDESITE)) : b(Blocks.SPRUCE_PLANKS);
                 if (y == deck + 1) return edge ? (road.type() == 1 ? b(Blocks.STONE_BRICK_WALL)
                         : Blocks.STRIPPED_SPRUCE_LOG.defaultBlockState().setValue(RotatedPillarBlock.AXIS, Direction.Axis.Y)) : KEEP_AIR;
@@ -87,6 +88,7 @@ final class RoadBlocks {
         }
         if (dy != 1 || k % 41 != 0) return null;
         int m = (k / 41) % 4;
+        if (idx >= KingdomRoads.REGIONS) idx = type == 3 ? 9 : type == 1 ? 8 : 5;      // 지선·군용로: 비슷한 길의 장식
         return switch (idx) {
             case 0 -> m == 0 ? b(Blocks.COBBLESTONE) : m == 1 ? b(Blocks.PACKED_ICE) : b(Blocks.SNOW_BLOCK);                    // 설산 원정길
             case 1 -> m == 0 ? b(Blocks.COBWEB) : m == 1 ? b(Blocks.RED_MUSHROOM) : m == 2 ? b(Blocks.BROWN_MUSHROOM) : b(Blocks.MOSS_CARPET); // 거미 숲길

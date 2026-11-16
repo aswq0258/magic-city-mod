@@ -40,7 +40,7 @@ public final class RoadSites implements BuildLayout {
     public static synchronized List<Site> sites() {
         if (sites != null) return sites;
         List<Site> out = new ArrayList<>();
-        for (int i = 0; i < KingdomRoads.ROADS.length; i++) {
+        for (int i = 0; i < KingdomRoads.REGIONS; i++) {
             KingdomRoads.Road r = KingdomRoads.ROADS[i];
             boolean longRoad = r.length() > 3000;
             Object[][] plan = longRoad
@@ -94,6 +94,7 @@ public final class RoadSites implements BuildLayout {
         }
         if (h1 - h0 > 14) return false;
         for (Site s : placed) if (Math.abs(s.x - x) < 40 && Math.abs(s.z - z) < 40) return false;
+        for (Hamlets.Spot v : Hamlets.spots()) if (Math.abs(v.x() - x) < v.half() + 30 && Math.abs(v.z() - z) < v.half() + 30) return false;
         return true;
     }
 

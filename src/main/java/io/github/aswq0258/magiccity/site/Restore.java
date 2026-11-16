@@ -72,7 +72,7 @@ public final class Restore implements BuildLayout {
 
     public static Restore hamlets() {
         Restore r = new Restore("촌락 전체");
-        for (Hamlets.Spot s : Hamlets.spots()) r.add(s.x() - 35, s.z() - 35, s.x() + 35, s.z() + 35, s.y() - 12, s.y() + 24);
+        for (Hamlets.Spot s : Hamlets.spots()) r.add(s.x() - s.half() - 40, s.z() - s.half() - 40, s.x() + s.half() + 40, s.z() + s.half() + 40, s.y() - 14, s.y() + 40);
         return r.done();
     }
 
@@ -80,7 +80,7 @@ public final class Restore implements BuildLayout {
         Hamlets.Spot best = null;
         for (Hamlets.Spot s : Hamlets.spots()) if (best == null || Math.hypot(s.x() - px, s.z() - pz) < Math.hypot(best.x() - px, best.z() - pz)) best = s;
         Restore r = new Restore(best == null ? "촌락" : best.name());
-        if (best != null) r.add(best.x() - 35, best.z() - 35, best.x() + 35, best.z() + 35, best.y() - 12, best.y() + 24);
+        if (best != null) r.add(best.x() - best.half() - 40, best.z() - best.half() - 40, best.x() + best.half() + 40, best.z() + best.half() + 40, best.y() - 14, best.y() + 40);
         return r.done();
     }
 

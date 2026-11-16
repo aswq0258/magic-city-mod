@@ -111,7 +111,7 @@ public final class MagicCityCommand {
                                                 com.mojang.brigadier.arguments.IntegerArgumentType.getInteger(ctx, "z")})))))
                 .then(Commands.literal("roads").executes(ctx -> {
                     StringBuilder sb = new StringBuilder("§b[마법 도시] 길(지역) 과 필드보스:");
-                    for (int i = 0; i < io.github.aswq0258.magiccity.world.KingdomRoads.ROADS.length; i++) {
+                    for (int i = 0; i < io.github.aswq0258.magiccity.world.KingdomRoads.REGIONS; i++) {
                         var r = io.github.aswq0258.magiccity.world.KingdomRoads.ROADS[i];
                         sb.append("\n§e").append(r.name()).append(" §7(").append(Math.round(r.length())).append("블록) §f")
                                 .append(io.github.aswq0258.magiccity.site.RoadTheme.THEMES[i].region());
