@@ -208,6 +208,7 @@ public final class SkyBoss {
                 new ItemStack(Items.DIAMOND, 8), new ItemStack(Items.GOLDEN_APPLE, 3), new ItemStack(Items.EXPERIENCE_BOTTLE, 24),
                 new ItemStack(Items.WIND_CHARGE, 32)};
         for (ItemStack s : loot) level.addFreshEntity(new ItemEntity(level, e.getX(), e.getY() + 1, e.getZ(), s));
+        Story.credit(level, e.blockPosition(), 9);
     }
 
     private static void clear() {

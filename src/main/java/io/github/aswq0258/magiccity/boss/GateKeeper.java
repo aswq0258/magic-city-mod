@@ -138,7 +138,8 @@ public final class GateKeeper {
             clearBar();
             bossId = null;
             boolean inArena = near.stream().anyMatch(p -> p.distanceToSqr(Vec3.atCenterOf(center)) < ARENA_R * ARENA_R && !p.isCreative());
-            if (inArena) spawnBoss(level, center);
+            List<ServerPlayer> trig = near.stream().filter(p -> p.distanceToSqr(Vec3.atCenterOf(center)) < ARENA_R * ARENA_R && !p.isCreative()).toList();
+            if (inArena && Story.mayWake(level, trig, 12)) spawnBoss(level, center);
             return;
         }
         // 체력바
@@ -284,6 +285,7 @@ public final class GateKeeper {
         ItemStack[] loot = {new ItemStack(Items.NETHERITE_INGOT, 2), new ItemStack(Items.DIAMOND, 8),
                 new ItemStack(Items.ENCHANTED_GOLDEN_APPLE, 1), new ItemStack(Items.WITHER_SKELETON_SKULL, 1), new ItemStack(Items.EXPERIENCE_BOTTLE, 32)};
         for (ItemStack s : loot) level.addFreshEntity(new ItemEntity(level, e.getX(), e.getY() + 1, e.getZ(), s));
+        Story.credit(level, e.blockPosition(), 12);
         broadcast(level, "§6[옛 왕도] 심연의 문지기가 쓰러졌다. 봉인된 마계문이 열려, 네더로 가는 길이 활성화되었다!");
     }
 

@@ -12,6 +12,7 @@ public final class Protected {
         if (DwarfHold.near(x, z)) return true;
         if (PortCity.near(x, z)) return true;
         if (DragonLair.near(x, z)) return true;
+        if (FrostArena.near(x, z)) return true;
         if (SkyRuins.near(x, z)) return true;
         if (CursedLands.protectedAt(x, z)) return true;
         if (BorderCity.near(x, z)) return true;

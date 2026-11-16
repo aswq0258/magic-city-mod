@@ -208,6 +208,7 @@ public final class CursedBoss {
         ItemStack[] loot = {new ItemStack(Items.TOTEM_OF_UNDYING), new ItemStack(Items.EMERALD, 24), new ItemStack(Items.DIAMOND, 6),
                 new ItemStack(Items.GOLDEN_APPLE, 2), new ItemStack(Items.EXPERIENCE_BOTTLE, 24), new ItemStack(Items.ECHO_SHARD, 4)};
         for (ItemStack s : loot) level.addFreshEntity(new ItemEntity(level, e.getX(), e.getY() + 1, e.getZ(), s));
+        Story.credit(level, e.blockPosition(), 2);
     }
 
     private static void clear() {

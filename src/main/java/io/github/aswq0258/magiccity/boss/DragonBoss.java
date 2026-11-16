@@ -75,7 +75,8 @@ public final class DragonBoss {
         if (boss == null) {
             clear();
             if (level.getGameTime() < deadUntil || level.getDifficulty() == Difficulty.PEACEFUL) return;
-            if (near.stream().anyMatch(p -> !p.isCreative() && inside(p, c, TRIGGER_R))) spawn(level, c);
+            List<ServerPlayer> trig = near.stream().filter(p -> !p.isCreative() && inside(p, c, TRIGGER_R)).toList();
+            if (!trig.isEmpty() && Story.mayWake(level, trig, 11)) spawn(level, c);
             return;
         }
         fight(level, boss, near, c);
@@ -226,6 +227,7 @@ public final class DragonBoss {
                 new ItemStack(Items.NETHERITE_SCRAP, 4), new ItemStack(Items.ENCHANTED_GOLDEN_APPLE), new ItemStack(Items.EXPERIENCE_BOTTLE, 32),
                 new ItemStack(Items.GOLD_INGOT, 32)};
         for (ItemStack s : loot) level.addFreshEntity(new ItemEntity(level, e.getX(), e.getY() + 1, e.getZ(), s));
+        Story.credit(level, e.blockPosition(), 11);
     }
 
     private static void clear() {

@@ -49,6 +49,8 @@ import java.util.List;
  * /magiccity goto ruins      — 발굴 구덩이 북서쪽 경사로 위로 이동
  * /magiccity site rootcave   — 세계수 뿌리 던전 (줄기 속 입구·뿌리 회랑·기생충의 둥지 보스 방) 건설. site worldtree 다음에
  * /magiccity goto rootcave   — 세계수 밑동의 던전 입구 앞으로 이동 / goto parasite — 보스 방
+ * /magiccity site frost      — 서리 결투장 (엘프 관문 북동쪽 길가, 4장 보스 서리 거인 요툰) 건설 / goto frost / remove frost
+ * /magiccity story           — 메인 스토리 12챕터 진행도·봉인·다음 목적지 (story give <장> 시험용 완료 표시, story reset 초기화)
  * /magiccity site elfgate    — 엘프 산맥 관문 은빛 협문 (협곡 성벽·문루·첨탑·엘프 안뜰) 건설
  * /magiccity goto elfgate    — 관문 아치 아래로 이동
  * /magiccity site dwarf      — 드워프 광산왕국 (산의 문·대전당·옥좌실·대장간·광산) 건설
@@ -90,6 +92,7 @@ public final class MagicCityCommand {
                         .then(Commands.literal("ruins").executes(MagicCityCommand::ruins))
                         .then(Commands.literal("elfgate").executes(MagicCityCommand::elfGate))
                         .then(Commands.literal("rootcave").executes(MagicCityCommand::rootCave))
+                        .then(Commands.literal("frost").executes(MagicCityCommand::frostArena))
                         .then(Commands.literal("dwarf").executes(MagicCityCommand::dwarf))
                         .then(Commands.literal("hamlets").executes(MagicCityCommand::hamlets))
                         .then(Commands.literal("hamlet").executes(MagicCityCommand::oneHamlet)))
@@ -121,6 +124,7 @@ public final class MagicCityCommand {
                         .then(Commands.literal("ruins").executes(ctx -> remove(ctx, io.github.aswq0258.magiccity.site.Restore.ruins())))
                         .then(Commands.literal("elfgate").executes(ctx -> remove(ctx, io.github.aswq0258.magiccity.site.Restore.elfGate())))
                         .then(Commands.literal("rootcave").executes(ctx -> remove(ctx, io.github.aswq0258.magiccity.site.Restore.rootDungeon())))
+                        .then(Commands.literal("frost").executes(ctx -> remove(ctx, io.github.aswq0258.magiccity.site.Restore.frostArena())))
                         .then(Commands.literal("dwarf").executes(ctx -> remove(ctx, io.github.aswq0258.magiccity.site.Restore.dwarf())))
                         .then(Commands.literal("oldcapital").executes(ctx -> remove(ctx, io.github.aswq0258.magiccity.site.Restore.oldCapital())))
                         .then(Commands.literal("city").executes(ctx -> removeCity(ctx, false)))
@@ -151,6 +155,14 @@ public final class MagicCityCommand {
                     if (k == null) return 0;
                     ctx.getSource().getPlayerOrException().teleportTo(k, io.github.aswq0258.magiccity.site.RootDungeon.OX + 0.5,
                             io.github.aswq0258.magiccity.site.RootDungeon.B + 1, io.github.aswq0258.magiccity.site.RootDungeon.OZ + 38.5, 180F, 0F);
+                    return 1;
+                })))
+                .then(Commands.literal("goto").then(Commands.literal("frost").executes(ctx -> {
+                    ServerLevel k = ctx.getSource().getServer().getLevel(io.github.aswq0258.magiccity.world.ModWorldgen.KINGDOM);
+                    if (k == null) return 0;
+                    ctx.getSource().getPlayerOrException().teleportTo(k, io.github.aswq0258.magiccity.site.FrostArena.RX + 0.5,
+                            io.github.aswq0258.magiccity.world.KingdomTerrain.column(io.github.aswq0258.magiccity.site.FrostArena.RX, io.github.aswq0258.magiccity.site.FrostArena.RZ).h() + 1,
+                            io.github.aswq0258.magiccity.site.FrostArena.RZ + 0.5, 0F, 0F);
                     return 1;
                 })))
                 .then(Commands.literal("goto").then(Commands.literal("parasite").executes(ctx -> {
@@ -269,6 +281,25 @@ public final class MagicCityCommand {
                     ctx.getSource().sendSuccess(() -> Component.literal(CityBuildManager.status()), false);
                     return 1;
                 }))
+                .then(Commands.literal("story").executes(ctx -> {
+                            var pl = ctx.getSource().getPlayerOrException();
+                            ctx.getSource().sendSuccess(() -> io.github.aswq0258.magiccity.boss.Story.describe(pl), false);
+                            return 1;
+                        })
+                        .then(Commands.literal("give").then(Commands.argument("chapter", com.mojang.brigadier.arguments.IntegerArgumentType.integer(1, 12)).executes(ctx -> {
+                            var pl = ctx.getSource().getPlayerOrException();
+                            int n = com.mojang.brigadier.arguments.IntegerArgumentType.getInteger(ctx, "chapter");
+                            io.github.aswq0258.magiccity.boss.Story.set(pl, n, true);
+                            var ch = io.github.aswq0258.magiccity.boss.Story.CHAPTERS.get(n - 1);
+                            if (ch.seal() != null) pl.getInventory().placeItemBackInInventory(io.github.aswq0258.magiccity.boss.Story.sealItem(ch));
+                            ctx.getSource().sendSuccess(() -> Component.literal("§e[마법 도시] " + n + "장을 완료로 표시했습니다 (시험용)."), true);
+                            return 1;
+                        })))
+                        .then(Commands.literal("reset").executes(ctx -> {
+                            io.github.aswq0258.magiccity.boss.Story.reset(ctx.getSource().getPlayerOrException());
+                            ctx.getSource().sendSuccess(() -> Component.literal("§e[마법 도시] 내 스토리 진행도를 처음으로 되돌렸습니다."), true);
+                            return 1;
+                        })))
                 .then(Commands.literal("cancel").executes(ctx -> {
                     boolean was = CityBuildManager.cancel();
                     ctx.getSource().sendSuccess(() -> Component.literal(
@@ -486,6 +517,25 @@ public final class MagicCityCommand {
         CityBuildManager.start(job);
         src.sendSuccess(() -> Component.literal(String.format("§a[마법 도시] 세계수 성역 건설 시작! 중심 (%d, %d), 건물 %d개, 청크 %d개. "
                 + "/magiccity goto worldtree 로 갈 수 있습니다.", site.cx(), site.cz(), site.featureCount(), job.chunkCount())), true);
+        return 1;
+    }
+
+    /** 서리 결투장 건설 */
+    private static int frostArena(CommandContext<CommandSourceStack> ctx) {
+        CommandSourceStack src = ctx.getSource();
+        if (CityBuildManager.isRunning()) {
+            src.sendFailure(Component.literal("[마법 도시] 이미 건설 중입니다. /magiccity status 로 확인하세요."));
+            return 0;
+        }
+        ServerLevel k = src.getServer().getLevel(io.github.aswq0258.magiccity.world.ModWorldgen.KINGDOM);
+        if (k == null) {
+            src.sendFailure(Component.literal("[마법 도시] 왕국 대륙 차원을 찾을 수 없습니다."));
+            return 0;
+        }
+        CityBuildJob job = new CityBuildJob(k, new io.github.aswq0258.magiccity.site.FrostArena(k.getSeed() ^ 0xF205L));
+        CityBuildManager.start(job);
+        src.sendSuccess(() -> Component.literal(String.format("§b[마법 도시] 서리 결투장 건설 시작! 중심 (%d, %d), 청크 %d개. /magiccity goto frost 로 길 위 입구에 갈 수 있습니다.",
+                io.github.aswq0258.magiccity.site.FrostArena.AX, io.github.aswq0258.magiccity.site.FrostArena.AZ, job.chunkCount())), true);
         return 1;
     }
 

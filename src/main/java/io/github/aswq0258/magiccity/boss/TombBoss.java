@@ -213,6 +213,7 @@ public final class TombBoss {
         ItemStack[] loot = {new ItemStack(Items.ENCHANTED_GOLDEN_APPLE), new ItemStack(Items.GOLD_BLOCK, 8), new ItemStack(Items.DIAMOND, 6),
                 new ItemStack(Items.EMERALD, 16), new ItemStack(Items.SNIFFER_EGG), new ItemStack(Items.EXPERIENCE_BOTTLE, 24)};
         for (ItemStack s : loot) level.addFreshEntity(new ItemEntity(level, e.getX(), e.getY() + 1, e.getZ(), s));
+        Story.credit(level, e.blockPosition(), 7);
     }
 
     private static void clear() {

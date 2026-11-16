@@ -1356,7 +1356,8 @@ public final class PortCity implements BuildLayout {
             p.set(cx, FLOOR + 2, cz, Blocks.CONDUIT.defaultBlockState());
         }
 
-        @Override public boolean needsSpawn() { return true; }
+        /** 보스(심해의 수호자)는 이제 boss.NewBosses.DeepGuardian 이 다가가면 깨움 */
+        @Override public boolean needsSpawn() { return false; }
 
         @Override
         public long anchorChunk() {

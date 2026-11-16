@@ -129,12 +129,21 @@ public final class Restore implements BuildLayout {
 
     /** 왕국 대륙에 지은 것 전부 (촌락·길 거점·세계수·드워프·옛 왕도·항구도시) — 왕성도시는 따로 */
     public static List<Restore> allSites() {
-        return List.of(hamlets(), roads(), worldTree(), rootDungeon(), dwarf(), oldCapital(), port(), dragon(), sky(), cursed(), border(), ruins(), elfGate());
+        return List.of(hamlets(), roads(), worldTree(), rootDungeon(), frostArena(), dwarf(), oldCapital(), port(), dragon(), sky(), cursed(), border(), ruins(), elfGate());
     }
 
     /** 세계수 뿌리 던전 (지하만 — 줄기 속 입구는 세계수 성역 쪽) */
     public static Restore rootDungeon() {
         return new Restore("세계수 뿌리 던전").add(RootDungeon.OX - 80, RootDungeon.OZ - 80, RootDungeon.OX + 80, RootDungeon.OZ + 80, RootDungeon.F - 4, RootDungeon.B - 2).done();
+    }
+
+    /** 서리 결투장 */
+    public static Restore frostArena() {
+        int r = FrostArena.R + 8;
+        return new Restore("서리 결투장")
+                .add(Math.min(FrostArena.AX - r, FrostArena.RX - 6), Math.min(FrostArena.AZ - r, FrostArena.RZ - 6),
+                        Math.max(FrostArena.AX + r, FrostArena.RX + 6), Math.max(FrostArena.AZ + r, FrostArena.RZ + 6), FrostArena.AY - 12, FrostArena.AY + 40)
+                .done();
     }
 
     /** 엘프 산맥 관문 */
