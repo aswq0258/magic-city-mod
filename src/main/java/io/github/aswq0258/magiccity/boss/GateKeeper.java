@@ -139,7 +139,7 @@ public final class GateKeeper {
             bossId = null;
             boolean inArena = near.stream().anyMatch(p -> p.distanceToSqr(Vec3.atCenterOf(center)) < ARENA_R * ARENA_R && !p.isCreative());
             List<ServerPlayer> trig = near.stream().filter(p -> p.distanceToSqr(Vec3.atCenterOf(center)) < ARENA_R * ARENA_R && !p.isCreative()).toList();
-            if (inArena && Story.mayWake(level, trig, 12)) spawnBoss(level, center);
+            if (inArena && Story.mayWake(level, trig, 12)) spawnBoss(level, center, trig);
             return;
         }
         // 체력바
@@ -162,7 +162,7 @@ public final class GateKeeper {
         abilities(level, boss, near);
     }
 
-    private static void spawnBoss(ServerLevel level, BlockPos center) {
+    private static void spawnBoss(ServerLevel level, BlockPos center, List<ServerPlayer> party) {
         WitherSkeleton w = EntityType.WITHER_SKELETON.spawn(level, center.offset(0, 1, -8), MobSpawnType.EVENT);
         if (w == null) return;
         w.addTag(TAG);
@@ -176,6 +176,7 @@ public final class GateKeeper {
         w.getAttribute(Attributes.KNOCKBACK_RESISTANCE).setBaseValue(1.0);
         w.getAttribute(Attributes.MOVEMENT_SPEED).setBaseValue(0.3);
         w.getAttribute(Attributes.FOLLOW_RANGE).setBaseValue(48);
+        Progression.apply(w, 12, party);
         w.setHealth(w.getMaxHealth());
         w.setItemSlot(EquipmentSlot.MAINHAND, new ItemStack(Items.NETHERITE_SWORD));
         w.setItemSlot(EquipmentSlot.HEAD, new ItemStack(Items.NETHERITE_HELMET));

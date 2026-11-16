@@ -29,7 +29,9 @@ import java.util.UUID;
  * 메인 스토리 12챕터 진행 (초안).
  *  - 챕터 보스를 처음 쓰러뜨릴 때 64칸 안에 있던 플레이어 모두에게 그 챕터가 "완료"로 기록됨 (서버 저장)
  *  - 2·3·5·6·9장 보스 = 다섯 봉인 (숲·생명·대지·바다·하늘), 11장 = 왕관 봉인
- *  - 입장 조건: 11장 고룡은 봉인 5개, 12장 마계문은 왕관 봉인(11장 완료)이 있어야 깨어남. 나머지는 자유 순서
+ *  - 입장 조건: 1장(서장)은 처음에 반드시 진행. 2~10장은 서장을 끝낸 뒤 자유 순서.
+ *    11장 고룡은 1~10장 모두 완료 + 봉인 5개, 12장 마계문은 왕관 봉인(11장 완료)이 있어야 깨어남
+ *  - 진행도(처음 완료한 챕터 수)로 등급·레벨 상한·작업대 크기가 정해짐 → {@link Progression}, {@link ProgressionRules}
  *  - /magiccity story 로 진행도·다음 목적지 확인
  */
 public final class Story {
@@ -118,14 +120,17 @@ public final class Story {
         for (ServerPlayer p : level.players()) {
             if (p.isSpectator() || p.blockPosition().distSqr(at) > 64 * 64) continue;
             boolean first = !cleared(p, chapter);
+            if (!first) continue;                                                       // 반복 처치는 진행도에 다시 반영하지 않음
+            int before = Progression.completed(p);
             set(p, chapter, true);
-            if (!first) continue;
+            int after = before + 1;
             title(p, "§6" + chapter + "장 완료", "§f" + ch.title());
             p.playNotifySound(SoundEvents.UI_TOAST_CHALLENGE_COMPLETE, SoundSource.PLAYERS, 1F, 1F);
             if (ch.seal() != null) {
                 p.getInventory().placeItemBackInInventory(sealItem(ch));
                 p.sendSystemMessage(Component.literal("§e[봉인] " + ch.seal() + "(을)를 되찾았다! §7(" + seals(p) + "/5)"));
             }
+            progressMessages(p, before, after);
             Chapter next = nextFor(p);
             if (next != null) p.sendSystemMessage(Component.literal("§7다음 목적지: §f" + next.n() + "장 " + next.title() + " §7— " + next.place() + " (" + next.x() + ", " + next.z() + ")"));
         }
@@ -145,14 +150,34 @@ public final class Story {
     }
 
     public static boolean requirementMet(ServerPlayer p, int chapter) {
-        if (chapter == 11) return seals(p) >= 5;
+        int m = mask(p);
+        if (chapter == 1) return true;
+        if (chapter <= 10) return ProgressionRules.freeChapterOpen(m);
+        if (chapter == 11) return ProgressionRules.chapter11Open(m, seals(p));
         if (chapter == 12) return cleared(p, 11);
         return true;
     }
 
+    /** 1~10장 중 완료한 수 */
+    public static int clearedMain(ServerPlayer p) {
+        int n = 0;
+        for (int c = 1; c <= 10; c++) if (cleared(p, c)) n++;
+        return n;
+    }
+
     private static String requirementText(ServerPlayer p, int chapter) {
-        if (chapter == 11) return "§6고룡은 다섯 봉인을 가진 자에게만 깨어난다 §7(" + seals(p) + "/5)";
+        if (chapter <= 10) return "§e먼저 서장을 끝내야 한다 §7(1장 — 왕성도시 지하 하수도 납골당)";
+        if (chapter == 11) return "§6고룡은 모든 시련을 마치고 다섯 봉인을 가진 자에게만 깨어난다 §7(1~10장 " + clearedMain(p) + "/10, 봉인 " + seals(p) + "/5)";
         return "§5마계문을 닫으려면 왕관 봉인이 필요하다 §7(11장 고룡 이그나르)";
+    }
+
+    /** 처음 완료로 진행도가 올랐을 때: 등급·레벨 상한·작업대 해금 알림 */
+    private static void progressMessages(ServerPlayer p, int before, int after) {
+        int g0 = ProgressionRules.grade(before), g1 = ProgressionRules.grade(after);
+        if (g1 > g0) p.sendSystemMessage(Component.literal("§b[성장] 진행 단계 " + g1 + "급 — 레벨 상한 Lv." + ProgressionRules.levelCap(after)
+                + " §7(다음 챕터 보스는 " + g1 + "급으로 맞섭니다)"));
+        int w0 = ProgressionRules.craftGrid(before), w1 = ProgressionRules.craftGrid(after);
+        if (w1 > w0) p.sendSystemMessage(Component.literal("§b[성장] " + w1 + "×" + w1 + " 작업대 제작법이 해금되었다!"));
     }
 
     public static ItemStack sealItem(Chapter ch) {
@@ -178,7 +203,11 @@ public final class Story {
 
     /** /magiccity story 출력 */
     public static Component describe(ServerPlayer p) {
+        int done0 = Progression.completed(p);
         StringBuilder sb = new StringBuilder("§6§l[마법 왕국 대륙 — 메인 스토리]§r §7봉인 " + seals(p) + "/5");
+        sb.append("\n§b진행 ").append(done0).append("/12장 · ").append(ProgressionRules.grade(done0)).append("급 · 레벨 상한 Lv.")
+                .append(ProgressionRules.levelCap(done0)).append(" · 작업대 ").append(ProgressionRules.craftGrid(done0)).append("×")
+                .append(ProgressionRules.craftGrid(done0));
         for (Chapter c : CHAPTERS) {
             boolean done = cleared(p, c.n());
             boolean open = requirementMet(p, c.n());

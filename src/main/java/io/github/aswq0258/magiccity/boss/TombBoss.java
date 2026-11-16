@@ -75,7 +75,8 @@ public final class TombBoss {
         if (boss == null) {
             clear();
             if (level.getGameTime() < deadUntil || level.getDifficulty() == Difficulty.PEACEFUL) return;
-            if (near.stream().anyMatch(p -> !p.isCreative() && inside(p, c, TRIGGER_R))) spawn(level, c);
+            List<ServerPlayer> trig = near.stream().filter(p -> !p.isCreative() && inside(p, c, TRIGGER_R)).toList();
+            if (!trig.isEmpty() && Story.mayWake(level, trig, 7)) spawn(level, c, trig);
             return;
         }
         fight(level, boss, near, c);
@@ -95,7 +96,7 @@ public final class TombBoss {
         if (i != null) i.setBaseValue(v);
     }
 
-    private static void spawn(ServerLevel level, Vec3 c) {
+    private static void spawn(ServerLevel level, Vec3 c, List<ServerPlayer> party) {
         BlockPos at = BlockPos.containing(c.x, c.y + 1, c.z);
         Mob m = EntityType.WITHER_SKELETON.spawn(level, at, MobSpawnType.EVENT);
         if (m == null) return;
@@ -110,10 +111,11 @@ public final class TombBoss {
         attr(m, Attributes.KNOCKBACK_RESISTANCE, 1.0);
         attr(m, Attributes.FOLLOW_RANGE, 48);
         attr(m, Attributes.STEP_HEIGHT, 3.0);
+        int grade = Progression.apply(m, 7, party);
         m.setHealth(m.getMaxHealth());
         m.addEffect(new MobEffectInstance(MobEffects.FIRE_RESISTANCE, -1, 0, false, false));
         id = m.getUUID();
-        bar = new ServerBossEvent(Component.literal(NAME), BossEvent.BossBarColor.YELLOW, BossEvent.BossBarOverlay.NOTCHED_20);
+        bar = new ServerBossEvent(Component.literal(NAME + " §7[" + grade + "급]"), BossEvent.BossBarColor.YELLOW, BossEvent.BossBarOverlay.NOTCHED_20);
         s66 = s33 = enraged = false;
         empty = 0;
         m.setItemSlot(net.minecraft.world.entity.EquipmentSlot.HEAD, new ItemStack(Items.GOLDEN_HELMET));
@@ -178,7 +180,7 @@ public final class TombBoss {
         }
         if (hp <= 0.33F && !s33) {
             s33 = true;
-            minions(level, boss);
+            if (ProgressionRules.secondSummon(Progression.gradeOf(boss))) minions(level, boss);
         }
         if (hp <= 0.25F && !enraged) {
             enraged = true;

@@ -51,7 +51,7 @@ import java.util.List;
  * /magiccity goto rootcave   — 세계수 밑동의 던전 입구 앞으로 이동 / goto parasite — 보스 방
  * /magiccity site sewer      — 왕성 하수도 확장: 순환 하수로에서 창살 너머로 보이는 거대한 간선 하수도 4개와 집수 홀 (들어갈 수는 없음). build 다음에
  * /magiccity site frost      — 서리 결투장 (엘프 관문 북동쪽 길가, 4장 보스 서리 거인 요툰) 건설 / goto frost / remove frost
- * /magiccity story           — 메인 스토리 12챕터 진행도·봉인·다음 목적지 (story give <장> 시험용 완료 표시, story reset 초기화)
+ * /magiccity story           — 메인 스토리 12챕터 진행도·봉인·다음 목적지 (story give <장> 시험용 완료 표시, story reset 초기화, story config 진행도 설정 다시 읽기)
  * /magiccity site elfgate    — 엘프 산맥 관문 은빛 협문 (협곡 성벽·문루·첨탑·엘프 안뜰) 건설
  * /magiccity goto elfgate    — 관문 아치 아래로 이동
  * /magiccity site dwarf      — 드워프 광산왕국 (산의 문·대전당·옥좌실·대장간·광산) 건설
@@ -309,6 +309,14 @@ public final class MagicCityCommand {
                             ctx.getSource().sendSuccess(() -> Component.literal("§e[마법 도시] " + n + "장을 완료로 표시했습니다 (시험용)."), true);
                             return 1;
                         })))
+                        .then(Commands.literal("config").executes(ctx -> {
+                            io.github.aswq0258.magiccity.boss.Progression.load();
+                            var c = io.github.aswq0258.magiccity.boss.Progression.config();
+                            ctx.getSource().sendSuccess(() -> Component.literal("§e[마법 도시] magiccity-progression.json 을 다시 읽었습니다. 등급 조정 "
+                                    + (c.enabled ? "켜짐" : "꺼짐") + " · 보스 기본 공격 " + java.util.Arrays.toString(c.boss_basic)
+                                    + " · 체력 배율 " + java.util.Arrays.toString(c.hp_scale)), true);
+                            return 1;
+                        }))
                         .then(Commands.literal("reset").executes(ctx -> {
                             io.github.aswq0258.magiccity.boss.Story.reset(ctx.getSource().getPlayerOrException());
                             ctx.getSource().sendSuccess(() -> Component.literal("§e[마법 도시] 내 스토리 진행도를 처음으로 되돌렸습니다."), true);

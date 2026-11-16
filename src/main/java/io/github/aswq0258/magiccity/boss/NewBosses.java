@@ -362,8 +362,8 @@ public final class NewBosses {
                 return true;
             }
             if (wave == 0) {
-                boolean trig = near.stream().anyMatch(p -> !p.isCreative() && p.position().distanceToSqr(c) < triggerR * triggerR);
-                if (!trig) return true;
+                List<ServerPlayer> trig = near.stream().filter(p -> !p.isCreative() && p.position().distanceToSqr(c) < triggerR * triggerR).toList();
+                if (trig.isEmpty() || !Story.mayWake(level, trig, chapter)) return true;           // 서장(1장)을 끝내야 습격이 시작됨
                 wave = 1;
                 spawnWave(level, c);
                 return true;

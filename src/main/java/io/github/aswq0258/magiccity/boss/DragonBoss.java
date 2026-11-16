@@ -76,7 +76,7 @@ public final class DragonBoss {
             clear();
             if (level.getGameTime() < deadUntil || level.getDifficulty() == Difficulty.PEACEFUL) return;
             List<ServerPlayer> trig = near.stream().filter(p -> !p.isCreative() && inside(p, c, TRIGGER_R)).toList();
-            if (!trig.isEmpty() && Story.mayWake(level, trig, 11)) spawn(level, c);
+            if (!trig.isEmpty() && Story.mayWake(level, trig, 11)) spawn(level, c, trig);
             return;
         }
         fight(level, boss, near, c);
@@ -96,7 +96,7 @@ public final class DragonBoss {
         if (i != null) i.setBaseValue(v);
     }
 
-    private static void spawn(ServerLevel level, Vec3 c) {
+    private static void spawn(ServerLevel level, Vec3 c, List<ServerPlayer> party) {
         BlockPos at = BlockPos.containing(c.x, c.y + 1, c.z);
         Mob m = EntityType.RAVAGER.spawn(level, at, MobSpawnType.EVENT);
         if (m == null) return;
@@ -111,10 +111,11 @@ public final class DragonBoss {
         attr(m, Attributes.KNOCKBACK_RESISTANCE, 1.0);
         attr(m, Attributes.FOLLOW_RANGE, 48);
         attr(m, Attributes.STEP_HEIGHT, 3.0);
+        int grade = Progression.apply(m, 11, party);
         m.setHealth(m.getMaxHealth());
         m.addEffect(new MobEffectInstance(MobEffects.FIRE_RESISTANCE, -1, 0, false, false));
         id = m.getUUID();
-        bar = new ServerBossEvent(Component.literal(NAME), BossEvent.BossBarColor.RED, BossEvent.BossBarOverlay.NOTCHED_20);
+        bar = new ServerBossEvent(Component.literal(NAME + " §7[" + grade + "급]"), BossEvent.BossBarColor.RED, BossEvent.BossBarOverlay.NOTCHED_20);
         s66 = s33 = enraged = false;
         empty = 0;
         level.playSound(null, at, SoundEvents.ENDER_DRAGON_GROWL, SoundSource.HOSTILE, 4F, 0.6F);

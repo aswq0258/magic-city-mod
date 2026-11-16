@@ -42,6 +42,8 @@ public class MagicCityMod {
         NeoForge.EVENT_BUS.addListener(io.github.aswq0258.magiccity.boss.CursedBoss::onDeath);
         NeoForge.EVENT_BUS.addListener(io.github.aswq0258.magiccity.boss.TombBoss::onServerTick);
         NeoForge.EVENT_BUS.addListener(io.github.aswq0258.magiccity.boss.TombBoss::onDeath);
+        NeoForge.EVENT_BUS.addListener(io.github.aswq0258.magiccity.boss.Progression::onIncomingDamage);
+        NeoForge.EVENT_BUS.addListener((net.neoforged.neoforge.event.server.ServerStartingEvent e) -> io.github.aswq0258.magiccity.boss.Progression.load());
     }
 
     private static void onRegisterCommands(RegisterCommandsEvent event) {

@@ -47,6 +47,8 @@ public abstract class ManagedBoss {
     private ServerBossEvent bar;
     private int empty;
     private boolean s66, s33, enraged;
+    /** 이번 전투의 등급 (깨어날 때 정해지고 전투 중에는 바뀌지 않음) */
+    protected int grade = ProgressionRules.MAX_GRADE;
     private long deadUntil;
     protected int tick;
 
@@ -113,7 +115,7 @@ public abstract class ManagedBoss {
             if (level.getGameTime() < deadUntil || level.getDifficulty() == Difficulty.PEACEFUL) return;
             if (preFight(level, near, c)) return;
             List<ServerPlayer> trig = near.stream().filter(p -> !p.isCreative() && inside(p, c, triggerR)).toList();
-            if (!trig.isEmpty() && mayWake(level, trig)) wake(level, c);
+            if (!trig.isEmpty() && mayWake(level, trig)) wake(level, c, trig);
             return;
         }
         fight(level, boss, near, c);
@@ -128,7 +130,7 @@ public abstract class ManagedBoss {
         return found.get(0);
     }
 
-    private void wake(ServerLevel level, Vec3 c) {
+    private void wake(ServerLevel level, Vec3 c, List<ServerPlayer> party) {
         BlockPos at = BlockPos.containing(c.x, c.y, c.z);
         Mob m = create(level, at);
         if (m == null) return;
@@ -136,16 +138,21 @@ public abstract class ManagedBoss {
         m.setCustomName(Component.literal("§l" + name));
         m.setCustomNameVisible(true);
         m.setPersistenceRequired();
+        grade = Progression.apply(m, chapter, party);
         m.setHealth(m.getMaxHealth());
         id = m.getUUID();
         s66 = s33 = enraged = false;
         empty = 0;
         level.playSound(null, at, roar(), SoundSource.HOSTILE, 4F, 0.6F);
-        say(level, at, "§4§l[" + region + "] " + wakeText());
+        say(level, at, "§4§l[" + region + "] " + wakeText() + " §7(" + grade + "급)");
     }
 
     private void fight(ServerLevel level, Mob boss, List<ServerPlayer> near, Vec3 c) {
-        if (bar == null) bar = new ServerBossEvent(Component.literal(name), color, BossEvent.BossBarOverlay.NOTCHED_20);
+        if (bar == null) {
+            int g = Progression.gradeOf(boss);
+            if (g > 0) grade = g;
+            bar = new ServerBossEvent(Component.literal(name + (g > 0 ? " §7[" + g + "급]" : "")), color, BossEvent.BossBarOverlay.NOTCHED_20);
+        }
         float hp = boss.getHealth() / boss.getMaxHealth();
         bar.setProgress(hp);
         for (ServerPlayer p : near) bar.addPlayer(p);
@@ -179,7 +186,7 @@ public abstract class ManagedBoss {
         }
         if (hp <= 0.33F && !s33) {
             s33 = true;
-            summon(level, boss);
+            if (ProgressionRules.secondSummon(grade)) summon(level, boss);
         }
         if (hp <= 0.25F && !enraged) {
             enraged = true;
