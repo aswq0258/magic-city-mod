@@ -49,6 +49,7 @@ import java.util.List;
  * /magiccity goto ruins      — 발굴 구덩이 북서쪽 경사로 위로 이동
  * /magiccity site rootcave   — 세계수 뿌리 던전 (줄기 속 입구·뿌리 회랑·기생충의 둥지 보스 방) 건설. site worldtree 다음에
  * /magiccity goto rootcave   — 세계수 밑동의 던전 입구 앞으로 이동 / goto parasite — 보스 방
+ * /magiccity site sewer      — 왕성 하수도 확장: 순환 하수로에서 창살 너머로 보이는 거대한 간선 하수도 4개와 집수 홀 (들어갈 수는 없음). build 다음에
  * /magiccity site frost      — 서리 결투장 (엘프 관문 북동쪽 길가, 4장 보스 서리 거인 요툰) 건설 / goto frost / remove frost
  * /magiccity story           — 메인 스토리 12챕터 진행도·봉인·다음 목적지 (story give <장> 시험용 완료 표시, story reset 초기화)
  * /magiccity site elfgate    — 엘프 산맥 관문 은빛 협문 (협곡 성벽·문루·첨탑·엘프 안뜰) 건설
@@ -93,6 +94,19 @@ public final class MagicCityCommand {
                         .then(Commands.literal("elfgate").executes(MagicCityCommand::elfGate))
                         .then(Commands.literal("rootcave").executes(MagicCityCommand::rootCave))
                         .then(Commands.literal("frost").executes(MagicCityCommand::frostArena))
+                        .then(Commands.literal("sewer").executes(ctx -> {
+                            CommandSourceStack src = ctx.getSource();
+                            if (CityBuildManager.isRunning()) {
+                                src.sendFailure(Component.literal("[마법 도시] 이미 건설 중입니다. /magiccity status 로 확인하세요."));
+                                return 0;
+                            }
+                            ServerLevel k = src.getServer().getLevel(io.github.aswq0258.magiccity.world.ModWorldgen.KINGDOM);
+                            if (k == null) return 0;
+                            CityBuildJob job = new CityBuildJob(k, new io.github.aswq0258.magiccity.site.SewerWorks(k.getSeed() ^ 0x5E3E8L));
+                            CityBuildManager.start(job);
+                            src.sendSuccess(() -> Component.literal(String.format("§7[마법 도시] 왕성 하수도 확장 (창살로 막힌 간선 하수도 4개·집수 홀) 건설 시작! 청크 %d개.", job.chunkCount())), true);
+                            return 1;
+                        }))
                         .then(Commands.literal("dwarf").executes(MagicCityCommand::dwarf))
                         .then(Commands.literal("hamlets").executes(MagicCityCommand::hamlets))
                         .then(Commands.literal("hamlet").executes(MagicCityCommand::oneHamlet)))
