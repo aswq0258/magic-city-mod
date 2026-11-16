@@ -63,7 +63,7 @@ public final class RoadEncounters {
 
     private static boolean nearSafe(ServerPlayer p) {
         if (Math.hypot(p.getX() - KingdomTerrain.OLD_X, p.getZ() - KingdomTerrain.OLD_Z) < 260) return true;
-        if (Math.hypot(p.getX() - KingdomTerrain.CX, p.getZ() - KingdomTerrain.CZ) < 480) return true;
+        if (Math.max(Math.abs(p.getX() - KingdomTerrain.CX), Math.abs(p.getZ() - KingdomTerrain.CZ)) < 680) return true;   // 왕성도시 + 신시가지
         if (io.github.aswq0258.magiccity.site.DwarfHold.near(p.getX(), p.getZ())) return true;
         if (io.github.aswq0258.magiccity.site.Hamlets.near(p.getX(), p.getZ())) return true;
         if (Math.hypot(p.getX() - io.github.aswq0258.magiccity.site.WorldTree.OX, p.getZ() - io.github.aswq0258.magiccity.site.WorldTree.OZ) < io.github.aswq0258.magiccity.site.WorldTree.R + 20) return true;

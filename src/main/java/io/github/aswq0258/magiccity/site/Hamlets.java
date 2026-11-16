@@ -87,7 +87,7 @@ public final class Hamlets implements BuildLayout {
 
     /** 촌락을 지을 만한 곳인지, 그렇다면 어떤 양식인지 */
     private static Style check(int x, int z) {
-        if (Math.hypot(x - KingdomTerrain.CX, z - KingdomTerrain.CZ) < 520) return null;
+        if (Math.max(Math.abs(x - KingdomTerrain.CX), Math.abs(z - KingdomTerrain.CZ)) < 720) return null;
         if (Math.hypot(x - KingdomTerrain.OLD_X, z - KingdomTerrain.OLD_Z) < 420) return null;
         for (Object[] p : KingdomMap.PLAN_SITES) {
             int sx = KingdomTerrain.worldX((Integer) p[2]), sz = KingdomTerrain.worldZ((Integer) p[3]);

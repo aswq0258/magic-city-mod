@@ -6,7 +6,7 @@ package io.github.aswq0258.magiccity.world;
  * 도면 좌표 P 의 실제 위치 = 260 + (P - 260) x 2. 지역 사이의 "길" 만 길어지고, 각 지역(왕성도시 평지,
  * 옛 왕도, 강폭, 산 봉우리의 굵기 같은 세부) 의 크기는 그대로 유지.
  *
- *  - 중앙 왕성도시 (260, 260): 반지름 430 안은 Y=63 평지 → /magiccity build
+ *  - 중앙 왕성도시 (260, 260): 반지름 560 안은 Y=63 평지 (원형 구시가지 + 신시가지) → /magiccity build
  *  - 북방 엘프 산맥: 도면 Z -1500 ~ -850 의 두꺼운 띠. 북부 왕도·엘프-북부 고갯길·엘프 산악길을 따라 고갯길이 파임
  *    고룡 봉우리 G1 (500, -1210) 이 가장 높음, 북동 산괴(부유섬 유적 A1 주변), 북서 드워프 산괴 D1
  *  - 혹한 설원: 도면 Z 약 -1480 북쪽 + 북동쪽 빙원 (650, -1750), 빙해 (Z -2150 북쪽)
@@ -19,7 +19,7 @@ package io.github.aswq0258.magiccity.world;
 public final class KingdomTerrain {
     private KingdomTerrain() {}
 
-    public static final int CX = 260, CZ = 260, SEA = 63, CITY_Y = 63, FLAT_R = 430;
+    public static final int CX = 260, CZ = 260, SEA = 63, CITY_Y = 63, FLAT_R = 560;
     /** 도면 → 월드 배율 (지역 사이 거리만 늘어남) */
     public static final double SCALE = 2.0;
 
@@ -242,7 +242,7 @@ public final class KingdomTerrain {
         h = h * (1 - siteFlat) + OLD_Y * siteFlat;
         // 왕성도시 터: 평평 (Y=63)
         double dc = Math.hypot(x - CX, z - CZ);
-        double city = 1 - smooth((dc - FLAT_R) / 170.0);
+        double city = 1 - smooth((dc - FLAT_R) / 140.0);
         h = h * (1 - city) + CITY_Y * city;
         // 강: 계곡과 물길
         double re = riverEdge(x, z);

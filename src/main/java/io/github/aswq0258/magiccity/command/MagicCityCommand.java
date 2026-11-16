@@ -22,6 +22,7 @@ import java.util.List;
  * /magiccity build      — 현재 위치를 중심으로 지름 약 520 의 방사형 이중 성곽 도시 + 동화성 왕성 건설.
  *                          도시 범위의 지형 높이를 재서 가장 알맞은(중간값) 높이를 지면으로 자동 결정
  * /magiccity build here — 자동 대신 발밑 블록 높이를 지면으로 사용
+ * /magiccity build expansion — 이미 지은 원형 도시 바깥에 신시가지·외곽 생활권만 덧지음
  * /magiccity kingdom    — 왕국 대륙 차원의 왕성도시 터(260, 260) 로 이동
  * /magiccity site oldcapital — 왕국 대륙에 몰락한 옛 왕도(네더 포탈이 열려 멸망한 수도) 건설
  * /magiccity goto oldcapital — 옛 왕도 앞 연합군 봉쇄 요새로 이동
@@ -48,7 +49,8 @@ public final class MagicCityCommand {
                 .requires(src -> src.hasPermission(2))
                 .then(Commands.literal("build")
                         .executes(ctx -> build(ctx, false))
-                        .then(Commands.literal("here").executes(ctx -> build(ctx, true))))
+                        .then(Commands.literal("here").executes(ctx -> build(ctx, true)))
+                        .then(Commands.literal("expansion").executes(MagicCityCommand::buildExpansion)))
                 .then(Commands.literal("kingdom").executes(MagicCityCommand::kingdom))
                 .then(Commands.literal("site").then(Commands.literal("oldcapital").executes(MagicCityCommand::oldCapital))
                         .then(Commands.literal("roads").executes(MagicCityCommand::roads))
@@ -173,16 +175,69 @@ public final class MagicCityCommand {
         CityLayout layout = new CityLayout(feet.getX(), feet.getZ(), base, seed);
         CityBuildJob job = new CityBuildJob(level, layout);
         CityBuildManager.start(job);
+        io.github.aswq0258.magiccity.build.CityRecord rec = io.github.aswq0258.magiccity.build.CityRecord.get(src.getServer());
+        rec.cx = feet.getX();
+        rec.cz = feet.getZ();
+        rec.base = base;
+        rec.seed = seed;
+        rec.dim = level.dimension().location().toString();
+        rec.setDirty();
 
         src.sendSuccess(() -> Component.literal(String.format(
-                "§b[마법 도시] 건설 시작! 중심 (%d, %d), 지면 Y=%d%s, 원형 도시 지름 약 520, 건물 %d개, 청크 %d개",
+                "§b[마법 도시] 건설 시작! 중심 (%d, %d), 지면 Y=%d%s, 원형 구시가지 + 신시가지(약 1240 x 1240), 건물 %d개, 청크 %d개",
                 feet.getX(), feet.getZ(), base, here ? "(발밑)" : "(자동)", layout.featureCount(), job.chunkCount())), true);
         src.sendSuccess(() -> Component.literal(
                 "§7진행률은 채팅으로 알려드립니다. 1~2시간 정도 걸릴 수 있습니다. 끝날 때까지 서버(게임)를 켜 두세요."), false);
         return 1;
     }
 
-    /** 왕국 대륙 차원의 왕성도시 터(250, 250) 로 이동 */
+    /**
+     * 이미 지어진 원형 도시 바깥에 신시가지·외곽 생활권만 덧지음.
+     * 이 버전으로 지은 도시는 기록을 쓰고, 기록이 없으면 왕국 대륙(260, 260) 또는 지금 서 있는 곳을 도시 중심으로 봄.
+     */
+    private static int buildExpansion(CommandContext<CommandSourceStack> ctx) {
+        CommandSourceStack src = ctx.getSource();
+        if (CityBuildManager.isRunning()) {
+            src.sendFailure(Component.literal("[마법 도시] 이미 건설 중입니다. /magiccity status 로 확인하세요."));
+            return 0;
+        }
+        io.github.aswq0258.magiccity.build.CityRecord rec = io.github.aswq0258.magiccity.build.CityRecord.get(src.getServer());
+        ServerLevel level;
+        int cx, cz, base;
+        long seed;
+        String how;
+        if (rec.present()) {
+            level = src.getServer().getLevel(net.minecraft.resources.ResourceKey.create(net.minecraft.core.registries.Registries.DIMENSION,
+                    net.minecraft.resources.ResourceLocation.parse(rec.dim)));
+            if (level == null) {
+                src.sendFailure(Component.literal("[마법 도시] 도시가 있는 차원을 찾을 수 없습니다: " + rec.dim));
+                return 0;
+            }
+            cx = rec.cx;
+            cz = rec.cz;
+            base = rec.base;
+            seed = rec.seed;
+            how = "기록된 도시";
+        } else {
+            level = src.getLevel();
+            boolean kingdom = level.dimension() == io.github.aswq0258.magiccity.world.ModWorldgen.KINGDOM;
+            BlockPos feet = BlockPos.containing(src.getPosition());
+            cx = kingdom ? io.github.aswq0258.magiccity.world.KingdomTerrain.CX : feet.getX();
+            cz = kingdom ? io.github.aswq0258.magiccity.world.KingdomTerrain.CZ : feet.getZ();
+            base = autoBase(level, cx, cz);
+            seed = level.getSeed() ^ (BlockPos.asLong(cx, base + 1, cz) * 0x9E3779B97F4A7C15L);
+            how = kingdom ? "왕국 대륙 왕성 터" : "지금 위치를 도시 중심으로";
+        }
+        CityLayout layout = new CityLayout(cx, cz, base, seed);
+        CityBuildJob job = new CityBuildJob(level, new io.github.aswq0258.magiccity.city.CityExpansion(layout));
+        CityBuildManager.start(job);
+        final String h = how;
+        src.sendSuccess(() -> Component.literal(String.format("§b[마법 도시] 신시가지 건설 시작! (%s) 중심 (%d, %d), 지면 Y=%d, 청크 %d개. 원형 성곽 안은 그대로 둡니다.",
+                h, cx, cz, base, job.chunkCount())), true);
+        return 1;
+    }
+
+    /** 왕국 대륙 차원의 왕성도시 터(260, 260) 로 이동 */
     private static int kingdom(CommandContext<CommandSourceStack> ctx) throws com.mojang.brigadier.exceptions.CommandSyntaxException {
         CommandSourceStack src = ctx.getSource();
         ServerLevel target = src.getServer().getLevel(io.github.aswq0258.magiccity.world.ModWorldgen.KINGDOM);
