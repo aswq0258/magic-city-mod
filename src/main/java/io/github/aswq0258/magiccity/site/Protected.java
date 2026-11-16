@@ -16,6 +16,7 @@ public final class Protected {
         if (CursedLands.protectedAt(x, z)) return true;
         if (BorderCity.near(x, z)) return true;
         if (AncientRuins.near(x, z)) return true;
+        if (ElfGate.near(x, z)) return true;
         if (Hamlets.near(x, z)) return true;
         for (RoadSites.Site s : RoadSites.sites()) {
             int e = s.kind() == RoadSites.Kind.ARENA ? 24 : 18;

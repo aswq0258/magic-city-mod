@@ -120,7 +120,12 @@ public final class Restore implements BuildLayout {
 
     /** 왕국 대륙에 지은 것 전부 (촌락·길 거점·세계수·드워프·옛 왕도·항구도시) — 왕성도시는 따로 */
     public static List<Restore> allSites() {
-        return List.of(hamlets(), roads(), worldTree(), dwarf(), oldCapital(), port(), dragon(), sky(), cursed(), border(), ruins());
+        return List.of(hamlets(), roads(), worldTree(), dwarf(), oldCapital(), port(), dragon(), sky(), cursed(), border(), ruins(), elfGate());
+    }
+
+    /** 엘프 산맥 관문 */
+    public static Restore elfGate() {
+        return new Restore("엘프 산맥 관문").add(ElfGate.GX - 90, ElfGate.GZ - 90, ElfGate.GX + 90, ElfGate.GZ + 90, ElfGate.G - 12, ElfGate.G + 52).done();
     }
 
     /** 고대 왕국 유적 (발굴 구덩이 + 왕릉) */
