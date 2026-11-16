@@ -643,7 +643,7 @@ public final class CityLayout implements io.github.aswq0258.magiccity.build.Buil
         // ── 외곽 생활권: 북쪽 관문 요새, 남쪽 풍차·밭, 남동 목장, 길목 초소, 결계석
         flatFeature(new Outskirts.BorderFort(cx, cz - 490, 18, 14), -22, 472, 22, 508, null);
         take(-22, 472, 22, 508);
-        for (int[] w : new int[][]{{-300, -610}, {-150, -625}, {150, -625}, {300, -610}}) {
+        for (int[] w : new int[][]{{-300, -590}, {-150, -596}, {150, -596}, {420, -590}}) {
             flatFeature(new Outskirts.Windmill(cx + w[0], cz - w[1], rand.nextLong()), w[0] - 7, w[1] - 7, w[0] + 7, w[1] + 7, null);
             take(w[0] - 7, w[1] - 7, w[0] + 7, w[1] + 7);
         }
@@ -944,7 +944,7 @@ public final class CityLayout implements io.github.aswq0258.magiccity.build.Buil
 
     /** 남쪽 신시가지 바깥의 농경지 (풍차 지대) */
     private static boolean southFields(int du, int dn) {
-        return dn < -588 && Math.abs(du) <= EXP - EDGE - 4;
+        return dn < -568 && Math.abs(du) <= EXP - EDGE - 4;
     }
 
     /** 서쪽 숲 (수림 경계지구는 숲을 남긴 채 집이 섞임), 남서 장인지구는 제외 */
