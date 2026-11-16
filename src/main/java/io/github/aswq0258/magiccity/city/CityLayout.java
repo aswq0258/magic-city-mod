@@ -767,6 +767,12 @@ public final class CityLayout implements io.github.aswq0258.magiccity.build.Buil
         return pick;
     }
 
+    /** 거리에서 r 블록 안인지 (나무를 심지 않을 곳) */
+    private static boolean nearOuterStreet(int du, int dn, int r) {
+        for (int a = -r; a <= r; a += 3) for (int b = -r; b <= r; b += 3) if (outerStreet(du + a, dn + b) > 0) return true;
+        return false;
+    }
+
     private static boolean in(int[] r, int du, int dn) {
         return du >= r[0] && du <= r[2] && dn >= r[1] && dn <= r[3];
     }
@@ -1144,8 +1150,7 @@ public final class CityLayout implements io.github.aswq0258.magiccity.build.Buil
                     int du = x - cx, dn = cz - z;
                     int m = Math.max(Math.abs(du), Math.abs(dn));
                     if (m > EXP - EDGE - 2 || Math.hypot(du, dn) < R_APRON + 6) continue;
-                    if (inFlat(du, dn, 4) || outerStreet(du, dn) > 0 || outerStreet(du + 3, dn) > 0 || outerStreet(du - 3, dn) > 0
-                            || outerStreet(du, dn + 3) > 0 || outerStreet(du, dn - 3) > 0) continue;
+                    if (inFlat(du, dn, 4) || nearOuterStreet(du, dn, 6)) continue;
                     boolean town = in(D_SOUTH, du, dn) || in(D_EAST, du, dn) || in(D_SW, du, dn) || in(D_NORTH, du, dn);
                     if (du > 270 && Math.abs(du - riverX(dn)) <= 13) continue;
                     if (southFields(du, dn)) continue;

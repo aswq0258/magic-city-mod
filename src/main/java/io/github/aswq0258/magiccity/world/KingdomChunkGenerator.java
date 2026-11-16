@@ -173,6 +173,39 @@ public class KingdomChunkGenerator extends ChunkGenerator {
                                  net.minecraft.world.level.levelgen.structure.templatesystem.StructureTemplateManager templateManager) {
     }
 
+    /** 길 가장자리에서 이만큼 안쪽(블록) 은 나무를 두지 않음 */
+    private static final double ROAD_CLEAR = 5.0;
+
+    /**
+     * 바이옴 장식(나무·풀·광석) 을 얹은 뒤, 길 위와 길 양옆 5블록 안의 나무(통나무·잎·덩굴·버섯 덩어리) 를 걷어냄.
+     * 장식은 이웃 청크까지 걸쳐 놓이므로 3x3 청크 범위를 살핌. 줄기를 잃은 잎은 저절로 시들어 사라짐.
+     */
+    @Override
+    public void applyBiomeDecoration(net.minecraft.world.level.WorldGenLevel level, ChunkAccess chunk, StructureManager structureManager) {
+        super.applyBiomeDecoration(level, chunk, structureManager);
+        ChunkPos cp = chunk.getPos();
+        BlockPos.MutableBlockPos pos = new BlockPos.MutableBlockPos();
+        double[] edge = new double[1];
+        for (int x = cp.getMinBlockX() - 16; x <= cp.getMaxBlockX() + 16; x++) {
+            for (int z = cp.getMinBlockZ() - 16; z <= cp.getMaxBlockZ() + 16; z++) {
+                if (!level.hasChunk(x >> 4, z >> 4) || KingdomRoads.excluded(x, z)) continue;
+                if (KingdomRoads.nearest(x, z, ROAD_CLEAR, edge) < 0) continue;
+                KingdomTerrain.Column c = KingdomTerrain.column(x, z);
+                int y0 = Math.max(c.h() + 1, c.water() == Integer.MIN_VALUE ? c.h() + 1 : c.water() + 3);   // 다리 기둥·난간은 그대로
+                for (int y = y0; y <= Math.min(c.h() + 40, getMinY() + HEIGHT - 1); y++) {
+                    pos.set(x, y, z);
+                    BlockState s = level.getBlockState(pos);
+                    if (s.isAir()) continue;
+                    if (s.is(net.minecraft.tags.BlockTags.LOGS) || s.is(net.minecraft.tags.BlockTags.LEAVES) || s.is(Blocks.VINE)
+                            || s.is(Blocks.BEE_NEST) || s.is(Blocks.BROWN_MUSHROOM_BLOCK) || s.is(Blocks.RED_MUSHROOM_BLOCK) || s.is(Blocks.MUSHROOM_STEM)
+                            || s.is(Blocks.COCOA) || s.is(Blocks.MANGROVE_ROOTS) || s.is(Blocks.MOSS_CARPET) && y > c.h() + 1) {
+                        level.setBlock(pos, Blocks.AIR.defaultBlockState(), 2);
+                    }
+                }
+            }
+        }
+    }
+
     @Override
     public void applyCarvers(WorldGenRegion level, long seed, RandomState randomState, BiomeManager biomeManager,
                              StructureManager structureManager, ChunkAccess chunk, GenerationStep.Carving step) {

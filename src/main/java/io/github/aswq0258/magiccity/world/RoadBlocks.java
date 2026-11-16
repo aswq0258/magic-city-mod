@@ -92,10 +92,10 @@ final class RoadBlocks {
             case 1 -> m == 0 ? b(Blocks.COBWEB) : m == 1 ? b(Blocks.RED_MUSHROOM) : m == 2 ? b(Blocks.BROWN_MUSHROOM) : b(Blocks.MOSS_CARPET); // 거미 숲길
             case 2 -> m < 2 ? b(Blocks.COBBLESTONE) : m == 2 ? b(Blocks.MOSSY_COBBLESTONE) : b(Blocks.GRAVEL);                  // 광산 무역로 돌무더기
             case 3 -> m == 0 ? b(Blocks.BONE_BLOCK) : m == 1 ? b(Blocks.COBWEB) : b(Blocks.COBBLESTONE);                       // 비룡 고갯길
-            case 4 -> m == 0 ? b(Blocks.HAY_BLOCK) : m == 1 ? Blocks.OAK_LOG.defaultBlockState().setValue(RotatedPillarBlock.AXIS, Direction.Axis.X) : b(Blocks.COARSE_DIRT); // 상단 교역로
+            case 4 -> m == 0 ? b(Blocks.HAY_BLOCK) : m == 1 ? b(Blocks.COMPOSTER) : b(Blocks.COARSE_DIRT);                     // 상단 교역로
             case 5 -> m == 0 ? b(Blocks.HAY_BLOCK) : m == 1 ? b(Blocks.PUMPKIN) : m == 2 ? b(Blocks.POPPY) : b(Blocks.DANDELION); // 농경 왕도
             case 6 -> m == 0 ? b(Blocks.MUD) : m == 1 ? b(Blocks.MOSSY_COBBLESTONE) : b(Blocks.FERN);                         // 강변길
-            case 7 -> m == 0 ? b(Blocks.MUD) : m == 1 ? b(Blocks.BROWN_MUSHROOM) : b(Blocks.MANGROVE_ROOTS);                  // 늪 교역로
+            case 7 -> m == 0 ? b(Blocks.MUD) : m == 1 ? b(Blocks.BROWN_MUSHROOM) : b(Blocks.MUDDY_MANGROVE_ROOTS);            // 늪 교역로
             case 8 -> m == 0 ? b(Blocks.COBBLESTONE_WALL) : m == 1 ? b(Blocks.COBWEB) : b(Blocks.DEAD_BUSH);                  // 저주받은 국경로 (묘비)
             default -> m == 0 ? b(Blocks.BONE_BLOCK) : m == 1 ? b(Blocks.BLACKSTONE) : b(Blocks.DEAD_BUSH);                   // 폐왕도
         };
