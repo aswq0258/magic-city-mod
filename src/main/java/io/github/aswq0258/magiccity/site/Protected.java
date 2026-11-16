@@ -10,6 +10,7 @@ public final class Protected {
         if (Math.hypot(x - KingdomTerrain.OLD_X, z - KingdomTerrain.OLD_Z) < 260) return true;
         if (Math.hypot(x - WorldTree.OX, z - WorldTree.OZ) < WorldTree.R + 20) return true;
         if (DwarfHold.near(x, z)) return true;
+        if (PortCity.near(x, z)) return true;
         if (Hamlets.near(x, z)) return true;
         for (RoadSites.Site s : RoadSites.sites()) {
             int e = s.kind() == RoadSites.Kind.ARENA ? 24 : 18;

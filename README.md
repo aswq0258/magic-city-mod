@@ -37,6 +37,7 @@
 - `/magiccity map` — 가 보지 않은 곳까지 그려진 지역 지도 (내 위치 중심 2048 x 2048, 쉼터·둥지·필드보스 표시). `/magiccity map <x> <z>` 로 다른 곳
 - `/magiccity map world` — 대륙 전체가 한 장에 그려진 전도
 - `/magiccity site worldtree` — 세계수 성역 건설 (세계수·나선 계단 전망대·정령호·엘프 나무집 10채·장로의 전당), `/magiccity goto worldtree` 로 이동
+- `/magiccity site port` — 동해안 항구도시 벨마르 (성벽·성문탑·분수 광장·항만청·해신 신전·세관·여관·창고·어시장·조선소·잔교 4개·정박 범선·방파제 등대) + 앞바다 등대 섬 (거대 등대·등대지기 오두막·해상신전·잠긴 성소의 보스 "심해의 수호자"), `/magiccity goto port`, `/magiccity goto lighthouse` 로 이동
 - `/magiccity site dwarf` — 드워프 광산왕국 건설 (산의 문·드워프 왕 거상·대전당·옥좌실·대장간·주거 회랑·광산·자수정 정동·잃어버린 광부의 갱도), `/magiccity goto dwarf` 로 이동
 - `/magiccity site hamlets` — 촌락 배치 마스터플랜의 촌락 16곳 + 전초기지 4곳 건설 (역참촌·농촌·제분촌·수차촌·교역촌·숲 전초마을·엘프 순례촌·약초촌·드워프 운송촌·혹한 마을·빙해 항구·어촌·늪지 수상촌·변경 경비촌, 보급초소·등대초소·발굴 야영지·피난민 은신처), `/magiccity hamlets` 로 가까운 촌락 목록
 - 마을을 잇는 지선 7개와 남서 국경 군용로·폐왕도 잔해길 (이미 생성된 대륙은 `/magiccity fix roads` 로 깔림)

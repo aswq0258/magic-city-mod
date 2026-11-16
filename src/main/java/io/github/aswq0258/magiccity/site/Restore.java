@@ -118,9 +118,20 @@ public final class Restore implements BuildLayout {
         return r.done();
     }
 
-    /** 왕국 대륙에 지은 것 전부 (촌락·길 거점·세계수·드워프·옛 왕도) — 왕성도시는 따로 */
+    /** 왕국 대륙에 지은 것 전부 (촌락·길 거점·세계수·드워프·옛 왕도·항구도시) — 왕성도시는 따로 */
     public static List<Restore> allSites() {
-        return List.of(hamlets(), roads(), worldTree(), dwarf(), oldCapital());
+        return List.of(hamlets(), roads(), worldTree(), dwarf(), oldCapital(), port());
+    }
+
+    /** 동해안 항구도시 + 방파제 + 등대 섬과 잠긴 성소 */
+    public static Restore port() {
+        int px = PortCity.PX, pz = PortCity.PZ, e = PortCity.MOLE_OUT + 8;
+        int ix = PortCity.IX, iz = PortCity.IZ;
+        return new Restore("동해안 항구도시·등대 섬")
+                .add(px - e, pz - e, px + e, pz + e, PortCity.B - 24, PortCity.B + 48)
+                .add(ix - PortCity.ISLE_R, iz - PortCity.ISLE_R, ix + PortCity.ISLE_R, iz + PortCity.ISLE_R, 30, 145)
+                .add(ix - 280, iz - 20, ix - 115, iz + 20, 28, 75)
+                .done();
     }
 
     public static Restore oldCapital() {

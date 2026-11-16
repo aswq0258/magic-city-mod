@@ -42,6 +42,9 @@ public final class KingdomRoads {
             {"폐왕도 잔해길", 3, new int[][]{{-1320, 1600}, {-1600, 1700}, {-1850, 1760}}},
     };
 
+    /** 동해안 항구도시 P1 중심 (도면 1490, 900) */
+    public static final int PORT_X = KingdomTerrain.worldX(1490), PORT_Z = KingdomTerrain.worldZ(900);
+
     /** 몬스터·쉼터·필드보스가 있는 지역 길의 수 (ROADS 의 앞부분) */
     public static final int REGIONS = 10;
 
@@ -100,6 +103,7 @@ public final class KingdomRoads {
     /** 길을 깔지 않는 곳: 왕성도시·신시가지 건설 범위 (도시가 직접 거리를 깖), 옛 왕도 성 안 */
     public static boolean excluded(double x, double z) {
         if (Math.abs(x - KingdomTerrain.CX) <= 620 && Math.abs(z - KingdomTerrain.CZ) <= 620) return true;   // 왕성도시 + 신시가지
+        if (Math.hypot(x - PORT_X, z - PORT_Z) < 169) return true;                                       // 항구도시 성벽 안 (도시가 직접 거리를 깖)
         return Math.hypot(x - KingdomTerrain.OLD_X, z - KingdomTerrain.OLD_Z) < 172;
     }
 
