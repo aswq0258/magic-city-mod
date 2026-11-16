@@ -35,7 +35,7 @@ public final class KingdomTerrain {
     /** 몰락한 옛 왕도 (도면 B1 (-1850, 1760) → 월드 (-3960, 3260)), 봉쇄 요새는 폐왕도 위 330블록 앞 */
     public static final int OLD_X = -3960, OLD_Z = 3260, OLD_Y = 70, OLD_R = 190, FORT_X = -3744, FORT_Z = 3011;
 
-    public enum Kind { OCEAN, DEEP_OCEAN, FROZEN_OCEAN, BEACH, RIVER, PLAINS, FARMLAND, FOREST, ELF_FOREST, CURSED, SNOW, MEADOW, PEAKS, DWARF, WASTELAND, SWAMP, ASH, CORRUPT }
+    public enum Kind { OCEAN, DEEP_OCEAN, FROZEN_OCEAN, BEACH, RIVER, PLAINS, FARMLAND, FOREST, ELF_FOREST, CURSED, SNOW, MEADOW, PEAKS, DWARF, WASTELAND, SWAMP, ASH, CORRUPT, TAIGA, GROVE }
 
     /**
      * 한 기둥: 지면 높이, 물 높이(없으면 Integer.MIN_VALUE), 종류, 가파름,
@@ -175,6 +175,39 @@ public final class KingdomTerrain {
         return Math.min(polyDist(x, z, OLD_RIVER_N), polyDist(x, z, OLD_RIVER_S)) + wob - 9;
     }
 
+    /** 산맥 덩어리 (도면 좌표): 엘프 산맥 띠 + 드워프 산괴 + 북동 산괴 */
+    private static double mountainMask(double px, double pz) {
+        double bandZ = -1175 + 50 * Math.sin(px / 350.0) + 40 * (fbm(px / 200.0, 0.3, 2, 21) - 0.5);
+        double band = (1 - smooth((Math.abs(pz - bandZ) - 190) / 150.0)) * smooth((1500 - px) / 160.0) * smooth((px + 2150) / 160.0);
+        double dwarf = ellipse(px, pz, -1690, -1070, 340, 310, 22);
+        double ne = ellipse(px, pz, 1150, -900, 300, 250, 37);
+        return Math.max(band, Math.max(dwarf * 0.95, ne * 0.9));
+    }
+
+    /** 산맥 남쪽 기슭: 북쪽(도면 70/140/220 위)에 산이 있으면 1/2/3, 없으면 0 */
+    private static int southFoot(double px, double pz) {
+        int[] d = {70, 140, 220};
+        for (int i = 0; i < d.length; i++) if (mountainMask(px, pz - d[i]) > 0.3) return i + 1;
+        return 0;
+    }
+
+    /** 촌락 터 {x, z, 반폭} (Hamlets 와 같은 위치): 둘레에 작은 숲을 둠 */
+    private static final int[][] VILLAGES = {
+            {320, -700, 55}, {80, 1700, 90}, {-660, 1280, 50}, {-380, 2440, 65}, {830, 1110, 55},
+            {-1120, -80, 65}, {-1720, -800, 65}, {-2060, 220, 45}, {-2960, -1920, 60}, {40, -3440, 70},
+            {-60, -4490, 65}, {1600, 240, 80}, {2100, 860, 70}, {3440, 880, 45}, {1840, 2600, 55},
+            {-1880, 2580, 75}, {-60, -3960, 25}, {3500, -560, 22}, {820, 2840, 30}, {-2900, 2940, 35}};
+
+    /** 촌락 둘레 숲 띠 안이면 1, 촌락 안(반폭+25)이면 -1, 멀면 0 */
+    private static int villageRing(int x, int z) {
+        for (int[] v : VILLAGES) {
+            int d = Math.max(Math.abs(x - v[0]), Math.abs(z - v[1]));
+            if (d <= v[2] + 25) return -1;
+            if (d < v[2] + 150) return 1;
+        }
+        return 0;
+    }
+
     // ───────────────────────── 해안 (도면 좌표) ─────────────────────────
 
     /** 바다까지의 거리 (도면 단위, 양수 = 육지 안쪽, 음수 = 바다) */
@@ -270,6 +303,9 @@ public final class KingdomTerrain {
         h = Math.min(h, 300);
 
         int hi = (int) Math.round(h);
+        double cf = fbm(x / 140.0, z / 140.0, 3, 41);                                       // 침엽수림 덩어리
+        boolean conifer = cf > 0.4;
+        double treeLine = 132 + 40 * (cf - 0.5);                                              // 나무가 자라는 높이 한계
         Kind kind;
         int water = Integer.MIN_VALUE;
         boolean frozen = pz < -1950;
@@ -283,11 +319,12 @@ public final class KingdomTerrain {
         } else if (sea < 22 && hi <= SEA + 2) {
             kind = Kind.BEACH;
         } else if (mtn > 0.35 && hi > 100) {
-            kind = dwarf > band && dwarf > ne ? Kind.DWARF : Kind.PEAKS;
+            kind = conifer && hi < treeLine ? (snow > 0.5 || hi > 118 ? Kind.GROVE : Kind.TAIGA)          // 산비탈 침엽수림
+                    : dwarf > band && dwarf > ne ? Kind.DWARF : Kind.PEAKS;
         } else if (mtn > 0.2 || (snow > 0.5 && hi > 80)) {
-            kind = snow > 0.5 ? Kind.SNOW : Kind.MEADOW;
+            kind = snow > 0.5 ? (conifer ? Kind.GROVE : Kind.SNOW) : (cf > 0.32 ? Kind.TAIGA : Kind.MEADOW);
         } else if (snow > 0.5) {
-            kind = Kind.SNOW;
+            kind = snow < 0.9 && cf > 0.62 ? Kind.GROVE : Kind.SNOW;                               // 설원 가장자리의 가문비 숲
         } else if (dOld < 130) {
             kind = Kind.CORRUPT;                                                     // 열린 네더 포탈이 퍼뜨린 오염
         } else if (dOld < OLD_R + 220 || rift > 0.3 || (waste > 0.4 && dOld < 1100)) {
@@ -303,11 +340,21 @@ public final class KingdomTerrain {
             kind = Kind.ELF_FOREST;
         } else if (elf > 0.15 || ellipse(px, pz, -500, 200, 360, 420, 36) > 0.35) {
             kind = Kind.FOREST;
-        } else if (farm > 0.4) {
-            kind = Kind.FARMLAND;
         } else {
-            kind = Kind.PLAINS;
+            kind = farm > 0.4 ? Kind.FARMLAND : Kind.PLAINS;
+            if (dc > FLAT_R + 160 && snow < 0.3 && re > 12 && sea > 30) {
+                int foot = southFoot(px, pz);                                                    // 산맥 남쪽 기슭 숲
+                double fp = fbm(x / 90.0, z / 90.0, 3, 43);
+                int ring = villageRing(x, z);
+                double g = fbm(x / 110.0, z / 110.0, 3, 42);                                       // 들판의 작은 숲
+                if (ring >= 0 && foot > 0 && fp > 0.22 + 0.1 * foot) {
+                    kind = foot == 1 && cf > 0.45 ? Kind.TAIGA : Kind.FOREST;
+                } else if (ring >= 0 && g > (ring == 1 ? 0.57 : 0.67) + (kind == Kind.FARMLAND ? 0.04 : 0)) {
+                    kind = Kind.FOREST;
+                }
+            }
         }
+        if (kind == Kind.SNOW && villageRing(x, z) == 1 && fbm(x / 110.0, z / 110.0, 3, 42) > 0.56) kind = Kind.GROVE;   // 북부 마을 둘레 가문비 숲
         if (water == Integer.MIN_VALUE && hi < SEA - 1 && kind != Kind.RIVER) water = SEA - 1;   // 낮은 땅의 웅덩이
         boolean steep = mtn > 0.2 && Math.abs(ridged(x / 60.0, z / 60.0, 2, 34) - 0.5) > 0.32;
         int road = 0;

@@ -87,7 +87,7 @@ public class KingdomChunkGenerator extends ChunkGenerator {
             if (c.water() != Integer.MIN_VALUE && y <= c.water()) {
                 return (c.kind() == KingdomTerrain.Kind.FROZEN_OCEAN && y == c.water()) ? ICE : WATER;
             }
-            if (y == h + 1 && (c.kind() == KingdomTerrain.Kind.SNOW || (c.kind() == KingdomTerrain.Kind.PEAKS && h > 135))
+            if (y == h + 1 && (c.kind() == KingdomTerrain.Kind.SNOW || c.kind() == KingdomTerrain.Kind.GROVE || (c.kind() == KingdomTerrain.Kind.PEAKS && h > 135))
                     && (c.water() == Integer.MIN_VALUE || h >= c.water())) return SNOW_LAYER;
             return null;
         }
@@ -132,6 +132,15 @@ public class KingdomChunkGenerator extends ChunkGenerator {
             }
             case SWAMP -> {
                 return top ? (underwater || hash % 4 == 0 ? MUD : GRASS) : DIRT;
+            }
+            case TAIGA -> {
+                if (h > 150 && top) return SNOW_BLOCK;
+                if (c.steep() && top) return hash % 5 == 0 ? ANDESITE : STONE;
+                return top ? (hash % 5 == 0 ? PODZOL : hash % 11 == 0 ? Blocks.COARSE_DIRT.defaultBlockState() : GRASS) : DIRT;
+            }
+            case GROVE -> {
+                if (c.steep() && top) return STONE;
+                return top ? (underwater ? GRAVEL : SNOWY_GRASS) : DIRT;
             }
             case ELF_FOREST, FOREST -> {
                 return top ? (hash % 9 == 0 ? PODZOL : GRASS) : DIRT;

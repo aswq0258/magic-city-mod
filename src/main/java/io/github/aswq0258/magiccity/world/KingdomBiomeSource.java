@@ -27,6 +27,8 @@ public class KingdomBiomeSource extends BiomeSource {
             Biomes.MEADOW, Biomes.JAGGED_PEAKS, Biomes.STONY_PEAKS, Biomes.BADLANDS, Biomes.SWAMP,
             Biomes.ERODED_BADLANDS,      // ASH: 재로 덮인 옛 왕도 들판
             Biomes.CRIMSON_FOREST,       // CORRUPT: 네더 포탈이 퍼뜨린 오염 (붉은 안개, 네더 몹)
+            Biomes.TAIGA,                // TAIGA: 산기슭·산비탈 침엽수림
+            Biomes.GROVE,                // GROVE: 눈 덮인 산비탈의 가문비 숲
     };
 
     private final HolderGetter<Biome> biomes;

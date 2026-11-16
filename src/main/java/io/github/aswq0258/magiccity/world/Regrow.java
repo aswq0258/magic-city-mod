@@ -71,6 +71,8 @@ public final class Regrow {
             case CURSED -> 1 / 20.0;
             case FOREST -> 1 / 26.0;
             case ELF_FOREST -> 1 / 28.0;
+            case TAIGA -> 1 / 30.0;
+            case GROVE -> 1 / 40.0;
             case SWAMP -> 1 / 100.0;
             case SNOW -> 1 / 700.0;
             case MEADOW -> 1 / 900.0;
@@ -84,7 +86,8 @@ public final class Regrow {
                 case FOREST -> pick < 0.6 ? OAK : pick < 0.8 ? BIRCH : FANCY;
                 case ELF_FOREST -> pick < 0.8 ? SUPER_BIRCH : BIRCH;
                 case SWAMP -> SWAMP;
-                case SNOW -> pick < 0.5 ? SPRUCE : PINE;
+                case SNOW, GROVE -> pick < 0.5 ? SPRUCE : PINE;
+                case TAIGA -> pick < 0.55 ? SPRUCE : pick < 0.9 ? PINE : BIRCH;
                 case MEADOW -> pick < 0.5 ? BIRCH : OAK;
                 default -> pick < 0.85 ? OAK : FANCY;
             };
@@ -98,7 +101,7 @@ public final class Regrow {
         if (!grass || !us.isAir()) return;
         double pg = switch (kind) {
             case PLAINS, FARMLAND, MEADOW -> 1 / 3.0;
-            case FOREST, ELF_FOREST -> 1 / 6.0;
+            case FOREST, ELF_FOREST, TAIGA -> 1 / 6.0;
             case CURSED, SWAMP -> 1 / 8.0;
             default -> 0;
         };
