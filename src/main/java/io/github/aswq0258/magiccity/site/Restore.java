@@ -96,7 +96,7 @@ public final class Restore implements BuildLayout {
 
     public static Restore worldTree() {
         int b = KingdomTerrain.column(WorldTree.OX, WorldTree.OZ).h();
-        return new Restore("세계수 성역").add(WorldTree.OX - WorldTree.R, WorldTree.OZ - WorldTree.R, WorldTree.OX + WorldTree.R, WorldTree.OZ + WorldTree.R, b - 12, b + 142).done();
+        return new Restore("세계수 성역").add(WorldTree.OX - WorldTree.R, WorldTree.OZ - WorldTree.R, WorldTree.OX + WorldTree.R, WorldTree.OZ + WorldTree.R, b - 12, b + 172).done();
     }
 
     public static Restore dwarf() {

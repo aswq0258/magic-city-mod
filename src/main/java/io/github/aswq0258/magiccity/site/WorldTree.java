@@ -33,7 +33,8 @@ import java.util.Map;
 /**
  * 세계수 성역 (마스터플랜 E1, 반경 약 210) — 엘프 대수림 한가운데. 세계수 순례길(서부 숲길 → 엘프 순례촌) 끝.
  *
- *  - 세계수: 뿌리가 땅 위로 드러난 거대한 나무 (줄기 지름 약 20, 높이 약 130), 큰 가지 7개와 진달래 잎 수관,
+ *  - 세계수: 뿌리가 땅 위로 드러난 거대한 나무 (줄기 지름 약 30, 높이 약 140, 수관 지름 약 400), 큰 가지 12개(120~165칸)와
+ *    가지를 받치는 기근(반얀나무처럼 땅까지 내려온 뿌리 기둥), 진달래 잎 수관,
  *    빛나는 열매 덩굴. 줄기를 감아 오르는 나선 계단과 3단 전망대, 꼭대기 "세계수의 심장" 제단
  *  - 정령호: 남서쪽의 맑은 호수, 바닥의 빛, 연잎, 가운데 섬의 정령 제단, 숲의 정령(알레이)
  *  - 엘프 마을: 자작나무 줄기 위 둥근 나무집 10채, 장로의 전당(둥근 홀), 엘프 주민
@@ -81,7 +82,7 @@ public final class WorldTree implements BuildLayout {
         for (int t = 0; t < 400 && made < 10; t++) {
             double a = rand.nextDouble() * Math.PI * 2, r = 75 + rand.nextDouble() * 80;
             int x = OX + (int) Math.round(Math.cos(a) * r), z = OZ + (int) Math.round(Math.sin(a) * r);
-            if (!free(x - 9, z - 9, x + 9, z + 9)) continue;
+            if (!free(x - 9, z - 9, x + 9, z + 9) || !clearOfPillars(x, z, 10)) continue;
             boolean road = false;
             for (int dx = -10; dx <= 10 && !road; dx += 5) for (int dz = -10; dz <= 10 && !road; dz += 5) road = KingdomTerrain.column(x + dx, z + dz).road() > 0;
             if (road) continue;
@@ -211,8 +212,11 @@ public final class WorldTree implements BuildLayout {
     /** 높이 y 에서 줄기 반지름 */
     private static double trunkR(double y) {
         double t = Math.max(0, Math.min(1, y / TRUNK_H));
-        return 5 + 8 * Math.pow(1 - t, 1.4) + (y < 14 ? (14 - y) * 0.4 : 0);
+        return 7 + 11 * Math.pow(1 - t, 1.3) + (y < 16 ? (16 - y) * 0.5 : 0);
     }
+
+    /** 큰 가지에서 땅으로 내려온 기근(받침 뿌리) {x, z, 반지름, 위쪽 y} */
+    private final List<double[]> pillars = new ArrayList<>();
 
     /** 큰 가지 끝·중간·곁가지 끝 (잎 덩어리 위치) — branches 보다 먼저 만들어져야 함 */
     private final List<double[]> tips = new ArrayList<>();
@@ -222,33 +226,59 @@ public final class WorldTree implements BuildLayout {
     /** 잎 덩어리 {x,y,z,rx,ry} */
     private final double[][] crowns = makeCrowns();
 
+    /** 기근을 세우면 안 되는 곳 (광장·정령호·장로의 전당·순례길 참배로) */
+    private static boolean keepClear(double x, double z) {
+        if (Math.hypot(x, z) < PLAZA_R + 8) return true;
+        if (Math.hypot((x + 70) / 50.0, (z - 85) / 38.0) < 1) return true;
+        if (Math.abs(x - 4) < 22 && Math.abs(z + 82) < 22) return true;
+        return x > PLAZA_R - 4 && Math.abs(z) < 12;
+    }
+
     /**
-     * 큰 가지 9개: 줄기에서 비스듬히 솟았다가(굵기 5) 거의 수평으로 멀리 뻗고(55~77칸) 끝이 다시 하늘로 휨.
-     * 큰 가지마다 곁가지 2개.
+     * 큰 가지 12개: 줄기에서 비스듬히 솟았다가(굵기 7) 거의 수평으로 아주 멀리 뻗고(120~165칸) 끝이 다시 하늘로 휨.
+     * 큰 가지마다 곁가지 3개, 중간·바깥쪽에서 땅까지 내려온 기근(반얀나무처럼 가지를 받침).
      */
     private double[][] makeBranches() {
         java.util.Random r = new java.util.Random(seed ^ 0xB4A9);
         List<double[]> out = new ArrayList<>();
-        for (int i = 0; i < 9; i++) {
-            double a = Math.PI * 2 * i / 9 + r.nextDouble() * 0.35;
-            double y0 = 52 + r.nextInt(30), L = 55 + r.nextInt(23);
+        for (int i = 0; i < 12; i++) {
+            double a = Math.PI * 2 * i / 12 + r.nextDouble() * 0.3;
+            double y0 = 50 + r.nextInt(34), L = 120 + r.nextInt(46);
             double sx = Math.cos(a) * trunkR(y0) * 0.5, sz = Math.sin(a) * trunkR(y0) * 0.5;
-            double p1x = Math.cos(a) * L * 0.35, p1z = Math.sin(a) * L * 0.35, p1y = y0 + 10 + r.nextInt(5);
-            double p2x = Math.cos(a + 0.12) * L * 0.7, p2z = Math.sin(a + 0.12) * L * 0.7, p2y = p1y + 3 + r.nextInt(5);
-            double p3x = Math.cos(a + 0.2) * L, p3z = Math.sin(a + 0.2) * L, p3y = p2y + 8 + r.nextInt(8);
-            out.add(new double[]{sx, y0, sz, p1x, p1y, p1z, 5.0, 3.6});
-            out.add(new double[]{p1x, p1y, p1z, p2x, p2y, p2z, 3.6, 2.5});
-            out.add(new double[]{p2x, p2y, p2z, p3x, p3y, p3z, 2.5, 1.3});
-            double s1x = p1x + Math.cos(a + 0.75) * 22, s1z = p1z + Math.sin(a + 0.75) * 22, s1y = p1y + 10;
-            double s2x = p2x + Math.cos(a - 0.65) * 20, s2z = p2z + Math.sin(a - 0.65) * 20, s2y = p2y + 8;
-            out.add(new double[]{p1x, p1y, p1z, s1x, s1y, s1z, 2.3, 1.0});
-            out.add(new double[]{p2x, p2y, p2z, s2x, s2y, s2z, 1.9, 0.9});
-            tips.add(new double[]{p3x, p3y + 4, p3z, 19 + r.nextInt(4), 9});
-            tips.add(new double[]{p2x, p2y + 6, p2z, 15, 8});
-            tips.add(new double[]{s1x, s1y + 3, s1z, 12, 7});
-            tips.add(new double[]{s2x, s2y + 3, s2z, 11, 6});
+            double p1x = Math.cos(a) * L * 0.3, p1z = Math.sin(a) * L * 0.3, p1y = y0 + 12 + r.nextInt(6);
+            double p2x = Math.cos(a + 0.1) * L * 0.62, p2z = Math.sin(a + 0.1) * L * 0.62, p2y = p1y + 2 + r.nextInt(5);
+            double p3x = Math.cos(a + 0.17) * L, p3z = Math.sin(a + 0.17) * L, p3y = p2y + 6 + r.nextInt(9);
+            out.add(new double[]{sx, y0, sz, p1x, p1y, p1z, 7.0, 4.8});
+            out.add(new double[]{p1x, p1y, p1z, p2x, p2y, p2z, 4.8, 3.2});
+            out.add(new double[]{p2x, p2y, p2z, p3x, p3y, p3z, 3.2, 1.6});
+            double s1x = p1x + Math.cos(a + 0.8) * 42, s1z = p1z + Math.sin(a + 0.8) * 42, s1y = p1y + 12;
+            double s2x = p2x + Math.cos(a - 0.7) * 40, s2z = p2z + Math.sin(a - 0.7) * 40, s2y = p2y + 9;
+            double m3x = (p2x + p3x) / 2, m3z = (p2z + p3z) / 2, m3y = (p2y + p3y) / 2;
+            double s3x = m3x + Math.cos(a + 0.9) * 30, s3z = m3z + Math.sin(a + 0.9) * 30, s3y = m3y + 8;
+            out.add(new double[]{p1x, p1y, p1z, s1x, s1y, s1z, 3.0, 1.2});
+            out.add(new double[]{p2x, p2y, p2z, s2x, s2y, s2z, 2.6, 1.1});
+            out.add(new double[]{m3x, m3y, m3z, s3x, s3y, s3z, 2.2, 1.0});
+            tips.add(new double[]{p3x, p3y + 5, p3z, 26 + r.nextInt(6), 11});
+            tips.add(new double[]{p2x, p2y + 7, p2z, 22, 10});
+            tips.add(new double[]{m3x, m3y + 7, m3z, 20, 9});
+            tips.add(new double[]{s1x, s1y + 4, s1z, 18, 8});
+            tips.add(new double[]{s2x, s2y + 4, s2z, 17, 8});
+            tips.add(new double[]{s3x, s3y + 4, s3z, 15, 7});
+            // 기근: 가지 중간과 바깥쪽에서 땅으로
+            for (double f : new double[]{0.62, 0.85}) {
+                double px = Math.cos(a + 0.1) * L * f, pz = Math.sin(a + 0.1) * L * f;
+                if (keepClear(px, pz)) continue;
+                pillars.add(new double[]{px, pz, f < 0.7 ? 2.6 : 1.9, f < 0.7 ? p2y : (p2y + p3y) / 2});
+            }
         }
+        for (double[] pl : pillars) out.add(new double[]{pl[0], -2, pl[1], pl[0] * 0.98, pl[3], pl[1] * 0.98, pl[2] + 1.6, pl[2]});
         return out.toArray(new double[0][]);
+    }
+
+    /** 나무집이 기근과 겹치지 않는지 */
+    private boolean clearOfPillars(int x, int z, int pad) {
+        for (double[] pl : pillars) if (Math.hypot(OX + pl[0] - x, OZ + pl[1] - z) < pad + pl[2] + 2) return false;
+        return true;
     }
 
     private double[][] makeRoots() {
@@ -258,15 +288,15 @@ public final class WorldTree implements BuildLayout {
             double a = Math.PI * 2 * i / 9 + r.nextDouble() * 0.4, len = 32 + r.nextInt(14);
             double mx = Math.cos(a) * len * 0.5, mz = Math.sin(a) * len * 0.5;
             double ex = Math.cos(a - 0.3) * len, ez = Math.sin(a - 0.3) * len;
-            out[i * 2] = new double[]{Math.cos(a) * 10, 9, Math.sin(a) * 10, mx, 3, mz, 4.6, 3.0};
-            out[i * 2 + 1] = new double[]{mx, 3, mz, ex, -1.5, ez, 3.0, 1.3};
+            out[i * 2] = new double[]{Math.cos(a) * 14, 11, Math.sin(a) * 14, mx * 1.5, 4, mz * 1.5, 6.0, 4.0};
+            out[i * 2 + 1] = new double[]{mx * 1.5, 4, mz * 1.5, ex * 1.6, -1.5, ez * 1.6, 4.0, 1.6};
         }
         return out;
     }
 
     private double[][] makeCrowns() {
         List<double[]> c = new ArrayList<>();
-        c.add(new double[]{0, 118, 0, 30, 15});
+        c.add(new double[]{0, 124, 0, 46, 18});
         c.addAll(tips);
         return c.toArray(new double[0][]);
     }
@@ -281,7 +311,7 @@ public final class WorldTree implements BuildLayout {
 
     public final class Tree extends Feature {
         Tree() {
-            super(OX - 104, OZ - 104, OX + 104, OZ + 104);
+            super(OX - 205, OZ - 205, OX + 205, OZ + 205);
             groundY = base;
         }
 
@@ -299,7 +329,19 @@ public final class WorldTree implements BuildLayout {
                     else if (d > 22 && d < PLAZA_R - 3 && k % 13 == 0) p.set(x, b + 1, z, Blocks.MOSS_CARPET.defaultBlockState());
                 }
                 int lowestLeaf = Integer.MAX_VALUE;
-                for (int y = -3; y <= 136; y++) {
+                List<double[]> bs = new ArrayList<>(), cs = new ArrayList<>();
+                for (double[] seg : branches) {
+                    if (dx < Math.min(seg[0], seg[3]) - seg[6] - 1 || dx > Math.max(seg[0], seg[3]) + seg[6] + 1
+                            || dz < Math.min(seg[2], seg[5]) - seg[6] - 1 || dz > Math.max(seg[2], seg[5]) + seg[6] + 1) continue;
+                    bs.add(seg);
+                }
+                for (double[] c : crowns) if (Math.abs(dx - c[0]) <= c[3] * 1.2 && Math.abs(dz - c[2]) <= c[3] * 1.2) cs.add(c);
+                boolean nearTrunk = d <= trunkR(-2) + 2 || d < 80;
+                if (bs.isEmpty() && cs.isEmpty() && !nearTrunk) {
+                    stairsAndDecks(p, b, x, z, dx, dz, d, ang);
+                    return;
+                }
+                for (int y = -3; y <= 150; y++) {
                     BlockState s = null;
                     // 줄기
                     if (y >= -2 && y <= TRUNK_H) {
@@ -315,9 +357,8 @@ public final class WorldTree implements BuildLayout {
                         }
                     }
                     // 가지
-                    if (s == null && y >= 45) for (double[] seg : branches) {
-                        if (dx < Math.min(seg[0], seg[3]) - seg[6] - 1 || dx > Math.max(seg[0], seg[3]) + seg[6] + 1
-                                || dz < Math.min(seg[2], seg[5]) - seg[6] - 1 || dz > Math.max(seg[2], seg[5]) + seg[6] + 1) continue;
+                    if (s == null) for (double[] seg : bs) {
+                        if (y < Math.min(seg[1], seg[4]) - seg[6] - 1 || y > Math.max(seg[1], seg[4]) + seg[6] + 1) continue;
                         double dd = segDist3(dx, y, dz, seg, t);
                         if (dd <= seg[6] + (seg[7] - seg[6]) * t[0]) {
                             s = BARK;
@@ -325,8 +366,8 @@ public final class WorldTree implements BuildLayout {
                         }
                     }
                     // 수관
-                    if (s == null && y >= 50) for (double[] c : crowns) {
-                        if (Math.abs(dx - c[0]) > c[3] * 1.2 || Math.abs(dz - c[2]) > c[3] * 1.2 || Math.abs(y - c[1]) > c[4] * 1.2) continue;
+                    if (s == null && y >= 50) for (double[] c : cs) {
+                        if (Math.abs(y - c[1]) > c[4] * 1.2) continue;
                         double ex = (dx - c[0]) / c[3], ey = (y - c[1]) / c[4], ez = (dz - c[2]) / c[3];
                         double e = ex * ex + ey * ey + ez * ez;
                         double n = 0.18 * Math.sin(dx / 3.0 + y / 4.0) * Math.cos(dz / 3.5 - y / 5.0);
