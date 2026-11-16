@@ -135,8 +135,8 @@ public final class KingdomTerrain {
     // ───────────────────────── 강 (월드 좌표) ─────────────────────────
 
     /** 큰 강: 고룡 봉우리 아래 → 왕성 동쪽(도시 설계와 같은 곡선) → 남동 하구 */
-    private static final int[][] RIVER_N = {{680, -2580}, {780, -2060}, {880, -1460}, {940, -860}, {660, -420}, {596, -300}};
-    private static final int[][] RIVER_S = {{596, 820}, {700, 1000}, {1060, 1340}, {1260, 1740}, {1540, 2100}, {1940, 2320}, {2440, 2360}, {2940, 2280}, {3940, 2240}};
+    private static final int[][] RIVER_N = {{680, -2580}, {780, -2060}, {880, -1460}, {940, -860}, {680, -520}, {600, -380}};
+    private static final int[][] RIVER_S = {{584, 900}, {700, 1060}, {1060, 1340}, {1260, 1740}, {1540, 2100}, {1940, 2320}, {2440, 2360}, {2940, 2280}, {3940, 2240}};
     /** 삼각주 갈래 */
     private static final int[][] DELTA_A = {{2440, 2360}, {2900, 2560}, {3500, 2720}, {3900, 2760}};
     private static final int[][] DELTA_B = {{2440, 2360}, {2850, 2110}, {3400, 1960}, {3900, 1920}};
@@ -153,7 +153,7 @@ public final class KingdomTerrain {
     public static double riverEdge(int x, int z) {
         double wob = 6 * (fbm(x / 70.0, z / 70.0, 2, 77) - 0.5);
         double best = 1e9;
-        if (z >= -300 && z <= 820) best = Math.abs(x - cityRiverX(z)) - 9;
+        if (z >= -380 && z <= 900) best = Math.abs(x - cityRiverX(z)) - 9;            // 왕성도시·신시가지 안의 강과 같은 물줄기
         else {
             best = Math.min(best, polyDist(x, z, RIVER_N) + wob - 9);
             double wide = 9 + 9 * smooth((x - 1800) / 900.0);

@@ -68,7 +68,7 @@ import static io.github.aswq0258.magiccity.city.Palette.*;
 public final class CityLayout implements io.github.aswq0258.magiccity.build.BuildLayout {
     public static final int R_CASTLE = 72, R_CRING = 82, R_INNER = 147, R_IWALL_IN = 148, R_IWALL_OUT = 154, R_IRING = 163,
             R_MID = 207, R_MRING = 215, R_OUTER = 252, R_WALL_IN = 253, R_WALL_OUT = 259, R_MOAT_IN = 262, R_MOAT_OUT = 275,
-            R_APRON = 285, SLOPE = 24, WALL_H = 24, IWALL_H = 16, AVE = 6, OUT = 390, EDGE = 20;
+            R_APRON = 285, SLOPE = 24, WALL_H = 24, IWALL_H = 16, AVE = 6, OUT = 390, EDGE = 44;
     /** 신시가지·외곽 생활권까지 포함한 도시 전체 범위 (중심에서 사각 반폭) */
     public static final int EXP = 620;
     /** 신시가지 구역 {du0, dn0, du1, dn1} (dn = 북쪽 +) */
@@ -643,7 +643,7 @@ public final class CityLayout implements io.github.aswq0258.magiccity.build.Buil
         // ── 외곽 생활권: 북쪽 관문 요새, 남쪽 풍차·밭, 남동 목장, 길목 초소, 결계석
         flatFeature(new Outskirts.BorderFort(cx, cz - 490, 18, 14), -22, 472, 22, 508, null);
         take(-22, 472, 22, 508);
-        for (int[] w : new int[][]{{-300, -590}, {-150, -596}, {150, -596}, {420, -590}}) {
+        for (int[] w : new int[][]{{-300, -560}, {-150, -566}, {150, -566}, {420, -560}}) {
             flatFeature(new Outskirts.Windmill(cx + w[0], cz - w[1], rand.nextLong()), w[0] - 7, w[1] - 7, w[0] + 7, w[1] + 7, null);
             take(w[0] - 7, w[1] - 7, w[0] + 7, w[1] + 7);
         }
@@ -651,11 +651,11 @@ public final class CityLayout implements io.github.aswq0258.magiccity.build.Buil
         lift(new Outskirts.Ranch(cx + 225, cz + 475, cx + 290, cz + 505, rand.nextLong()), ranchLv);
         lift(new Outskirts.Barn(cx + 258, cz + 522, Direction.NORTH, 15, 11), ranchLv);
         take(220, -535, 295, -470);
-        for (int[] w : new int[][]{{-565, 18}, {18, -595}, {585, 18}}) {                          // 서: 수림 감시초소, 남: 왕립 순찰대 초소, 동: 교역로 초소
+        for (int[] w : new int[][]{{-555, 18}, {18, -558}, {560, 18}}) {                          // 서: 수림 감시초소, 남: 왕립 순찰대 초소, 동: 교역로 초소
             flatFeature(new Outskirts.Watchpost(cx + w[0], cz - w[1]), w[0] - 10, w[1] - 10, w[0] + 10, w[1] + 10, null);
             take(w[0] - 10, w[1] - 10, w[0] + 10, w[1] + 10);
         }
-        for (int[] w : new int[][]{{560, 560}, {-560, 560}, {560, -560}, {-560, -560}, {22, 560}, {-22, -575}, {-578, -22}, {585, -40}}) {
+        for (int[] w : new int[][]{{555, 555}, {-555, 555}, {555, -555}, {-555, -555}, {22, 555}, {-22, -560}, {-560, -22}, {562, -40}}) {
             flatFeature(new DistrictBuilding.BarrierStone(cx + w[0], cz - w[1]), w[0] - 4, w[1] - 4, w[0] + 4, w[1] + 4, null);
             take(w[0] - 4, w[1] - 4, w[0] + 4, w[1] + 4);
         }
@@ -944,7 +944,7 @@ public final class CityLayout implements io.github.aswq0258.magiccity.build.Buil
 
     /** 남쪽 신시가지 바깥의 농경지 (풍차 지대) */
     private static boolean southFields(int du, int dn) {
-        return dn < -568 && Math.abs(du) <= EXP - EDGE - 4;
+        return dn < -568 && Math.abs(du) <= EXP - EDGE - 2;
     }
 
     /** 서쪽 숲 (수림 경계지구는 숲을 남긴 채 집이 섞임), 남서 장인지구는 제외 */
@@ -983,6 +983,7 @@ public final class CityLayout implements io.github.aswq0258.magiccity.build.Buil
             t = t * t * (3 - 2 * t);
             target = (int) Math.round(top + (target - top) * t);
         }
+        if (du > 280 && rd <= 16) target = Math.max(target, b);                            // 강둑은 물(지면-1)보다 높게: 범람 방지
         boolean mountain = dn > 240 && H >= 8;
         if (target < top) p.clearAbove(x, z, target + 1);
         else {

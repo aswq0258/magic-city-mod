@@ -50,11 +50,17 @@ public final class KingdomRoads {
 
     /** 길을 구불구불하게 만드는 좌표 비틀기 */
     static double warpX(double x, double z) {
-        return x + 60 * (KingdomTerrain.fbm(x / 320.0, z / 320.0, 2, 51) - 0.5);
+        return x + 60 * cityFade(x, z) * (KingdomTerrain.fbm(x / 320.0, z / 320.0, 2, 51) - 0.5);
     }
 
     static double warpZ(double x, double z) {
-        return z + 60 * (KingdomTerrain.fbm(x / 320.0, z / 320.0, 2, 52) - 0.5);
+        return z + 60 * cityFade(x, z) * (KingdomTerrain.fbm(x / 320.0, z / 320.0, 2, 52) - 0.5);
+    }
+
+    /** 신시가지 경계(620) 에서는 0 → 1000 블록 밖에서 1: 도시 대로와 길이 어긋나지 않게 */
+    private static double cityFade(double x, double z) {
+        double m = Math.max(Math.abs(x - KingdomTerrain.CX), Math.abs(z - KingdomTerrain.CZ));
+        return KingdomTerrain.smooth((m - 640) / 360.0);
     }
 
     /** 길 중심선까지의 거리 (비틀린 좌표 기준) */
