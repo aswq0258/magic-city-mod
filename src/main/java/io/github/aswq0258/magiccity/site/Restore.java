@@ -44,6 +44,15 @@ public final class Restore implements BuildLayout {
         return label;
     }
 
+    /** 되돌릴 영역들 {x0, z0, x1, z1, y0, y1} (읽기 전용) */
+    public List<int[]> areas() {
+        return java.util.Collections.unmodifiableList(areas);
+    }
+
+    public boolean formula() {
+        return formula;
+    }
+
     public int areaCount() {
         return areas.size();
     }

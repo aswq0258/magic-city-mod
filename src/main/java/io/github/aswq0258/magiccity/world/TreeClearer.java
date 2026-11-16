@@ -61,7 +61,7 @@ public final class TreeClearer {
         }
     }
 
-    private static BlockPos nearestWood(Access a, BlockPos c, int r) {
+    public static BlockPos nearestWood(Access a, BlockPos c, int r) {
         BlockPos best = null;
         int bd = Integer.MAX_VALUE;
         BlockPos.MutableBlockPos m = new BlockPos.MutableBlockPos();
