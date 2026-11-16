@@ -148,7 +148,6 @@ public final class Hamlets implements BuildLayout {
         l.add(spot("드워프 광석 운송촌", -2960, -1920, Type.DWARF_HAUL, Style.DWARF, 60, 2));
         // 북부 혹한권
         l.add(spot("혹한의 북부 마을", 40, -3440, Type.FROST_TOWN, Style.FROST, 70, 2));
-        l.add(spot("빙해 항구", -60, -4490, Type.FROST_PORT, Style.FROST, 65, 2));
         // 동부 강·해안·습지권
         l.add(spot("동부 교역소", 1600, 240, Type.TRADE, Style.KINGDOM, 80, 1));
         l.add(spot("동부 상단 중계촌", 2100, 860, Type.TRADE, Style.KINGDOM, 70, 1));
