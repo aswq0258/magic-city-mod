@@ -151,6 +151,15 @@ public final class Placer {
         return y;
     }
 
+    /**
+     * 월드 생성기가 처음 만든 지면 높이 (지금 월드에 무엇이 지어져 있든 같은 값).
+     * 같은 건설을 여러 번 다시 돌려도 가장자리 경사가 매번 깎여 절벽이 되지 않게 함.
+     */
+    public int baseTop(int x, int z) {
+        var src = level.getChunkSource();
+        return src.getGenerator().getBaseHeight(x, z, Heightmap.Types.OCEAN_FLOOR_WG, level, src.randomState()) - 1;
+    }
+
     /** 청크를 다 지은 뒤: 계단·울타리·판유리·담장의 연결 모양을 이웃에 맞춤 (청크 둘레 1칸 포함) */
     public void finishShapes(int y0, int y1) {
         if (pass != Pass.SOLID) return;

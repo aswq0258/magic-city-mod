@@ -953,6 +953,49 @@ public final class CityLayout implements io.github.aswq0258.magiccity.build.Buil
         return dn < -568 && Math.abs(du) <= EXP - EDGE - 2;
     }
 
+    /** 밭 칸: 남쪽 농경지 중 길·강둑·건물 터·지도 끝 4칸을 뺀 곳 */
+    private boolean fieldCell(int du, int dn) {
+        return southFields(du, dn) && dn > -(EXP - 4) && !inFlat(du, dn, 2) && outerStreet(du, dn) == 0
+                && !(du > 280 && Math.abs(du - riverX(dn)) <= 16);
+    }
+
+    /** 물길 칸: 필지 서쪽 끝 줄, 사방이 모두 밭일 때만 (물이 밭 밖으로 흘러넘치지 않게) */
+    private boolean channelCell(int du, int dn) {
+        if (Math.floorMod(du, 12) != 0 || Math.floorMod(dn, 26) < 2) return false;
+        for (int a = -1; a <= 1; a++) for (int c = -1; c <= 1; c++) if (!fieldCell(du + a, dn + c)) return false;
+        return true;
+    }
+
+    /** 바깥 경계(EDGE) 띠에서 원래 지형(월드 생성기 높이)으로 부드럽게 이어 붙임. 다시 지어도 같은 결과 */
+    private int edgeBlend(Placer p, int du, int dn, int target) {
+        int eb = EXP - Math.max(Math.abs(du), Math.abs(dn));
+        if (eb >= EDGE) return target;
+        double t = Math.max(0, eb) / (double) EDGE;
+        t = t * t * (3 - 2 * t);
+        int nat = p.baseTop(cx + du, cz - dn);
+        return (int) Math.round(nat + (target - nat) * t);
+    }
+
+    private final java.util.Map<Long, Integer> plotCache = new java.util.HashMap<>();
+
+    /** 밭 한 필지(12×26)의 높이: 필지 가운데 지형 하나로 정함 */
+    private int plotLevel(Placer p, int pi, int pj) {
+        long key = ((long) pi << 32) ^ (pj & 0xffffffffL);
+        Integer v = plotCache.get(key);
+        if (v != null) return v;
+        int du = pi * 12 + 6, dn = pj * 26 + 13;
+        int lv = edgeBlend(p, du, dn, base + (int) Math.round(terrainH(du, dn)));
+        if (du > 280 && Math.abs(du - riverX(dn)) <= 40) lv = Math.max(lv, base);
+        plotCache.put(key, lv);
+        return lv;
+    }
+
+    /** 물길 높이: 맞닿은 필지들 중 가장 낮은 높이 (물이 넘치지 않음) */
+    private int channelLevel(Placer p, int pi, int pj) {
+        return Math.min(Math.min(plotLevel(p, pi, pj), plotLevel(p, pi - 1, pj)),
+                Math.min(plotLevel(p, pi, pj + 1), plotLevel(p, pi - 1, pj + 1)));
+    }
+
     /** 서쪽 숲 (수림 경계지구는 숲을 남긴 채 집이 섞임), 남서 장인지구는 제외 */
     private static boolean westForest(int du, int dn) {
         return du < -282 && Math.abs(dn) <= -du - 12 && !in(D_SW, du, dn);
@@ -981,15 +1024,17 @@ public final class CityLayout implements io.github.aswq0258.magiccity.build.Buil
             return;
         }
         int H = (int) Math.round(terrainH(du, dn));
-        int top = p.naturalTop(x, z);
-        int target = b + H;
-        int eb = EXP - m;
-        if (eb < EDGE) {
-            double t = eb / (double) EDGE;
-            t = t * t * (3 - 2 * t);
-            target = (int) Math.round(top + (target - top) * t);
+        int top = p.naturalTop(x, z);                                                       // 지금 월드의 지면 (채우기·깎기 기준)
+        boolean field = fieldCell(du, dn);
+        boolean channel = field && channelCell(du, dn);
+        int target;
+        if (field) {
+            int pi = Math.floorDiv(du, 12), pj = Math.floorDiv(dn, 26);
+            target = channel ? channelLevel(p, pi, pj) : plotLevel(p, pi, pj);               // 필지마다 한 높이 (계단식 밭)
+        } else {
+            target = edgeBlend(p, du, dn, b + H);
+            if (du > 280 && rd <= 16) target = Math.max(target, b);                        // 강둑은 물(지면-1)보다 높게: 범람 방지
         }
-        if (du > 280 && rd <= 16) target = Math.max(target, b);                            // 강둑은 물(지면-1)보다 높게: 범람 방지
         boolean mountain = dn > 240 && H >= 8;
         if (target < top) p.clearAbove(x, z, target + 1);
         else {
@@ -1025,14 +1070,14 @@ public final class CityLayout implements io.github.aswq0258.magiccity.build.Buil
             surface = mountainSurface(x, z, du, dn, H, h);
             if (surface.is(Blocks.SNOW_BLOCK) && steepness(du, dn) < 0.6 && h % 3 == 0) plant = Blocks.SNOW.defaultBlockState();
             else if (surface.is(Blocks.GRASS_BLOCK) && h % 17 == 0) plant = Blocks.SHORT_GRASS.defaultBlockState();
-        } else if (southFields(du, dn) && !inFlat(du, dn, 2)) {
-            int col = Math.floorMod(du, 12), row = Math.floorMod(dn, 26);
+        } else if (field) {
+            int row = Math.floorMod(dn, 26);
             if (row == 0) {
                 surface = GRASS;
                 plant = Royal.HEDGE;
             } else if (row == 1) {
                 surface = Blocks.DIRT_PATH.defaultBlockState();
-            } else if (col == 0) {
+            } else if (channel) {
                 surface = WATER;
             } else {
                 surface = Blocks.FARMLAND.defaultBlockState().setValue(net.minecraft.world.level.block.FarmBlock.MOISTURE, 7);
