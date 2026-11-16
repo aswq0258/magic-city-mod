@@ -47,6 +47,8 @@ import java.util.List;
  * /magiccity goto border     — 국경도시 열병 광장으로 이동
  * /magiccity site ruins      — 고대 왕국 유적 (발굴 구덩이·대신전·쓰러진 거상·왕릉과 보스 고대왕 아르케온) 건설
  * /magiccity goto ruins      — 발굴 구덩이 북서쪽 경사로 위로 이동
+ * /magiccity site rootcave   — 세계수 뿌리 던전 (줄기 속 입구·뿌리 회랑·기생충의 둥지 보스 방) 건설. site worldtree 다음에
+ * /magiccity goto rootcave   — 세계수 밑동의 던전 입구 앞으로 이동 / goto parasite — 보스 방
  * /magiccity site elfgate    — 엘프 산맥 관문 은빛 협문 (협곡 성벽·문루·첨탑·엘프 안뜰) 건설
  * /magiccity goto elfgate    — 관문 아치 아래로 이동
  * /magiccity site dwarf      — 드워프 광산왕국 (산의 문·대전당·옥좌실·대장간·광산) 건설
@@ -86,6 +88,7 @@ public final class MagicCityCommand {
                         .then(Commands.literal("border").executes(MagicCityCommand::border))
                         .then(Commands.literal("ruins").executes(MagicCityCommand::ruins))
                         .then(Commands.literal("elfgate").executes(MagicCityCommand::elfGate))
+                        .then(Commands.literal("rootcave").executes(MagicCityCommand::rootCave))
                         .then(Commands.literal("dwarf").executes(MagicCityCommand::dwarf))
                         .then(Commands.literal("hamlets").executes(MagicCityCommand::hamlets))
                         .then(Commands.literal("hamlet").executes(MagicCityCommand::oneHamlet)))
@@ -115,6 +118,7 @@ public final class MagicCityCommand {
                         .then(Commands.literal("border").executes(ctx -> remove(ctx, io.github.aswq0258.magiccity.site.Restore.border())))
                         .then(Commands.literal("ruins").executes(ctx -> remove(ctx, io.github.aswq0258.magiccity.site.Restore.ruins())))
                         .then(Commands.literal("elfgate").executes(ctx -> remove(ctx, io.github.aswq0258.magiccity.site.Restore.elfGate())))
+                        .then(Commands.literal("rootcave").executes(ctx -> remove(ctx, io.github.aswq0258.magiccity.site.Restore.rootDungeon())))
                         .then(Commands.literal("dwarf").executes(ctx -> remove(ctx, io.github.aswq0258.magiccity.site.Restore.dwarf())))
                         .then(Commands.literal("oldcapital").executes(ctx -> remove(ctx, io.github.aswq0258.magiccity.site.Restore.oldCapital())))
                         .then(Commands.literal("city").executes(ctx -> removeCity(ctx, false)))
@@ -138,6 +142,20 @@ public final class MagicCityCommand {
                     int y = io.github.aswq0258.magiccity.world.KingdomTerrain.column(io.github.aswq0258.magiccity.site.DwarfHold.CX,
                             io.github.aswq0258.magiccity.site.DwarfHold.CZ - 50).h() + 1;
                     ctx.getSource().getPlayerOrException().teleportTo(k, x + 0.5, y, z + 0.5, 180F, 0F);
+                    return 1;
+                })))
+                .then(Commands.literal("goto").then(Commands.literal("rootcave").executes(ctx -> {
+                    ServerLevel k = ctx.getSource().getServer().getLevel(io.github.aswq0258.magiccity.world.ModWorldgen.KINGDOM);
+                    if (k == null) return 0;
+                    ctx.getSource().getPlayerOrException().teleportTo(k, io.github.aswq0258.magiccity.site.RootDungeon.OX + 0.5,
+                            io.github.aswq0258.magiccity.site.RootDungeon.B + 1, io.github.aswq0258.magiccity.site.RootDungeon.OZ + 38.5, 180F, 0F);
+                    return 1;
+                })))
+                .then(Commands.literal("goto").then(Commands.literal("parasite").executes(ctx -> {
+                    ServerLevel k = ctx.getSource().getServer().getLevel(io.github.aswq0258.magiccity.world.ModWorldgen.KINGDOM);
+                    if (k == null) return 0;
+                    ctx.getSource().getPlayerOrException().teleportTo(k, io.github.aswq0258.magiccity.site.RootDungeon.OX + 20.5,
+                            io.github.aswq0258.magiccity.site.RootDungeon.F + 1, io.github.aswq0258.magiccity.site.RootDungeon.OZ + 0.5, 90F, 0F);
                     return 1;
                 })))
                 .then(Commands.literal("goto").then(Commands.literal("elfgate").executes(ctx -> {
@@ -466,6 +484,26 @@ public final class MagicCityCommand {
         CityBuildManager.start(job);
         src.sendSuccess(() -> Component.literal(String.format("§a[마법 도시] 세계수 성역 건설 시작! 중심 (%d, %d), 건물 %d개, 청크 %d개. "
                 + "/magiccity goto worldtree 로 갈 수 있습니다.", site.cx(), site.cz(), site.featureCount(), job.chunkCount())), true);
+        return 1;
+    }
+
+    /** 세계수 뿌리 던전 건설 */
+    private static int rootCave(CommandContext<CommandSourceStack> ctx) {
+        CommandSourceStack src = ctx.getSource();
+        if (CityBuildManager.isRunning()) {
+            src.sendFailure(Component.literal("[마법 도시] 이미 건설 중입니다. /magiccity status 로 확인하세요."));
+            return 0;
+        }
+        ServerLevel k = src.getServer().getLevel(io.github.aswq0258.magiccity.world.ModWorldgen.KINGDOM);
+        if (k == null) {
+            src.sendFailure(Component.literal("[마법 도시] 왕국 대륙 차원을 찾을 수 없습니다."));
+            return 0;
+        }
+        io.github.aswq0258.magiccity.site.RootDungeon site = new io.github.aswq0258.magiccity.site.RootDungeon(k.getSeed() ^ 0x8007CAFEL);
+        CityBuildJob job = new CityBuildJob(k, site);
+        CityBuildManager.start(job);
+        src.sendSuccess(() -> Component.literal(String.format("§2[마법 도시] 세계수 뿌리 던전 건설 시작! 청크 %d개. /magiccity goto rootcave 로 입구, goto parasite 로 기생충의 둥지에 갈 수 있습니다.",
+                job.chunkCount())), true);
         return 1;
     }
 
