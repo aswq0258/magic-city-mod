@@ -29,6 +29,7 @@ public class KingdomBiomeSource extends BiomeSource {
             Biomes.CRIMSON_FOREST,       // CORRUPT: 네더 포탈이 퍼뜨린 오염 (붉은 안개, 네더 몹)
             Biomes.TAIGA,                // TAIGA: 산기슭·산비탈 침엽수림
             Biomes.GROVE,                // GROVE: 눈 덮인 산비탈의 가문비 숲
+            Biomes.DARK_FOREST,          // DEEPWOOD: 세계수를 둘러싼 태고의 숲 (고목은 DeepWood 가 따로 심음)
     };
 
     private final HolderGetter<Biome> biomes;

@@ -35,7 +35,7 @@ public final class KingdomTerrain {
     /** 몰락한 옛 왕도 (도면 B1 (-1850, 1760) → 월드 (-3960, 3260)), 봉쇄 요새는 폐왕도 위 330블록 앞 */
     public static final int OLD_X = -3960, OLD_Z = 3260, OLD_Y = 70, OLD_R = 190, FORT_X = -3744, FORT_Z = 3011;
 
-    public enum Kind { OCEAN, DEEP_OCEAN, FROZEN_OCEAN, BEACH, RIVER, PLAINS, FARMLAND, FOREST, ELF_FOREST, CURSED, SNOW, MEADOW, PEAKS, DWARF, WASTELAND, SWAMP, ASH, CORRUPT, TAIGA, GROVE }
+    public enum Kind { OCEAN, DEEP_OCEAN, FROZEN_OCEAN, BEACH, RIVER, PLAINS, FARMLAND, FOREST, ELF_FOREST, CURSED, SNOW, MEADOW, PEAKS, DWARF, WASTELAND, SWAMP, ASH, CORRUPT, TAIGA, GROVE, DEEPWOOD }
 
     /**
      * 한 기둥: 지면 높이, 물 높이(없으면 Integer.MIN_VALUE), 종류, 가파름,
@@ -338,7 +338,7 @@ public final class KingdomTerrain {
             kind = Kind.SWAMP;
             if (hi < SEA) water = SEA - 1;
         } else if (elf > 0.45) {
-            kind = Kind.ELF_FOREST;
+            kind = DeepWood.mask(px, pz, x, z) ? Kind.DEEPWOOD : Kind.ELF_FOREST;                  // 세계수를 둘러싼 태고의 숲
         } else if (elf > 0.15 || ellipse(px, pz, -500, 200, 360, 420, 36) > 0.35) {
             kind = Kind.FOREST;
         } else {

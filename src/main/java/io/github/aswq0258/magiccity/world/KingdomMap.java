@@ -40,7 +40,7 @@ public final class KingdomMap {
             case BEACH -> MapColor.SAND;
             case FARMLAND -> MapColor.TERRACOTTA_YELLOW;
             case FOREST, TAIGA, GROVE -> MapColor.PLANT;
-            case ELF_FOREST -> MapColor.COLOR_GREEN;
+            case ELF_FOREST, DEEPWOOD -> MapColor.COLOR_GREEN;
             case CURSED -> MapColor.TERRACOTTA_PURPLE;
             case SNOW -> MapColor.SNOW;
             case PEAKS, DWARF -> c.h() > 150 ? MapColor.SNOW : c.h() > 112 || c.steep() ? MapColor.STONE : MapColor.GRASS;

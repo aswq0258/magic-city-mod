@@ -49,6 +49,7 @@ import java.util.List;
  * /magiccity fix roads      — 이미 생성된 대륙에서 길·강·길가 나무만 그 자리에서 고침 (+ 신시가지 다시 짓기)
  * /magiccity fix lava [반지름]   — 내 주변(기본 512) 지표의 용암 호수·용암 샘을 물로 바꿈
  * /magiccity fix forests [반지름] — 이미 생성된 땅에 새 숲 배치(산기슭·산비탈 침엽수·들판 작은 숲)를 입힘 (기본 1024)
+ * /magiccity fix deepwood   — 이미 생성된 땅의 엘프 대수림 심부에 태고의 숲(고목·이끼 바닥·선돌·버섯 고리)을 입힘
  * /magiccity fix nature [반지름] — 내 주변(기본 256) 빈 땅에 바이옴에 맞는 나무·풀을 다시 심음
  * /magiccity remove city     — 왕성도시(구시가지 + 신시가지) 철거
  * /magiccity remove all      — 왕국 대륙의 모든 건축물 + 왕성도시 철거 (차례로)
@@ -79,6 +80,7 @@ public final class MagicCityCommand {
                         .then(Commands.literal("lava").executes(ctx -> fixLava(ctx, 512))
                                 .then(Commands.argument("radius", com.mojang.brigadier.arguments.IntegerArgumentType.integer(16, 4096))
                                         .executes(ctx -> fixLava(ctx, com.mojang.brigadier.arguments.IntegerArgumentType.getInteger(ctx, "radius")))))
+                        .then(Commands.literal("deepwood").executes(MagicCityCommand::fixDeepwood))
                         .then(Commands.literal("forests").executes(ctx -> fixForests(ctx, 1024))
                                 .then(Commands.argument("radius", com.mojang.brigadier.arguments.IntegerArgumentType.integer(16, 4096))
                                         .executes(ctx -> fixForests(ctx, com.mojang.brigadier.arguments.IntegerArgumentType.getInteger(ctx, "radius")))))
@@ -629,6 +631,24 @@ public final class MagicCityCommand {
         CityBuildManager.start(job);
         src.sendSuccess(() -> Component.literal(String.format("§a[마법 도시] 용암 호수 정리 시작! (%d, %d) 주변 %d블록, 청크 %d개. 땅 위로 드러난 용암만 물로 바꿉니다 (지하 용암은 그대로).",
                 x, z, radius, job.chunkCount())), true);
+        return 1;
+    }
+
+    private static int fixDeepwood(CommandContext<CommandSourceStack> ctx) {
+        CommandSourceStack src = ctx.getSource();
+        if (CityBuildManager.isRunning()) {
+            src.sendFailure(Component.literal("[마법 도시] 이미 건설 중입니다. /magiccity status 로 확인하세요."));
+            return 0;
+        }
+        ServerLevel k = src.getServer().getLevel(io.github.aswq0258.magiccity.world.ModWorldgen.KINGDOM);
+        if (k == null) {
+            src.sendFailure(Component.literal("[마법 도시] 왕국 대륙 차원을 찾을 수 없습니다."));
+            return 0;
+        }
+        io.github.aswq0258.magiccity.site.DeepWoodFix fix = new io.github.aswq0258.magiccity.site.DeepWoodFix();
+        CityBuildJob job = new CityBuildJob(k, fix);
+        CityBuildManager.start(job);
+        src.sendSuccess(() -> Component.literal(String.format("§2[마법 도시] 태고의 숲 입히기 시작! 청크 %d개. 세계수 성역·길·촌락 자리는 건드리지 않습니다.", fix.chunkCount())), true);
         return 1;
     }
 

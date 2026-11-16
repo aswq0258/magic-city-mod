@@ -67,7 +67,7 @@ public final class ForestFix implements BuildLayout {
     }
 
     /** 청크 바이옴을 새 계산대로 다시 칠하고 접속한 플레이어에게 다시 보냄 (/fillbiome 과 같은 방식) */
-    private static void rebiome(ServerLevel level, int chx, int chz) {
+    static void rebiome(ServerLevel level, int chx, int chz) {
         LevelChunk ch = level.getChunk(chx, chz);
         BiomeSource src = level.getChunkSource().getGenerator().getBiomeSource();
         Map<Long, Holder<Biome>> cache = new HashMap<>();

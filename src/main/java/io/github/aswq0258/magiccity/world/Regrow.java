@@ -68,7 +68,7 @@ public final class Regrow {
 
         ResourceKey<ConfiguredFeature<?, ?>> tree = null;
         double p = switch (kind) {
-            case CURSED -> 1 / 20.0;
+            case CURSED, DEEPWOOD -> 1 / 20.0;
             case FOREST -> 1 / 26.0;
             case ELF_FOREST -> 1 / 28.0;
             case TAIGA -> 1 / 30.0;
@@ -82,7 +82,7 @@ public final class Regrow {
         };
         if (ri < 0 && r < p) {
             tree = switch (kind) {
-                case CURSED -> pick < 0.03 ? (pick < 0.015 ? RED : BROWN) : DARK;
+                case CURSED, DEEPWOOD -> pick < 0.03 ? (pick < 0.015 ? RED : BROWN) : DARK;
                 case FOREST -> pick < 0.6 ? OAK : pick < 0.8 ? BIRCH : FANCY;
                 case ELF_FOREST -> pick < 0.8 ? SUPER_BIRCH : BIRCH;
                 case SWAMP -> SWAMP;
@@ -101,7 +101,7 @@ public final class Regrow {
         if (!grass || !us.isAir()) return;
         double pg = switch (kind) {
             case PLAINS, FARMLAND, MEADOW -> 1 / 3.0;
-            case FOREST, ELF_FOREST, TAIGA -> 1 / 6.0;
+            case FOREST, ELF_FOREST, TAIGA, DEEPWOOD -> 1 / 6.0;
             case CURSED, SWAMP -> 1 / 8.0;
             default -> 0;
         };

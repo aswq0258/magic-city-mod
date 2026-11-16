@@ -142,6 +142,10 @@ public class KingdomChunkGenerator extends ChunkGenerator {
                 if (c.steep() && top) return STONE;
                 return top ? (underwater ? GRAVEL : SNOWY_GRASS) : DIRT;
             }
+            case DEEPWOOD -> {
+                if (!top) return hash % 5 == 0 ? Blocks.ROOTED_DIRT.defaultBlockState() : DIRT;
+                return hash % 5 == 0 ? PODZOL : hash % 7 == 0 ? Blocks.MOSS_BLOCK.defaultBlockState() : hash % 11 == 0 ? Blocks.ROOTED_DIRT.defaultBlockState() : GRASS;
+            }
             case ELF_FOREST, FOREST -> {
                 return top ? (hash % 9 == 0 ? PODZOL : GRASS) : DIRT;
             }
@@ -197,6 +201,8 @@ public class KingdomChunkGenerator extends ChunkGenerator {
             @Override public void set(BlockPos p, BlockState s) { level.setBlock(p, s, 2); }
             @Override public boolean ok(int x, int z) { return x >= rx0 && x <= rx1 && z >= rz0 && z <= rz1 && level.hasChunk(x >> 4, z >> 4); }
         };
+        // 세계수를 둘러싼 태고의 숲: 고목·쓰러진 통나무·선돌·버섯 고리·바닥 식물
+        DeepWood.decorateChunk(acc, cp.x, cp.z, false);
         // 땅 위로 드러난 용암 호수·용암 샘 → 물 (지하 용암은 그대로)
         for (int x = rx0; x <= rx1; x++) {
             for (int z = rz0; z <= rz1; z++) {
