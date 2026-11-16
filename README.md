@@ -40,6 +40,7 @@
 - `/magiccity site dwarf` — 드워프 광산왕국 건설 (산의 문·드워프 왕 거상·대전당·옥좌실·대장간·주거 회랑·광산·자수정 정동·잃어버린 광부의 갱도), `/magiccity goto dwarf` 로 이동
 - `/magiccity site hamlets` — 대륙 곳곳의 테마 촌락 건설 (왕국 농촌·숲속 엘프 촌락·설원 사냥꾼 마을·어부 촌락·피난민 정착촌), `/magiccity hamlets` 로 가까운 촌락 목록
 - `/magiccity remove <hamlets|hamlet|roads|worldtree|dwarf|oldcapital>` — 왕국 대륙에 지은 건축물을 철거하고 원래 지형으로 되돌림 (`hamlet` = 가장 가까운 촌락 하나). 나무·풀은 되살아나지 않음
+- `/magiccity fix roads` — 이미 생성된 왕국 대륙에서 길만 그 자리에서 고침 (도시 근처 길·강 다시 깔기, 길가 5블록 나무 정리, 신시가지 다시 짓기). 대륙을 다시 생성하지 않아도 됨
 - `/magiccity remove city` — 왕성도시(구시가지 + 신시가지) 철거. 왕국 대륙은 원래 지형 그대로, 다른 차원은 기본 지형 + 흙·풀로 되돌림
 - `/magiccity remove all` — 왕국 대륙의 모든 건축물(촌락·길 거점·세계수·드워프·옛 왕도) + 왕성도시를 차례로 철거
 - 왕국 대륙에는 바닐라 구조물(마을·약탈자 전초기지·폐허 포탈 등) 이 생성되지 않습니다.

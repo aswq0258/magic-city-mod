@@ -38,6 +38,7 @@ import java.util.List;
  * /magiccity site hamlets    — 대륙 곳곳의 테마 촌락 건설 (바닐라 마을 대신)
  * /magiccity hamlets         — 가까운 촌락 목록
  * /magiccity remove <hamlets|hamlet|roads|worldtree|dwarf|oldcapital> — 왕국 대륙 건축물 철거 (원래 지형으로)
+ * /magiccity fix roads      — 이미 생성된 대륙에서 길·강·길가 나무만 그 자리에서 고침 (+ 신시가지 다시 짓기)
  * /magiccity remove city     — 왕성도시(구시가지 + 신시가지) 철거
  * /magiccity remove all      — 왕국 대륙의 모든 건축물 + 왕성도시 철거 (차례로)
  * /magiccity status          — 진행률 확인
@@ -59,6 +60,7 @@ public final class MagicCityCommand {
                         .then(Commands.literal("worldtree").executes(MagicCityCommand::worldTree))
                         .then(Commands.literal("dwarf").executes(MagicCityCommand::dwarf))
                         .then(Commands.literal("hamlets").executes(MagicCityCommand::hamlets)))
+                .then(Commands.literal("fix").then(Commands.literal("roads").executes(MagicCityCommand::fixRoads)))
                 .then(Commands.literal("remove")
                         .then(Commands.literal("hamlets").executes(ctx -> remove(ctx, io.github.aswq0258.magiccity.site.Restore.hamlets())))
                         .then(Commands.literal("hamlet").executes(ctx -> {
@@ -468,6 +470,50 @@ public final class MagicCityCommand {
         src.sendSuccess(() -> Component.literal(String.format("§e[마법 도시] %s 철거 시작! 작업 %d개, 청크 %d개 (차례로 진행). 왕성도시 중심 (%d, %d)%s",
                 all ? "왕국 대륙의 모든 건축물" : "왕성도시", fj, fc, cx, cz,
                 isKingdom ? "" : " — 왕국 대륙이 아닌 곳은 기본 지형 + 흙·풀로 되돌립니다")), true);
+        return 1;
+    }
+
+    /**
+     * 이미 생성된 왕국 대륙에서 길만 그 자리에서 고침 (대륙을 다시 생성하지 않음):
+     * 도시 근처 길·강 띠를 지형째 다시 깔고, 먼 길은 주변 나무만 걷어냄. 이어서 신시가지(성곽 바깥) 를 다시 지음.
+     */
+    private static int fixRoads(CommandContext<CommandSourceStack> ctx) {
+        CommandSourceStack src = ctx.getSource();
+        if (CityBuildManager.isRunning()) {
+            src.sendFailure(Component.literal("[마법 도시] 이미 건설 중입니다. /magiccity status 로 확인하세요."));
+            return 0;
+        }
+        ServerLevel k = src.getServer().getLevel(io.github.aswq0258.magiccity.world.ModWorldgen.KINGDOM);
+        if (k == null) {
+            src.sendFailure(Component.literal("[마법 도시] 왕국 대륙 차원을 찾을 수 없습니다."));
+            return 0;
+        }
+        io.github.aswq0258.magiccity.site.RoadRepair repair = new io.github.aswq0258.magiccity.site.RoadRepair();
+        CityBuildJob j1 = new CityBuildJob(k, repair);
+        CityBuildManager.enqueue(j1);
+        // 왕국 대륙의 왕성도시: 신시가지(성곽 바깥) 다시 짓기
+        io.github.aswq0258.magiccity.build.CityRecord rec = io.github.aswq0258.magiccity.build.CityRecord.get(src.getServer());
+        int cx = io.github.aswq0258.magiccity.world.KingdomTerrain.CX, cz = io.github.aswq0258.magiccity.world.KingdomTerrain.CZ, base;
+        long seed;
+        boolean cityHere = !rec.present() || rec.dim.equals(k.dimension().location().toString());
+        String extra = "";
+        if (cityHere) {
+            if (rec.present()) {
+                cx = rec.cx;
+                cz = rec.cz;
+                base = rec.base;
+                seed = rec.seed;
+            } else {
+                base = autoBase(k, cx, cz);
+                seed = k.getSeed() ^ (BlockPos.asLong(cx, base + 1, cz) * 0x9E3779B97F4A7C15L);
+            }
+            CityBuildJob j2 = new CityBuildJob(k, new io.github.aswq0258.magiccity.city.CityExpansion(new CityLayout(cx, cz, base, seed)));
+            CityBuildManager.enqueue(j2);
+            extra = String.format(" 이어서 왕성도시 신시가지(성곽 바깥, 청크 %d개) 를 다시 짓습니다.", j2.chunkCount());
+        }
+        final String e = extra;
+        src.sendSuccess(() -> Component.literal(String.format("§b[마법 도시] 길 고치기 시작! 길 주변 청크 %d개 (도시 근처는 길·강을 다시 깔고, 먼 길은 주변 나무만 정리).%s",
+                j1.chunkCount(), e)), true);
         return 1;
     }
 }
