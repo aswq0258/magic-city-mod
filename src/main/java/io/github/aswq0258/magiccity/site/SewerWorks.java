@@ -83,6 +83,7 @@ public final class SewerWorks implements BuildLayout {
         return cp.toLong() == den.anchorChunk() ? List.of(den) : Collections.emptyList();
     }
     @Override public int[] lightRange(int x, int z) { return null; }
+    @Override public boolean waterPassAll() { return true; }
     @Override public int shapeMinY() { return F - 4; }
     @Override public int shapeMaxY() { return F + 14; }
 
@@ -102,7 +103,7 @@ public final class SewerWorks implements BuildLayout {
 
     @Override
     public void buildColumn(Placer p, int x, int z) {
-        if (p.pass() != Placer.Pass.SOLID) return;
+        // 두 패스 모두 돎: 첫 패스(SOLID)는 물을 건너뛰고, 둘째 패스(WATER)에서 물만 놓임
         prisonRework(p, x, z);
         falls(p, x, z);
         if (x >= DX0 - 1 && x <= 127 && z >= DZ0 - 1 && z <= 451) hideout(p, x, z);
