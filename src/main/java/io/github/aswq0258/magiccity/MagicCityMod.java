@@ -31,6 +31,7 @@ public class MagicCityMod {
         NeoForge.EVENT_BUS.addListener(io.github.aswq0258.magiccity.boss.FieldBosses::onServerTick);
         NeoForge.EVENT_BUS.addListener(io.github.aswq0258.magiccity.boss.FieldBosses::onDeath);
         NeoForge.EVENT_BUS.addListener(io.github.aswq0258.magiccity.boss.RoadEncounters::onServerTick);
+        NeoForge.EVENT_BUS.addListener(io.github.aswq0258.magiccity.world.SafeZones::onFinalizeSpawn);
         NeoForge.EVENT_BUS.addListener(io.github.aswq0258.magiccity.boss.DragonBoss::onServerTick);
         NeoForge.EVENT_BUS.addListener(io.github.aswq0258.magiccity.boss.DragonBoss::onDeath);
         NeoForge.EVENT_BUS.addListener(io.github.aswq0258.magiccity.boss.SkyBoss::onServerTick);

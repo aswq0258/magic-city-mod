@@ -128,6 +128,13 @@ public final class Placer {
         }
     }
 
+    /** fromY..toY 만 비움 (그 위의 나무 수관 같은 것은 남김) */
+    public void clearBetween(int x, int z, int fromY, int toY) {
+        if (pass != Pass.SOLID || !contains(x, z)) return;
+        int top = Math.min(toY, level.getHeight(Heightmap.Types.WORLD_SURFACE, x, z));
+        for (int y = fromY; y <= top && y <= maxY; y++) set(x, y, z, AIR);
+    }
+
     /** fromY 부터 아래로 단단한 블록을 만날 때까지 채움 (위 6칸은 석영 벽돌, 그 아래는 돌) */
     public void foundation(int x, int z, int fromY, int maxDepth) {
         if (pass != Pass.SOLID || !contains(x, z)) return;

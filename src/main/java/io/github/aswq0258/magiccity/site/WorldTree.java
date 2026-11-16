@@ -196,15 +196,22 @@ public final class WorldTree implements BuildLayout {
         int top = p.naturalTop(x, z);
         BlockState below = p.get(x, top, z);
         if (!below.getFluidState().isEmpty()) return;
-        p.clearAbove(x, z, top + 1);
+        p.clearBetween(x, z, top + 1, top + 5);          // 머리 위 공간만 (수관·가지는 남김)
         int k = h(x, z, 32);
         p.set(x, top, z, ring ? (k % 4 == 0 ? Blocks.MOSSY_STONE_BRICKS.defaultBlockState() : Blocks.STONE_BRICKS.defaultBlockState())
                 : k % 5 == 0 ? Blocks.MOSS_BLOCK.defaultBlockState() : Blocks.DIRT_PATH.defaultBlockState());
     }
 
-    /** 평평한 터 다지기 */
+    /** 평평한 터 다지기 — 위로는 건물 높이(24칸)까지만 비워서 그 위의 세계수 수관이 뚫리지 않게 함 */
     static void pad(Placer p, int x, int z, int b, BlockState top) {
-        RoadSites.pad(p, x, z, b, top);
+        if (p.pass() != Placer.Pass.SOLID || !p.contains(x, z)) return;
+        p.clearBetween(x, z, b + 1, b + 24);
+        p.set(x, b, z, top);
+        for (int y = b - 1; y > b - 30; y--) {
+            BlockState s = p.get(x, y, z);
+            if (!s.isAir() && s.getFluidState().isEmpty() && !s.canBeReplaced()) break;
+            p.set(x, y, z, b - y < 3 ? Blocks.DIRT.defaultBlockState() : Blocks.STONE.defaultBlockState());
+        }
     }
 
     // ───────────────────────── 세계수 ─────────────────────────
@@ -475,7 +482,7 @@ public final class WorldTree implements BuildLayout {
                 }
                 if (e < 1) {
                     int depth = 1 + (int) Math.round(5 * (1 - e));
-                    if (p.pass() == Placer.Pass.SOLID) p.clearAbove(x, z, L + 1);
+                    if (p.pass() == Placer.Pass.SOLID) p.clearBetween(x, z, L + 1, L + 24);
                     p.set(x, L - depth, z, k % 19 == 0 ? Blocks.SEA_LANTERN.defaultBlockState() : k % 3 == 0 ? Blocks.CLAY.defaultBlockState() : Blocks.SAND.defaultBlockState());
                     for (int y = L - depth + 1; y <= L; y++) p.set(x, y, z, Blocks.WATER.defaultBlockState());
                     if (depth > 2 && k % 11 == 0) p.set(x, L - depth + 1, z, Blocks.SEAGRASS.defaultBlockState());
