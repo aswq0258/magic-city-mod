@@ -7,7 +7,7 @@ import io.github.aswq0258.magiccity.city.feature.Feature;
 import io.github.aswq0258.magiccity.world.KingdomChunkGenerator;
 import io.github.aswq0258.magiccity.world.KingdomRoads;
 import io.github.aswq0258.magiccity.world.KingdomTerrain;
-import net.minecraft.tags.BlockTags;
+import io.github.aswq0258.magiccity.world.TreeClearer;
 import net.minecraft.world.level.ChunkPos;
 import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.state.BlockState;
@@ -71,27 +71,31 @@ public final class RoadRepair implements BuildLayout {
     public void buildColumn(Placer p, int x, int z) {
         if (Math.abs(x - KingdomTerrain.CX) <= CITY && Math.abs(z - KingdomTerrain.CZ) <= CITY) return;
         boolean near = near(x, z);
-        int ri = KingdomRoads.nearest(x, z, near ? BAND : 5.5, null);
+        double[] edge = new double[1];
+        double offset = near ? BAND - 3 : 0;
+        int ri = KingdomRoads.nearest(x, z, TreeClearer.ORPHAN + offset, edge);
         boolean river = near && inRiverZone(x, z);
         if (ri < 0 && !river) return;
         KingdomTerrain.Column c = KingdomTerrain.column(x, z);
         int top = p.level().getHeight(Heightmap.Types.WORLD_SURFACE, x, z);
-        if (near) {                                                                    // 띠 전체를 지형째 다시 깖
+        if (p.pass() == Placer.Pass.SOLID && ri >= 0) {                                // 길가 나무는 한 그루째 (잘린 나무·떠 있는 잎 정리 포함)
+            net.minecraft.server.level.ServerLevel lv = p.level();
+            TreeClearer.Access acc = new TreeClearer.Access() {
+                @Override public BlockState get(net.minecraft.core.BlockPos q) { return lv.getBlockState(q); }
+                @Override public void set(net.minecraft.core.BlockPos q, BlockState s) { lv.setBlock(q, s, 2 | 16); }
+                @Override public boolean ok(int xx, int zz) { return true; }
+            };
+            int y0 = Math.max(c.h() + 1, c.water() == Integer.MIN_VALUE ? c.h() + 1 : c.water() + 3);
+            TreeClearer.clearColumn(acc, x, z, y0, top, edge[0], offset);
+            top = p.level().getHeight(Heightmap.Types.WORLD_SURFACE, x, z);
+        }
+        if (near && (ri >= 0 && edge[0] <= BAND || river)) {                           // 띠 전체를 지형째 다시 깖
             int y1 = Math.max(c.h() + 8, Math.min(top, c.h() + 48));
             for (int y = c.h() - 8; y <= y1; y++) {
                 BlockState s = KingdomChunkGenerator.blockAt(c, x, y, z);
                 p.set(x, y, z, s == null ? Blocks.AIR.defaultBlockState() : s);
             }
             return;
-        }
-        if (p.pass() != Placer.Pass.SOLID) return;                                     // 먼 길: 나무만 걷어냄
-        int y0 = Math.max(c.h() + 1, c.water() == Integer.MIN_VALUE ? c.h() + 1 : c.water() + 3);
-        for (int y = y0; y < top; y++) {
-            BlockState s = p.get(x, y, z);
-            if (s.is(BlockTags.LOGS) || s.is(BlockTags.LEAVES) || s.is(Blocks.VINE) || s.is(Blocks.BEE_NEST)
-                    || s.is(Blocks.BROWN_MUSHROOM_BLOCK) || s.is(Blocks.RED_MUSHROOM_BLOCK) || s.is(Blocks.MUSHROOM_STEM) || s.is(Blocks.COCOA)) {
-                p.set(x, y, z, Blocks.AIR.defaultBlockState());
-            }
         }
     }
 

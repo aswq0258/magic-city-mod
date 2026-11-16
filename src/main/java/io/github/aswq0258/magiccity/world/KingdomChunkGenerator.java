@@ -173,35 +173,29 @@ public class KingdomChunkGenerator extends ChunkGenerator {
                                  net.minecraft.world.level.levelgen.structure.templatesystem.StructureTemplateManager templateManager) {
     }
 
-    /** 길 가장자리에서 이만큼 안쪽(블록) 은 나무를 두지 않음 */
-    private static final double ROAD_CLEAR = 5.0;
-
     /**
-     * 바이옴 장식(나무·풀·광석) 을 얹은 뒤, 길 위와 길 양옆 5블록 안의 나무(통나무·잎·덩굴·버섯 덩어리) 를 걷어냄.
-     * 장식은 이웃 청크까지 걸쳐 놓이므로 3x3 청크 범위를 살핌. 줄기를 잃은 잎은 저절로 시들어 사라짐.
+     * 바이옴 장식(나무·풀·광석) 을 얹은 뒤 길가 나무를 한 그루째 정리 (TreeClearer):
+     * 길에서 9블록 안에 줄기가 있거나 길 위로 가지를 늘어뜨린 나무·큰 버섯은 통째로 없애고, 떠 있는 잎도 치움.
+     * 이 청크에서 심긴 나무는 줄기가 이 청크(±8) 에 있으므로 여기서 다 살핌. 수정은 3x3 청크 안에서만.
      */
     @Override
     public void applyBiomeDecoration(net.minecraft.world.level.WorldGenLevel level, ChunkAccess chunk, StructureManager structureManager) {
         super.applyBiomeDecoration(level, chunk, structureManager);
         ChunkPos cp = chunk.getPos();
-        BlockPos.MutableBlockPos pos = new BlockPos.MutableBlockPos();
+        final int rx0 = cp.getMinBlockX() - 16, rx1 = cp.getMaxBlockX() + 16, rz0 = cp.getMinBlockZ() - 16, rz1 = cp.getMaxBlockZ() + 16;
+        TreeClearer.Access acc = new TreeClearer.Access() {
+            @Override public BlockState get(BlockPos p) { return level.getBlockState(p); }
+            @Override public void set(BlockPos p, BlockState s) { level.setBlock(p, s, 2); }
+            @Override public boolean ok(int x, int z) { return x >= rx0 && x <= rx1 && z >= rz0 && z <= rz1 && level.hasChunk(x >> 4, z >> 4); }
+        };
         double[] edge = new double[1];
-        for (int x = cp.getMinBlockX() - 16; x <= cp.getMaxBlockX() + 16; x++) {
-            for (int z = cp.getMinBlockZ() - 16; z <= cp.getMaxBlockZ() + 16; z++) {
-                if (!level.hasChunk(x >> 4, z >> 4) || KingdomRoads.excluded(x, z)) continue;
-                if (KingdomRoads.nearest(x, z, ROAD_CLEAR, edge) < 0) continue;
+        for (int x = cp.getMinBlockX() - 8; x <= cp.getMaxBlockX() + 8; x++) {
+            for (int z = cp.getMinBlockZ() - 8; z <= cp.getMaxBlockZ() + 8; z++) {
+                if (!acc.ok(x, z) || KingdomRoads.excluded(x, z)) continue;
+                if (KingdomRoads.nearest(x, z, TreeClearer.ORPHAN, edge) < 0) continue;
                 KingdomTerrain.Column c = KingdomTerrain.column(x, z);
                 int y0 = Math.max(c.h() + 1, c.water() == Integer.MIN_VALUE ? c.h() + 1 : c.water() + 3);   // 다리 기둥·난간은 그대로
-                for (int y = y0; y <= Math.min(c.h() + 40, getMinY() + HEIGHT - 1); y++) {
-                    pos.set(x, y, z);
-                    BlockState s = level.getBlockState(pos);
-                    if (s.isAir()) continue;
-                    if (s.is(net.minecraft.tags.BlockTags.LOGS) || s.is(net.minecraft.tags.BlockTags.LEAVES) || s.is(Blocks.VINE)
-                            || s.is(Blocks.BEE_NEST) || s.is(Blocks.BROWN_MUSHROOM_BLOCK) || s.is(Blocks.RED_MUSHROOM_BLOCK) || s.is(Blocks.MUSHROOM_STEM)
-                            || s.is(Blocks.COCOA) || s.is(Blocks.MANGROVE_ROOTS) || s.is(Blocks.MOSS_CARPET) && y > c.h() + 1) {
-                        level.setBlock(pos, Blocks.AIR.defaultBlockState(), 2);
-                    }
-                }
+                TreeClearer.clearColumn(acc, x, z, y0, Math.min(c.h() + 40, getMinY() + HEIGHT - 1), edge[0], 0);
             }
         }
     }
