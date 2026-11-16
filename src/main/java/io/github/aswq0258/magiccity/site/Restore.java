@@ -120,7 +120,16 @@ public final class Restore implements BuildLayout {
 
     /** 왕국 대륙에 지은 것 전부 (촌락·길 거점·세계수·드워프·옛 왕도·항구도시) — 왕성도시는 따로 */
     public static List<Restore> allSites() {
-        return List.of(hamlets(), roads(), worldTree(), dwarf(), oldCapital(), port(), dragon(), sky(), cursed(), border());
+        return List.of(hamlets(), roads(), worldTree(), dwarf(), oldCapital(), port(), dragon(), sky(), cursed(), border(), ruins());
+    }
+
+    /** 고대 왕국 유적 (발굴 구덩이 + 왕릉) */
+    public static Restore ruins() {
+        int e = AncientRuins.PIT_R + 26;
+        return new Restore("고대 왕국 유적")
+                .add(AncientRuins.CX - e, AncientRuins.CZ - e, AncientRuins.CX + e, AncientRuins.CZ + e, AncientRuins.TOMB_Y - 3, AncientRuins.G + 22)
+                .add(AncientRuins.KING_X - 16, AncientRuins.KING_Z - 16, AncientRuins.KING_X + 22, AncientRuins.CZ, AncientRuins.TOMB_Y - 3, AncientRuins.G + 6)
+                .done();
     }
 
     /** 남부 국경도시 (별 모양 요새·해자 포함) */

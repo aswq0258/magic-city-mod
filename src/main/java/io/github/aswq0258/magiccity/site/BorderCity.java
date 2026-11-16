@@ -69,6 +69,22 @@ public final class BorderCity implements BuildLayout {
         if (gates.isEmpty()) gates.add(-Math.PI / 2);
         // 성문은 능보 사이(성벽 가운데)에 오도록 별을 돌림
         theta0 = gates.get(0) + Math.PI / 6;
+        // 성문 각도를 실제 길이 해자 바깥 둑에 닿는 지점으로 맞춤 (길이 도시 중심을 정확히 지나지 않아도 큰길·다리·길이 한 줄로 이어지게)
+        for (int gi = 0; gi < gates.size(); gi++) {
+            double g = gates.get(gi), best = 1e9, ba = g;
+            for (KingdomRoads.Road road : KingdomRoads.ROADS) {
+                for (double[] q : KingdomRoads.centerline(road, 1)) {
+                    double qa = Math.atan2(q[1] - VZ, q[0] - VX);
+                    if (Math.abs(Math.atan2(Math.sin(qa - g), Math.cos(qa - g))) > 0.35) continue;
+                    double off = Math.hypot(q[0] - VX, q[1] - VZ) - wallR(qa) - (MOAT + 5);
+                    if (Math.abs(off) < best) {
+                        best = Math.abs(off);
+                        ba = qa;
+                    }
+                }
+            }
+            if (best < 4) gates.set(gi, ba);
+        }
 
         Random rand = new Random(seed);
         features.add(new Plaza());
