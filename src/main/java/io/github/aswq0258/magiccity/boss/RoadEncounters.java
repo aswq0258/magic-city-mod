@@ -71,6 +71,7 @@ public final class RoadEncounters {
         if (io.github.aswq0258.magiccity.site.DwarfHold.near(p.getX(), p.getZ())) return true;
         if (io.github.aswq0258.magiccity.site.Hamlets.near(p.getX(), p.getZ())) return true;
         if (io.github.aswq0258.magiccity.site.PortCity.near(p.getX(), p.getZ())) return true;
+        if (io.github.aswq0258.magiccity.site.BorderCity.near(p.getX(), p.getZ())) return true;
         if (Math.hypot(p.getX() - io.github.aswq0258.magiccity.site.WorldTree.OX, p.getZ() - io.github.aswq0258.magiccity.site.WorldTree.OZ) < io.github.aswq0258.magiccity.site.WorldTree.R + 20) return true;
         for (RoadSites.Site s : RoadSites.sites()) {
             if (s.kind() == RoadSites.Kind.REST && Math.hypot(p.getX() - s.x(), p.getZ() - s.z()) < 64) return true;

@@ -504,22 +504,22 @@ public final class PortCity implements BuildLayout {
 
     // ───────────────────────── 공통 도우미 ─────────────────────────
 
-    private static BlockState door(Direction facing, boolean upper) {
+    static BlockState door(Direction facing, boolean upper) {
         return Blocks.SPRUCE_DOOR.defaultBlockState().setValue(DoorBlock.FACING, facing)
                 .setValue(DoorBlock.HALF, upper ? DoubleBlockHalf.UPPER : DoubleBlockHalf.LOWER);
     }
 
-    private static BlockState stairs(Block b, Direction facing) {
+    static BlockState stairs(Block b, Direction facing) {
         return b.defaultBlockState().setValue(StairBlock.FACING, facing);
     }
 
-    private static BlockState slabTop(Block b) {
+    static BlockState slabTop(Block b) {
         return b.defaultBlockState().setValue(SlabBlock.TYPE, SlabType.TOP);
     }
 
-    private static final BlockState HANG = Blocks.LANTERN.defaultBlockState().setValue(LanternBlock.HANGING, true);
+    static final BlockState HANG = Blocks.LANTERN.defaultBlockState().setValue(LanternBlock.HANGING, true);
 
-    private static void villager(ServerLevel level, int x, int y, int z, String name) {
+    static void villager(ServerLevel level, int x, int y, int z, String name) {
         Mob m = EntityType.VILLAGER.spawn(level, new BlockPos(x, y, z), MobSpawnType.STRUCTURE);
         if (m != null) {
             m.setPersistenceRequired();
@@ -528,7 +528,7 @@ public final class PortCity implements BuildLayout {
     }
 
     /** 박공 지붕 집 몸체 (Frame 기준: 앞벽 v=0, 문은 가운데) */
-    private static void body(Placer p, Frame f, int b, int W, int D, int floors, BlockState wall, BlockState post,
+    static void body(Placer p, Frame f, int b, int W, int D, int floors, BlockState wall, BlockState post,
                              Block roofStairs, Block roofSlab, boolean shopFront) {
         final int FH = 5, top = floors * FH;
         for (int u = -1; u <= W; u++) for (int v = -1; v <= D; v++) {

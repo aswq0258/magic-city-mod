@@ -94,7 +94,7 @@ public final class RoadSites implements BuildLayout {
         }
         if (h1 - h0 > 14) return false;
         for (Site s : placed) if (Math.abs(s.x - x) < 40 && Math.abs(s.z - z) < 40) return false;
-        if (PortCity.near(x, z) || SkyRuins.near(x, z)) return false;
+        if (PortCity.near(x, z) || SkyRuins.near(x, z) || BorderCity.near(x, z)) return false;
         for (Hamlets.Spot v : Hamlets.spots()) if (Math.abs(v.x() - x) < v.half() + 30 && Math.abs(v.z() - z) < v.half() + 30) return false;
         return true;
     }

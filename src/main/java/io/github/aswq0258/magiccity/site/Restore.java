@@ -120,7 +120,13 @@ public final class Restore implements BuildLayout {
 
     /** 왕국 대륙에 지은 것 전부 (촌락·길 거점·세계수·드워프·옛 왕도·항구도시) — 왕성도시는 따로 */
     public static List<Restore> allSites() {
-        return List.of(hamlets(), roads(), worldTree(), dwarf(), oldCapital(), port(), dragon(), sky(), cursed());
+        return List.of(hamlets(), roads(), worldTree(), dwarf(), oldCapital(), port(), dragon(), sky(), cursed(), border());
+    }
+
+    /** 남부 국경도시 (별 모양 요새·해자 포함) */
+    public static Restore border() {
+        int e = 150;
+        return new Restore("남부 국경도시").add(BorderCity.VX - e, BorderCity.VZ - e, BorderCity.VX + e, BorderCity.VZ + e, BorderCity.B - 14, BorderCity.B + 45).done();
     }
 
     /** 저주받은 숲 + 심연 균열 (숲 전체를 원래 지형으로 — 시든 나무 대신 새 나무가 심어짐) */
