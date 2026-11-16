@@ -33,6 +33,8 @@ public class MagicCityMod {
         NeoForge.EVENT_BUS.addListener(io.github.aswq0258.magiccity.boss.RoadEncounters::onServerTick);
         NeoForge.EVENT_BUS.addListener(io.github.aswq0258.magiccity.boss.DragonBoss::onServerTick);
         NeoForge.EVENT_BUS.addListener(io.github.aswq0258.magiccity.boss.DragonBoss::onDeath);
+        NeoForge.EVENT_BUS.addListener(io.github.aswq0258.magiccity.boss.SkyBoss::onServerTick);
+        NeoForge.EVENT_BUS.addListener(io.github.aswq0258.magiccity.boss.SkyBoss::onDeath);
     }
 
     private static void onRegisterCommands(RegisterCommandsEvent event) {

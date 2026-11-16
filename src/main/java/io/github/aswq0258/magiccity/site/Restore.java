@@ -120,7 +120,12 @@ public final class Restore implements BuildLayout {
 
     /** 왕국 대륙에 지은 것 전부 (촌락·길 거점·세계수·드워프·옛 왕도·항구도시) — 왕성도시는 따로 */
     public static List<Restore> allSites() {
-        return List.of(hamlets(), roads(), worldTree(), dwarf(), oldCapital(), port(), dragon());
+        return List.of(hamlets(), roads(), worldTree(), dwarf(), oldCapital(), port(), dragon(), sky());
+    }
+
+    /** 부유섬 유적 (하늘의 섬들·탑·땅의 샘·야영지) */
+    public static Restore sky() {
+        return new Restore("부유섬 유적").add(SkyRuins.CX - 110, SkyRuins.CZ - 210, SkyRuins.CX + 110, SkyRuins.CZ + 40, 55, 250).done();
     }
 
     /** 고룡 봉우리 드래곤 레어 (지하 미궁 전체 + 동굴 입구) */
