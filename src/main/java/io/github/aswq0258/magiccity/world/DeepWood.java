@@ -27,6 +27,8 @@ public final class DeepWood {
     /** 숲 중심 = 세계수 (도면 -1300, -300) */
     public static final int FX = KingdomTerrain.worldX(-1300), FZ = KingdomTerrain.worldZ(-300);
     private static final int SANCTUARY = 240;
+    /** 이 반지름 안에는 고목이 없음 (세계수 수관·성역 시설 바깥) */
+    private static final int INNER = 212;
 
     /** 태고의 숲 안인지 (지형 종류와 같은 판정) */
     public static boolean in(int x, int z) {
@@ -100,13 +102,17 @@ public final class DeepWood {
                 floor(a, x, c.h(), z, retop);
             }
         }
-        if (Math.hypot(bx + 8 - FX, bz + 8 - FZ) < SANCTUARY) return;
-        // 고목 (청크마다 0~1 그루)
-        if (rnd(chx, chz, 1) < 0.5) {
+        if (Math.hypot(bx + 8 - FX, bz + 8 - FZ) < INNER - 24) return;
+        // 고목 (청크마다 0~1 그루). 성역 쪽으로 갈수록 드물고 작아져서, 고목 숲이 벽처럼 뚝 끊기지 않고 서서히 엷어짐
+        {
             int tx = bx + 4 + (int) (rnd(chx, chz, 2) * 8), tz = bz + 4 + (int) (rnd(chx, chz, 3) * 8);
-            if (in(tx, tz) && !nearRoad(tx, tz, 18) && KingdomTerrain.column(tx, tz).water() == Integer.MIN_VALUE)
-                giant(a, tx, ground(tx, tz) + 1, tz, (long) chx * 31 + chz);
+            boolean outer = Math.hypot(bx + 8 - FX, bz + 8 - FZ) >= SANCTUARY;               // 원래 고목 숲 (예전과 똑같이)
+            double ramp = outer ? 1 : Math.max(0, Math.min(1, (Math.hypot(tx - FX, tz - FZ) - INNER) / 40.0));
+            if (ramp > 0 && rnd(chx, chz, 1) < (outer ? 0.5 : 0.5 * (0.35 + 0.65 * ramp))
+                    && in(tx, tz) && !nearRoad(tx, tz, 18) && KingdomTerrain.column(tx, tz).water() == Integer.MIN_VALUE)
+                giant(a, tx, ground(tx, tz) + 1, tz, (long) chx * 31 + chz, outer ? 1 : 0.5 + 0.4 * ramp);
         }
+        if (Math.hypot(bx + 8 - FX, bz + 8 - FZ) < SANCTUARY) return;
         if (rnd(chx, chz, 4) < 0.3) {
             int lx = bx + 3 + (int) (rnd(chx, chz, 5) * 10), lz = bz + 3 + (int) (rnd(chx, chz, 6) * 10);
             if (in(lx, lz) && !nearRoad(lx, lz, 8)) fallenLog(a, lx, lz, rnd(chx, chz, 7));
@@ -157,9 +163,14 @@ public final class DeepWood {
     // ───────────────────────── 고목 ─────────────────────────
 
     static void giant(TreeClearer.Access a, int tx, int y0, int tz, long seed) {
+        giant(a, tx, y0, tz, seed, 1);
+    }
+
+    /** sc = 크기 배율 (성역 가장자리의 어린 고목은 0.5 정도) */
+    static void giant(TreeClearer.Access a, int tx, int y0, int tz, long seed, double sc) {
         double r = rnd(seed, 1, 31);
-        int H = 26 + (int) (r * 16);
-        double R0 = 2.2 + rnd(seed, 2, 31) * 1.1;
+        int H = (int) ((26 + r * 16) * sc);
+        double R0 = (2.2 + rnd(seed, 2, 31) * 1.1) * (0.6 + 0.4 * sc);
         Block wood = rnd(seed, 3, 31) < 0.7 ? Blocks.DARK_OAK_LOG : Blocks.OAK_LOG;
         BlockState trunk = log(wood, Direction.Axis.Y);
         // 줄기 (아래는 뿌리 쪽으로 퍼짐)
@@ -186,7 +197,7 @@ public final class DeepWood {
         int roots = 5 + (int) (rnd(seed, 4, 31) * 3);
         for (int i = 0; i < roots; i++) {
             double ang = Math.PI * 2 * i / roots + rnd(seed, 10 + i, 31) * 0.5;
-            double len = 6 + rnd(seed, 20 + i, 31) * 5;
+            double len = (6 + rnd(seed, 20 + i, 31) * 5) * sc;
             Direction.Axis ax = Math.abs(Math.cos(ang)) > Math.abs(Math.sin(ang)) ? Direction.Axis.X : Direction.Axis.Z;
             for (double t = R0; t <= R0 + len; t += 0.5) {
                 double f = (t - R0) / len;
@@ -201,7 +212,7 @@ public final class DeepWood {
         for (int i = 0; i < branches; i++) {
             double ang = Math.PI * 2 * i / branches + rnd(seed, 40 + i, 31);
             int by = y0 + (int) (H * (0.55 + 0.4 * rnd(seed, 50 + i, 31)));
-            double len = 7 + rnd(seed, 60 + i, 31) * 6, rise = 3 + rnd(seed, 70 + i, 31) * 4;
+            double len = (7 + rnd(seed, 60 + i, 31) * 6) * sc, rise = (3 + rnd(seed, 70 + i, 31) * 4) * sc;
             Direction.Axis ax = Math.abs(Math.cos(ang)) > Math.abs(Math.sin(ang)) ? Direction.Axis.X : Direction.Axis.Z;
             int ex = tx, ey = by, ez = tz;
             for (double t = 0; t <= len; t += 0.5) {
@@ -210,9 +221,9 @@ public final class DeepWood {
                 ey = by + (int) Math.round(rise * t / len);
                 put(a, ex, ey, ez, log(wood, t < len * 0.3 ? Direction.Axis.Y : ax));
             }
-            cluster(a, ex, ey + 1, ez, 4 + rnd(seed, 80 + i, 31) * 1.5, seed + i);
+            cluster(a, ex, ey + 1, ez, (4 + rnd(seed, 80 + i, 31) * 1.5) * (0.6 + 0.4 * sc), seed + i);
         }
-        cluster(a, tx, y0 + H + 2, tz, 6.5, seed + 99);
+        cluster(a, tx, y0 + H + 2, tz, 6.5 * (0.6 + 0.4 * sc), seed + 99);
     }
 
     private static void cluster(TreeClearer.Access a, int cx, int cy, int cz, double r, long seed) {
