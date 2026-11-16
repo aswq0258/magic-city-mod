@@ -525,7 +525,7 @@ public final class MagicCityCommand {
         int x = (int) Math.floor(src.getPosition().x), z = (int) Math.floor(src.getPosition().z);
         CityBuildJob job = new CityBuildJob(k, new io.github.aswq0258.magiccity.site.LavaFix(x, z, radius));
         CityBuildManager.start(job);
-        src.sendSuccess(() -> Component.literal(String.format("§a[마법 도시] 용암 호수 정리 시작! (%d, %d) 주변 %d블록, 청크 %d개. 지표(Y 50 위)의 용암을 물로 바꿉니다.",
+        src.sendSuccess(() -> Component.literal(String.format("§a[마법 도시] 용암 호수 정리 시작! (%d, %d) 주변 %d블록, 청크 %d개. 땅 위로 드러난 용암만 물로 바꿉니다 (지하 용암은 그대로).",
                 x, z, radius, job.chunkCount())), true);
         return 1;
     }

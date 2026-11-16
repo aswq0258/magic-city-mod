@@ -18,7 +18,7 @@ import java.util.Collections;
 import java.util.List;
 
 /**
- * /magiccity fix lava: 이미 생성된 대륙에서 지표 가까이(Y 50 위)의 용암 호수·용암 샘을 물로 바꿈.
+ * /magiccity fix lava: 이미 생성된 대륙에서 땅 위로 드러난 용암 호수·용암 샘을 물로 바꿈 (지하 용암은 그대로).
  * 왕성도시와 지어 둔 건축물(드워프 대장간·옛 왕도 등 일부러 둔 용암) 자리는 건드리지 않음.
  */
 public final class LavaFix implements BuildLayout {
@@ -41,7 +41,9 @@ public final class LavaFix implements BuildLayout {
             @Override public void set(BlockPos q, BlockState s) { lv.setBlock(q, s, 3); }
             @Override public boolean ok(int xx, int zz) { return true; }
         };
-        changed += LavaClear.column(acc, x, z, lv.getHeight(Heightmap.Types.WORLD_SURFACE, x, z) + 2);
+        int nb = Integer.MAX_VALUE;
+        for (int[] d : new int[][]{{1, 0}, {-1, 0}, {0, 1}, {0, -1}}) nb = Math.min(nb, lv.getHeight(Heightmap.Types.WORLD_SURFACE, x + d[0], z + d[1]) - 1);
+        changed += LavaClear.column(acc, x, z, lv.getHeight(Heightmap.Types.WORLD_SURFACE, x, z) - 1, nb);
     }
 
     @Override public int cx() { return cx; }

@@ -197,11 +197,15 @@ public class KingdomChunkGenerator extends ChunkGenerator {
             @Override public void set(BlockPos p, BlockState s) { level.setBlock(p, s, 2); }
             @Override public boolean ok(int x, int z) { return x >= rx0 && x <= rx1 && z >= rz0 && z <= rz1 && level.hasChunk(x >> 4, z >> 4); }
         };
-        // 용암 호수·용암 샘 → 물 (왕국 대륙 지표에는 용암을 두지 않음)
+        // 땅 위로 드러난 용암 호수·용암 샘 → 물 (지하 용암은 그대로)
         for (int x = rx0; x <= rx1; x++) {
             for (int z = rz0; z <= rz1; z++) {
                 if (!acc.ok(x, z)) continue;
-                LavaClear.column(acc, x, z, level.getHeight(Heightmap.Types.WORLD_SURFACE_WG, x, z) + 2);
+                int nb = Integer.MAX_VALUE;
+                for (int[] d : new int[][]{{1, 0}, {-1, 0}, {0, 1}, {0, -1}})
+                    if (acc.ok(x + d[0], z + d[1])) nb = Math.min(nb, level.getHeight(Heightmap.Types.WORLD_SURFACE_WG, x + d[0], z + d[1]) - 1);
+                int top = level.getHeight(Heightmap.Types.WORLD_SURFACE_WG, x, z) - 1;
+                LavaClear.column(acc, x, z, top, nb == Integer.MAX_VALUE ? top : nb);
             }
         }
         double[] edge = new double[1];
