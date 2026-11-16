@@ -365,11 +365,26 @@ public final class Hamlets implements BuildLayout {
                 }
             }
             sideBase = through ? a0 + Math.PI / 2 : a0;
-            int others = through ? n - 1 : n - 1;
-            for (int i = 0; i < others; i++) {
-                double a = through ? sideBase + Math.PI * 2 * i / Math.max(1, others) + (r.nextDouble() - 0.5) * 0.3
-                        : a0 + Math.PI * 2 * (i + 1) / n + (r.nextDouble() - 0.5) * 0.4;
-                lane(s.x(), s.z(), a, s.half() - 4, w);
+            if (through) {
+                // 길가 마을: 대륙 길이 곧 큰길, 그 길에서 양옆으로 짧은 골목이 갈라짐 (지나가다 들르는 마을)
+                List<double[]> road = new ArrayList<>(streets);
+                int alleys = Math.max(2, n + 1), k = 0;
+                for (double[] q : road) {
+                    double len = Math.hypot(q[2] - q[0], q[3] - q[1]);
+                    double ux = (q[2] - q[0]) / len, uz = (q[3] - q[1]) / len, ra = Math.atan2(uz, ux);
+                    for (double t = 14 + r.nextInt(6); t < Math.min(len, s.half()) - 8 && k < alleys; t += 18 + r.nextInt(6)) {
+                        int side = (k % 2 == 0) ? 1 : -1;
+                        double ax = q[0] + ux * t, az = q[1] + uz * t;
+                        lane(ax, az, ra + side * Math.PI / 2 + (r.nextDouble() - 0.5) * 0.25, 14 + r.nextInt(9), w);
+                        if (r.nextInt(3) == 0) lane(ax, az, ra - side * Math.PI / 2 + (r.nextDouble() - 0.5) * 0.25, 12 + r.nextInt(7), w);   // 네거리
+                        k++;
+                    }
+                }
+            } else {
+                for (int i = 0; i < n - 1; i++) {
+                    double a = a0 + Math.PI * 2 * (i + 1) / n + (r.nextDouble() - 0.5) * 0.4;
+                    lane(s.x(), s.z(), a, s.half() - 4, w);
+                }
             }
             if (streets.isEmpty()) lane(s.x(), s.z(), a0, s.half() - 4, w);
         }
