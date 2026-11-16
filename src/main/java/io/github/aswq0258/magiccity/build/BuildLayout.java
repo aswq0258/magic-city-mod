@@ -32,6 +32,11 @@ public interface BuildLayout {
         return null;
     }
 
+    /** true = 모든 청크에 두 번째(물·주민) 패스를 돌림 (나무 다시 심기 등) */
+    default boolean waterPassAll() {
+        return false;
+    }
+
     /** 계단·울타리 연결을 맞출 높이 범위 */
     default int shapeMinY() {
         return base() - 26;

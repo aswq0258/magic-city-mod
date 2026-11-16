@@ -7,6 +7,7 @@ import io.github.aswq0258.magiccity.city.feature.Feature;
 import io.github.aswq0258.magiccity.world.KingdomChunkGenerator;
 import io.github.aswq0258.magiccity.world.KingdomRoads;
 import io.github.aswq0258.magiccity.world.KingdomTerrain;
+import io.github.aswq0258.magiccity.world.Regrow;
 import io.github.aswq0258.magiccity.world.TreeClearer;
 import net.minecraft.world.level.ChunkPos;
 import net.minecraft.world.level.block.Blocks;
@@ -22,12 +23,15 @@ import java.util.List;
  * 이미 생성된 왕국 대륙에서 길만 그 자리에서 고침 (대륙을 다시 생성하지 않아도 됨).
  *  - 왕성도시 근처(사방 1700 안): 길이 지나는 띠(양옆 45) 와 도시 남북 강 끝을 지형째 다시 깖 → 도시 대로와 어긋나던 길·강을 바로잡음
  *  - 그 바깥: 길은 그대로 두고 길 위·양옆 5블록 안의 나무만 걷어냄
- * 왕성도시 범위(사방 622 안) 는 건드리지 않음 (/magiccity build expansion 으로 따로).
+ *  - 강: 예전 물길과 새 물길(골짜기 포함)이 지나는 곳을 모두 지형째 다시 깖 → 옛 강이 남아 물벽·끊긴 강이 생기던 문제
+ *  - 다시 깐 땅에는 바이옴에 맞는 나무·풀을 다시 심음 (길 가까이는 빼고)
+ * 왕성도시 범위(사방 620 안) 와 지어 둔 건축물 자리(세계수·드워프·촌락·옛 왕도·길 거점) 는 건드리지 않음.
  */
 public final class RoadRepair implements BuildLayout {
-    private static final int NEAR = 1700, BAND = 45, CITY = 622;
-    /** 도시 남북 끝에서 강이 바뀐 곳 {x0, z0, x1, z1} */
-    private static final int[][] RIVER_ZONES = {{500, -600, 780, -280}, {500, 800, 780, 1100}};
+    private static final int NEAR = 1700, BAND = 45, CITY = 620;
+    /** 강 물길이 바뀐 범위 {x0, z0, x1, z1} (이 안에서 옛·새 물길 골짜기만 고침) */
+    private static final int[][] RIVER_ZONES = {{480, -940, 1060, -280}, {460, 740, 1160, 1420}};
+    private static final double VALLEY = 52;
     private final List<ChunkPos> chunks = new ArrayList<>();
 
     public RoadRepair() {
@@ -44,7 +48,11 @@ public final class RoadRepair implements BuildLayout {
                 }
             }
         }
-        for (int[] q : RIVER_ZONES) for (int x = q[0] >> 4; x <= q[2] >> 4; x++) for (int z = q[1] >> 4; z <= q[3] >> 4; z++) keys.add(ChunkPos.asLong(x, z));
+        for (int[] q : RIVER_ZONES) for (int x = q[0] >> 4; x <= q[2] >> 4; x++) for (int z = q[1] >> 4; z <= q[3] >> 4; z++) {
+            boolean hit = false;
+            for (int u = 0; u < 16 && !hit; u += 4) for (int v = 0; v < 16 && !hit; v += 4) hit = riverFix((x << 4) + u, (z << 4) + v);
+            if (hit) keys.add(ChunkPos.asLong(x, z));
+        }
         for (long k : keys) {
             ChunkPos cp = new ChunkPos(k);
             int mx = Math.max(Math.abs(cp.getMinBlockX() - KingdomTerrain.CX), Math.abs(cp.getMaxBlockX() - KingdomTerrain.CX));
@@ -58,9 +66,12 @@ public final class RoadRepair implements BuildLayout {
         return Math.max(Math.abs(x - KingdomTerrain.CX), Math.abs(z - KingdomTerrain.CZ)) < NEAR;
     }
 
-    private static boolean inRiverZone(int x, int z) {
-        for (int[] q : RIVER_ZONES) if (x >= q[0] && x <= q[2] && z >= q[1] && z <= q[3]) return true;
-        return false;
+    /** 옛 물길이나 새 물길의 골짜기 안 (두 지형이 다른 곳) */
+    private static boolean riverFix(int x, int z) {
+        boolean in = false;
+        for (int[] q : RIVER_ZONES) if (x >= q[0] && x <= q[2] && z >= q[1] && z <= q[3]) in = true;
+        if (!in) return false;
+        return KingdomTerrain.riverEdge(x, z) < VALLEY || KingdomTerrain.oldRiverEdge(x, z) < VALLEY;
     }
 
     public int chunkCount() {
@@ -70,11 +81,12 @@ public final class RoadRepair implements BuildLayout {
     @Override
     public void buildColumn(Placer p, int x, int z) {
         if (Math.abs(x - KingdomTerrain.CX) <= CITY && Math.abs(z - KingdomTerrain.CZ) <= CITY) return;
+        if (Protected.at(x, z)) return;                                                // 세계수·촌락 등 지어 둔 곳
         boolean near = near(x, z);
         double[] edge = new double[1];
         double offset = near ? BAND - 3 : 0;
         int ri = KingdomRoads.nearest(x, z, TreeClearer.ORPHAN + offset, edge);
-        boolean river = near && inRiverZone(x, z);
+        boolean river = near && riverFix(x, z);
         if (ri < 0 && !river) return;
         KingdomTerrain.Column c = KingdomTerrain.column(x, z);
         int top = p.level().getHeight(Heightmap.Types.WORLD_SURFACE, x, z);
@@ -102,10 +114,11 @@ public final class RoadRepair implements BuildLayout {
         }
         if (near && (ri >= 0 && edge[0] <= BAND || river)) {                           // 띠 전체를 지형째 다시 깖
             int y1 = Math.max(c.h() + 8, Math.min(top, c.h() + 48));
-            for (int y = c.h() - 8; y <= y1; y++) {
+            for (int y = Math.min(c.h(), 56) - 8; y <= y1; y++) {
                 BlockState s = KingdomChunkGenerator.blockAt(c, x, y, z);
                 p.set(x, y, z, s == null ? Blocks.AIR.defaultBlockState() : s);
             }
+            if (p.pass() == Placer.Pass.WATER) Regrow.column(p.level(), x, z);           // 다시 깐 땅에 나무·풀
             return;
         }
     }
@@ -120,4 +133,5 @@ public final class RoadRepair implements BuildLayout {
     @Override public int shapeMaxY() { return 200; }
     @Override public List<Feature> featuresIn(ChunkPos cp) { return Collections.emptyList(); }
     @Override public int[] lightRange(int x, int z) { return null; }
+    @Override public boolean waterPassAll() { return true; }
 }

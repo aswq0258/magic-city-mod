@@ -165,6 +165,16 @@ public final class KingdomTerrain {
         return best;
     }
 
+    /** 예전(강·길 연결 수정 전) 강 끝자락 — 이미 생성된 월드에 남은 옛 물길을 찾아 고칠 때만 씀 */
+    private static final int[][] OLD_RIVER_N = {{940, -860}, {660, -420}, {596, -300}};
+    private static final int[][] OLD_RIVER_S = {{596, 820}, {700, 1000}, {1060, 1340}};
+
+    public static double oldRiverEdge(int x, int z) {
+        if (z >= -300 && z <= 820) return Math.abs(x - cityRiverX(z)) - 9;
+        double wob = 6 * (fbm(x / 70.0, z / 70.0, 2, 77) - 0.5);
+        return Math.min(polyDist(x, z, OLD_RIVER_N), polyDist(x, z, OLD_RIVER_S)) + wob - 9;
+    }
+
     // ───────────────────────── 해안 (도면 좌표) ─────────────────────────
 
     /** 바다까지의 거리 (도면 단위, 양수 = 육지 안쪽, 음수 = 바다) */

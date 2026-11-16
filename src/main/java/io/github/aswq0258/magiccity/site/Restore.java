@@ -5,6 +5,7 @@ import io.github.aswq0258.magiccity.build.Placer;
 import io.github.aswq0258.magiccity.city.CityLayout;
 import io.github.aswq0258.magiccity.city.feature.Feature;
 import io.github.aswq0258.magiccity.world.KingdomChunkGenerator;
+import io.github.aswq0258.magiccity.world.KingdomRoads;
 import io.github.aswq0258.magiccity.world.KingdomTerrain;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.entity.Entity;
@@ -24,7 +25,7 @@ import java.util.Map;
 /**
  * 철거: 왕국 대륙에 지은 건축물 자리를 원래 지형으로 되돌림.
  * 지형은 계산식(KingdomTerrain) 이라, 각 기둥을 지형 생성기와 똑같이 다시 채우면 원래 땅(길 포함) 이 됨.
- * 원래 있던 나무·풀 같은 바닐라 장식은 되살아나지 않음. 이름 붙은 주민·정령·골렘, 보스·몬스터 무리도 치움.
+ * 되돌린 빈 땅에는 바이옴에 맞는 나무·풀을 다시 심음 (길 가까이는 빼고). 이름 붙은 주민·정령·골렘, 보스·몬스터 무리도 치움.
  */
 public final class Restore implements BuildLayout {
     /** 되돌릴 영역 {x0, z0, x1, z1, y0, y1} */
@@ -155,6 +156,12 @@ public final class Restore implements BuildLayout {
             BlockState s = KingdomChunkGenerator.blockAt(c, x, y, z);
             p.set(x, y, z, s == null ? Blocks.AIR.defaultBlockState() : s);
         }
+        if (p.pass() == Placer.Pass.WATER && !KingdomRoads.excluded(x, z)) io.github.aswq0258.magiccity.world.Regrow.column(p.level(), x, z);   // 나무·풀 다시 심기
+    }
+
+    @Override
+    public boolean waterPassAll() {
+        return formula;
     }
 
     /**

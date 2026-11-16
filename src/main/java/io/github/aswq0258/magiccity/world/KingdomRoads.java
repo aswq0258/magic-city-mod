@@ -98,7 +98,7 @@ public final class KingdomRoads {
 
     /** 길을 깔지 않는 곳: 왕성도시·신시가지 건설 범위 (도시가 직접 거리를 깖), 옛 왕도 성 안 */
     public static boolean excluded(double x, double z) {
-        if (Math.abs(x - KingdomTerrain.CX) <= 622 && Math.abs(z - KingdomTerrain.CZ) <= 622) return true;   // 왕성도시 + 신시가지
+        if (Math.abs(x - KingdomTerrain.CX) <= 620 && Math.abs(z - KingdomTerrain.CZ) <= 620) return true;   // 왕성도시 + 신시가지
         return Math.hypot(x - KingdomTerrain.OLD_X, z - KingdomTerrain.OLD_Z) < 172;
     }
 

@@ -123,7 +123,7 @@ public final class CityBuildJob {
         } catch (RuntimeException e) {
             MagicCityMod.LOGGER.error("Magic City: failed to build chunk {}", cp, e);
         }
-        if (pass == Placer.Pass.SOLID && (p.sawWater() || spawns)) waterChunks.add(cp);
+        if (pass == Placer.Pass.SOLID && (p.sawWater() || spawns || layout.waterPassAll())) waterChunks.add(cp);
     }
 
     private void broadcast(String msg) {
