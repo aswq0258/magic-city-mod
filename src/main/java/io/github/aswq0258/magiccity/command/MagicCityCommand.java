@@ -40,6 +40,7 @@ import java.util.List;
  * /magiccity hamlets         — 가까운 촌락 목록
  * /magiccity remove <hamlets|hamlet|roads|worldtree|dwarf|oldcapital> — 왕국 대륙 건축물 철거 (원래 지형으로)
  * /magiccity fix roads      — 이미 생성된 대륙에서 길·강·길가 나무만 그 자리에서 고침 (+ 신시가지 다시 짓기)
+ * /magiccity fix lava [반지름]   — 내 주변(기본 512) 지표의 용암 호수·용암 샘을 물로 바꿈
  * /magiccity fix nature [반지름] — 내 주변(기본 256) 빈 땅에 바이옴에 맞는 나무·풀을 다시 심음
  * /magiccity remove city     — 왕성도시(구시가지 + 신시가지) 철거
  * /magiccity remove all      — 왕국 대륙의 모든 건축물 + 왕성도시 철거 (차례로)
@@ -64,6 +65,9 @@ public final class MagicCityCommand {
                         .then(Commands.literal("hamlets").executes(MagicCityCommand::hamlets))
                         .then(Commands.literal("hamlet").executes(MagicCityCommand::oneHamlet)))
                 .then(Commands.literal("fix").then(Commands.literal("roads").executes(MagicCityCommand::fixRoads))
+                        .then(Commands.literal("lava").executes(ctx -> fixLava(ctx, 512))
+                                .then(Commands.argument("radius", com.mojang.brigadier.arguments.IntegerArgumentType.integer(16, 4096))
+                                        .executes(ctx -> fixLava(ctx, com.mojang.brigadier.arguments.IntegerArgumentType.getInteger(ctx, "radius")))))
                         .then(Commands.literal("nature").executes(ctx -> fixNature(ctx, 256))
                                 .then(Commands.argument("radius", com.mojang.brigadier.arguments.IntegerArgumentType.integer(16, 2048))
                                         .executes(ctx -> fixNature(ctx, com.mojang.brigadier.arguments.IntegerArgumentType.getInteger(ctx, "radius"))))))
@@ -503,6 +507,25 @@ public final class MagicCityCommand {
      * 이미 생성된 왕국 대륙에서 길만 그 자리에서 고침 (대륙을 다시 생성하지 않음):
      * 도시 근처 길·강 띠를 지형째 다시 깔고, 먼 길은 주변 나무만 걷어냄. 이어서 신시가지(성곽 바깥) 를 다시 지음.
      */
+    private static int fixLava(CommandContext<CommandSourceStack> ctx, int radius) {
+        CommandSourceStack src = ctx.getSource();
+        if (CityBuildManager.isRunning()) {
+            src.sendFailure(Component.literal("[마법 도시] 이미 건설 중입니다. /magiccity status 로 확인하세요."));
+            return 0;
+        }
+        ServerLevel k = src.getServer().getLevel(io.github.aswq0258.magiccity.world.ModWorldgen.KINGDOM);
+        if (k == null || src.getLevel() != k) {
+            src.sendFailure(Component.literal("[마법 도시] 왕국 대륙 안에서 입력하세요."));
+            return 0;
+        }
+        int x = (int) Math.floor(src.getPosition().x), z = (int) Math.floor(src.getPosition().z);
+        CityBuildJob job = new CityBuildJob(k, new io.github.aswq0258.magiccity.site.LavaFix(x, z, radius));
+        CityBuildManager.start(job);
+        src.sendSuccess(() -> Component.literal(String.format("§a[마법 도시] 용암 호수 정리 시작! (%d, %d) 주변 %d블록, 청크 %d개. 지표(Y 50 위)의 용암을 물로 바꿉니다.",
+                x, z, radius, job.chunkCount())), true);
+        return 1;
+    }
+
     private static int fixNature(CommandContext<CommandSourceStack> ctx, int radius) {
         CommandSourceStack src = ctx.getSource();
         if (CityBuildManager.isRunning()) {
