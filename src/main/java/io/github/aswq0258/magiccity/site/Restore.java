@@ -120,7 +120,15 @@ public final class Restore implements BuildLayout {
 
     /** 왕국 대륙에 지은 것 전부 (촌락·길 거점·세계수·드워프·옛 왕도·항구도시) — 왕성도시는 따로 */
     public static List<Restore> allSites() {
-        return List.of(hamlets(), roads(), worldTree(), dwarf(), oldCapital(), port(), dragon(), sky());
+        return List.of(hamlets(), roads(), worldTree(), dwarf(), oldCapital(), port(), dragon(), sky(), cursed());
+    }
+
+    /** 저주받은 숲 + 심연 균열 (숲 전체를 원래 지형으로 — 시든 나무 대신 새 나무가 심어짐) */
+    public static Restore cursed() {
+        return new Restore("저주받은 숲·심연 균열")
+                .add(CursedLands.WX - 580, CursedLands.WZ - 500, CursedLands.WX + 580, CursedLands.WZ + 500, 60, 110)
+                .add(CursedLands.RX - 150, CursedLands.RZ - 150, CursedLands.RX + 150, CursedLands.RZ + 150, -34, 90)
+                .done();
     }
 
     /** 부유섬 유적 (하늘의 섬들·탑·땅의 샘·야영지) */

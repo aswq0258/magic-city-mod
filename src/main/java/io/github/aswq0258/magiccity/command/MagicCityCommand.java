@@ -40,6 +40,9 @@ import java.util.List;
  * /magiccity goto dragon     — 용의 동굴 입구 앞마당으로 이동
  * /magiccity site sky        — 부유섬 유적 (하늘의 섬 7개·사슬 다리·폭포·천공의 탑·보스 폭풍의 수호자) 건설
  * /magiccity goto sky        — 천공의 탑 앞 학자 야영지로 이동
+ * /magiccity site cursed     — 저주받은 숲(시든 숲·교수대·마녀의 오두막·저주받은 제단과 보스 저주의 마녀왕) + 심연 균열(Y -30 까지의 협곡·나선 계단·스컬크 폐허) 건설
+ * /magiccity goto cursed     — 저주받은 숲 갈림길로 이동
+ * /magiccity goto rift       — 심연 균열 나선 계단 입구로 이동
  * /magiccity site dwarf      — 드워프 광산왕국 (산의 문·대전당·옥좌실·대장간·광산) 건설
  * /magiccity goto dwarf      — 드워프 교역 마당으로 이동
  * /magiccity site hamlets    — 대륙 곳곳의 테마 촌락 건설 (바닐라 마을 대신)
@@ -73,6 +76,7 @@ public final class MagicCityCommand {
                         .then(Commands.literal("port").executes(MagicCityCommand::port))
                         .then(Commands.literal("dragon").executes(MagicCityCommand::dragon))
                         .then(Commands.literal("sky").executes(MagicCityCommand::sky))
+                        .then(Commands.literal("cursed").executes(MagicCityCommand::cursed))
                         .then(Commands.literal("dwarf").executes(MagicCityCommand::dwarf))
                         .then(Commands.literal("hamlets").executes(MagicCityCommand::hamlets))
                         .then(Commands.literal("hamlet").executes(MagicCityCommand::oneHamlet)))
@@ -98,6 +102,7 @@ public final class MagicCityCommand {
                         .then(Commands.literal("port").executes(ctx -> remove(ctx, io.github.aswq0258.magiccity.site.Restore.port())))
                         .then(Commands.literal("dragon").executes(ctx -> remove(ctx, io.github.aswq0258.magiccity.site.Restore.dragon())))
                         .then(Commands.literal("sky").executes(ctx -> remove(ctx, io.github.aswq0258.magiccity.site.Restore.sky())))
+                        .then(Commands.literal("cursed").executes(ctx -> remove(ctx, io.github.aswq0258.magiccity.site.Restore.cursed())))
                         .then(Commands.literal("dwarf").executes(ctx -> remove(ctx, io.github.aswq0258.magiccity.site.Restore.dwarf())))
                         .then(Commands.literal("oldcapital").executes(ctx -> remove(ctx, io.github.aswq0258.magiccity.site.Restore.oldCapital())))
                         .then(Commands.literal("city").executes(ctx -> removeCity(ctx, false)))
@@ -121,6 +126,21 @@ public final class MagicCityCommand {
                     int y = io.github.aswq0258.magiccity.world.KingdomTerrain.column(io.github.aswq0258.magiccity.site.DwarfHold.CX,
                             io.github.aswq0258.magiccity.site.DwarfHold.CZ - 50).h() + 1;
                     ctx.getSource().getPlayerOrException().teleportTo(k, x + 0.5, y, z + 0.5, 180F, 0F);
+                    return 1;
+                })))
+                .then(Commands.literal("goto").then(Commands.literal("cursed").executes(ctx -> {
+                    ServerLevel k = ctx.getSource().getServer().getLevel(io.github.aswq0258.magiccity.world.ModWorldgen.KINGDOM);
+                    if (k == null) return 0;
+                    int x = io.github.aswq0258.magiccity.site.CursedLands.WX - 6, z = io.github.aswq0258.magiccity.site.CursedLands.WZ - 6;
+                    int y = io.github.aswq0258.magiccity.world.KingdomTerrain.column(x, z).h() + 2;
+                    ctx.getSource().getPlayerOrException().teleportTo(k, x + 0.5, y, z + 0.5, 0F, 0F);
+                    return 1;
+                })).then(Commands.literal("rift").executes(ctx -> {
+                    ServerLevel k = ctx.getSource().getServer().getLevel(io.github.aswq0258.magiccity.world.ModWorldgen.KINGDOM);
+                    if (k == null) return 0;
+                    int x = io.github.aswq0258.magiccity.site.CursedLands.STAIR_X + 7, z = io.github.aswq0258.magiccity.site.CursedLands.STAIR_Z;
+                    int y = io.github.aswq0258.magiccity.world.KingdomTerrain.column(x, z).h() + 2;
+                    ctx.getSource().getPlayerOrException().teleportTo(k, x + 0.5, y, z + 0.5, 90F, 0F);
                     return 1;
                 })))
                 .then(Commands.literal("goto").then(Commands.literal("sky").executes(ctx -> {
@@ -412,6 +432,26 @@ public final class MagicCityCommand {
         CityBuildManager.start(job);
         src.sendSuccess(() -> Component.literal(String.format("§a[마법 도시] 세계수 성역 건설 시작! 중심 (%d, %d), 건물 %d개, 청크 %d개. "
                 + "/magiccity goto worldtree 로 갈 수 있습니다.", site.cx(), site.cz(), site.featureCount(), job.chunkCount())), true);
+        return 1;
+    }
+
+    /** 저주받은 숲 + 심연 균열 건설 */
+    private static int cursed(CommandContext<CommandSourceStack> ctx) {
+        CommandSourceStack src = ctx.getSource();
+        if (CityBuildManager.isRunning()) {
+            src.sendFailure(Component.literal("[마법 도시] 이미 건설 중입니다. /magiccity status 로 확인하세요."));
+            return 0;
+        }
+        ServerLevel k = src.getServer().getLevel(io.github.aswq0258.magiccity.world.ModWorldgen.KINGDOM);
+        if (k == null) {
+            src.sendFailure(Component.literal("[마법 도시] 왕국 대륙 차원을 찾을 수 없습니다."));
+            return 0;
+        }
+        io.github.aswq0258.magiccity.site.CursedLands site = new io.github.aswq0258.magiccity.site.CursedLands(k.getSeed() ^ 0xC0E5EDL);
+        CityBuildJob job = new CityBuildJob(k, site);
+        CityBuildManager.start(job);
+        src.sendSuccess(() -> Component.literal(String.format("§5[마법 도시] 저주받은 숲·심연 균열 건설 시작! 청크 %d개. /magiccity goto cursed, /magiccity goto rift 로 갈 수 있습니다.",
+                job.chunkCount())), true);
         return 1;
     }
 

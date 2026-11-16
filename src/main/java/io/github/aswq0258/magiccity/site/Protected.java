@@ -13,6 +13,7 @@ public final class Protected {
         if (PortCity.near(x, z)) return true;
         if (DragonLair.near(x, z)) return true;
         if (SkyRuins.near(x, z)) return true;
+        if (CursedLands.protectedAt(x, z)) return true;
         if (Hamlets.near(x, z)) return true;
         for (RoadSites.Site s : RoadSites.sites()) {
             int e = s.kind() == RoadSites.Kind.ARENA ? 24 : 18;
