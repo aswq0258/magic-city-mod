@@ -115,7 +115,14 @@ public final class Placer {
         if (needsShapeUpdate(state)) {
             state = Block.updateFromNeighbourShapes(state, level, cursor);
         }
-        if (level.getBlockState(cursor) == state) return;
+        BlockState old = level.getBlockState(cursor);
+        if (old == state) return;
+        // 다시 지을 때: 아직 열어 보지 않은 보물 상자·통을 지우면 그 자리에서 전리품이 만들어져 바닥에 쏟아지므로, 지우기 전에 전리품 표를 떼어 냄
+        // (이미 열어 본 상자는 안의 물건을 그대로 떨어뜨려 플레이어 물건이 사라지지 않게 함)
+        if (old.hasBlockEntity() && level.getBlockEntity(cursor) instanceof net.minecraft.world.level.block.entity.RandomizableContainerBlockEntity rc
+                && rc.getLootTable() != null) {
+            rc.setLootTable(null);
+        }
         level.setBlock(cursor, state, FLAGS);
     }
 
