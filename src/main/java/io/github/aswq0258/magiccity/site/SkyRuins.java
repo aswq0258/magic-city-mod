@@ -59,7 +59,7 @@ public final class SkyRuins implements BuildLayout {
     };
     /** 다리 {섬 a, 섬 b, 끊김 여부} */
     private static final int[][] BRIDGES = {{0, 1, 0}, {0, 2, 1}, {0, 3, 0}, {0, 4, 1}, {1, 5, 0}, {2, 5, 0}, {4, 1, 0}};
-    public static final int TOWER_X = CX + 41, TOWER_Z = CZ - 2, TOWER_R = 6;
+    public static final int TOWER_X = CX + 41, TOWER_Z = CZ - 40, TOWER_R = 6;
     public static final int POOL_X = CX, POOL_Z = CZ - 3;
     public static final int ARENA_X = ISLES[5][0], ARENA_Z = ISLES[5][1], ARENA_Y = ISLES[5][3];
 
