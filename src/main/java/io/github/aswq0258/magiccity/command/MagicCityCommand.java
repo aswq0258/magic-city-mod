@@ -36,6 +36,7 @@ import java.util.List;
  * /magiccity site dwarf      — 드워프 광산왕국 (산의 문·대전당·옥좌실·대장간·광산) 건설
  * /magiccity goto dwarf      — 드워프 교역 마당으로 이동
  * /magiccity site hamlets    — 대륙 곳곳의 테마 촌락 건설 (바닐라 마을 대신)
+ * /magiccity site hamlet     — 가장 가까운 촌락 한 곳만 건설 (remove hamlet 뒤 다시 지을 때)
  * /magiccity hamlets         — 가까운 촌락 목록
  * /magiccity remove <hamlets|hamlet|roads|worldtree|dwarf|oldcapital> — 왕국 대륙 건축물 철거 (원래 지형으로)
  * /magiccity fix roads      — 이미 생성된 대륙에서 길·강·길가 나무만 그 자리에서 고침 (+ 신시가지 다시 짓기)
@@ -60,7 +61,8 @@ public final class MagicCityCommand {
                         .then(Commands.literal("roads").executes(MagicCityCommand::roads))
                         .then(Commands.literal("worldtree").executes(MagicCityCommand::worldTree))
                         .then(Commands.literal("dwarf").executes(MagicCityCommand::dwarf))
-                        .then(Commands.literal("hamlets").executes(MagicCityCommand::hamlets)))
+                        .then(Commands.literal("hamlets").executes(MagicCityCommand::hamlets))
+                        .then(Commands.literal("hamlet").executes(MagicCityCommand::oneHamlet)))
                 .then(Commands.literal("fix").then(Commands.literal("roads").executes(MagicCityCommand::fixRoads))
                         .then(Commands.literal("nature").executes(ctx -> fixNature(ctx, 256))
                                 .then(Commands.argument("radius", com.mojang.brigadier.arguments.IntegerArgumentType.integer(16, 2048))
@@ -383,6 +385,26 @@ public final class MagicCityCommand {
     }
 
     /** 대륙 곳곳의 테마 촌락 건설 */
+    private static int oneHamlet(CommandContext<CommandSourceStack> ctx) {
+        CommandSourceStack src = ctx.getSource();
+        if (CityBuildManager.isRunning()) {
+            src.sendFailure(Component.literal("[마법 도시] 이미 건설 중입니다. /magiccity status 로 확인하세요."));
+            return 0;
+        }
+        ServerLevel k = src.getServer().getLevel(io.github.aswq0258.magiccity.world.ModWorldgen.KINGDOM);
+        if (k == null) {
+            src.sendFailure(Component.literal("[마법 도시] 왕국 대륙 차원을 찾을 수 없습니다."));
+            return 0;
+        }
+        var spot = io.github.aswq0258.magiccity.site.Hamlets.nearest(src.getPosition().x, src.getPosition().z);
+        if (spot == null) return 0;
+        CityBuildJob job = new CityBuildJob(k, new io.github.aswq0258.magiccity.site.Hamlets(List.of(spot)));
+        CityBuildManager.start(job);
+        src.sendSuccess(() -> Component.literal(String.format("§b[마법 도시] %s 건설 시작! (%d, %d) 청크 %d개.",
+                spot.name(), spot.x(), spot.z(), job.chunkCount())), true);
+        return 1;
+    }
+
     private static int hamlets(CommandContext<CommandSourceStack> ctx) {
         CommandSourceStack src = ctx.getSource();
         if (CityBuildManager.isRunning()) {

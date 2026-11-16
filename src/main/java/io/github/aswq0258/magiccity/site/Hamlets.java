@@ -194,8 +194,16 @@ public final class Hamlets implements BuildLayout {
     private final List<ChunkPos> chunks = new ArrayList<>();
     private final List<int[]> lit = new ArrayList<>();          // 실내 조명 {x0, z0, x1, z1, y0, y1}
 
+    private final int count;
+
     public Hamlets() {
-        for (Spot s : spots()) {
+        this(spots());
+    }
+
+    /** 일부 촌락만 (예: 가장 가까운 한 곳) */
+    public Hamlets(List<Spot> only) {
+        count = only.size();
+        for (Spot s : only) {
             Village v = new Village(s);
             features.add(v);
             features.addAll(v.extraFeatures);
@@ -215,7 +223,14 @@ public final class Hamlets implements BuildLayout {
     }
 
     public int count() {
-        return spots().size();
+        return count;
+    }
+
+    /** 가장 가까운 촌락 (없으면 null) */
+    public static Spot nearest(double px, double pz) {
+        Spot best = null;
+        for (Spot s : spots()) if (best == null || Math.hypot(s.x() - px, s.z() - pz) < Math.hypot(best.x() - px, best.z() - pz)) best = s;
+        return best;
     }
 
     @Override public int cx() { return KingdomTerrain.CX; }
