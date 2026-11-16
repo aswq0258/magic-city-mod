@@ -39,6 +39,7 @@ public final class KingdomRoads {
             {"등대 지선", 2, new int[][]{{1300, -450}, {1550, -300}, {1880, -150}}},
             {"남서 국경 군용로", 1, new int[][]{{-200, 1670}, {-500, 1560}, {-810, 1420}, {-1080, 1500}, {-1320, 1600}}},
             {"세계수 순례길", 2, new int[][]{{-660, -230}, {-850, -255}, {-1030, -315}, {-1195, -300}}},   // 서부 숲길 → 엘프 순례촌 → 대수림 한가운데 세계수 성역
+            {"용의 길", 2, new int[][]{{190, -970}, {340, -1035}, {450, -1080}, {488, -1130}, {474, -1167}}},   // 북부 왕도 → 고룡 봉우리 협곡 끝 용의 동굴 (비틀지 않음)
             {"폐왕도 잔해길", 3, new int[][]{{-1320, 1600}, {-1600, 1700}, {-1850, 1760}}},
     };
 
@@ -68,6 +69,11 @@ public final class KingdomRoads {
         }
     }
 
+    /** 비틀지 않는 길 (정해진 동굴 입구에 정확히 닿아야 하는 길) */
+    private static boolean straight(Road r) {
+        return r.name().equals("용의 길");
+    }
+
     /** 길을 구불구불하게 만드는 좌표 비틀기 */
     static double warpX(double x, double z) {
         return x + 60 * cityFade(x, z) * (KingdomTerrain.fbm(x / 320.0, z / 320.0, 2, 51) - 0.5);
@@ -86,7 +92,7 @@ public final class KingdomRoads {
     /** 길 중심선까지의 거리 (비틀린 좌표 기준) */
     public static double dist(Road r, double x, double z) {
         if (x < r.minX || x > r.maxX || z < r.minZ || z > r.maxZ) return 1e9;
-        return warpedDist(r, warpX(x, z), warpZ(x, z));
+        return straight(r) ? warpedDist(r, x, z) : warpedDist(r, warpX(x, z), warpZ(x, z));
     }
 
     private static double warpedDist(Road r, double wx, double wz) {
@@ -118,7 +124,7 @@ public final class KingdomRoads {
                 wx = warpX(x, z);
                 wz = warpZ(x, z);
             }
-            double d = warpedDist(r, wx, wz) - r.halfWidth();
+            double d = (straight(r) ? warpedDist(r, x, z) : warpedDist(r, wx, wz)) - r.halfWidth();
             if (d < bd) {
                 bd = d;
                 best = i;
@@ -138,7 +144,7 @@ public final class KingdomRoads {
             for (double t = 0; t < len || (i + 2 == p.length && t <= len); t += step) {
                 double qx = p[i][0] + (p[i + 1][0] - p[i][0]) * Math.min(1, t / len), qz = p[i][1] + (p[i + 1][1] - p[i][1]) * Math.min(1, t / len);
                 double x = qx, z = qz;
-                for (int k = 0; k < 6; k++) {                                          // warp(x) = q 를 푸는 고정점 반복
+                for (int k = 0; k < 6 && !straight(r); k++) {                                          // warp(x) = q 를 푸는 고정점 반복
                     double nx = qx - (warpX(x, z) - x), nz = qz - (warpZ(x, z) - z);
                     x = nx;
                     z = nz;

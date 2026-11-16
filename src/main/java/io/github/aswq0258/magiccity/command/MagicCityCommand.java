@@ -36,6 +36,8 @@ import java.util.List;
  * /magiccity site port       — 동해안 항구도시(성벽·항구·잔교·범선·방파제 등대) + 앞바다 등대 섬(거대 등대·해상신전·잠긴 성소) 건설
  * /magiccity goto port       — 항구도시 분수 광장으로 이동
  * /magiccity goto lighthouse — 등대 섬으로 이동
+ * /magiccity site dragon     — 고룡 봉우리 드래곤 레어 (동굴 입구·샘의 동굴·나선 목구멍·2층 미궁·보물 동굴과 보스 고룡 이그나르) 건설
+ * /magiccity goto dragon     — 용의 동굴 입구 앞마당으로 이동
  * /magiccity site dwarf      — 드워프 광산왕국 (산의 문·대전당·옥좌실·대장간·광산) 건설
  * /magiccity goto dwarf      — 드워프 교역 마당으로 이동
  * /magiccity site hamlets    — 대륙 곳곳의 테마 촌락 건설 (바닐라 마을 대신)
@@ -66,6 +68,7 @@ public final class MagicCityCommand {
                         .then(Commands.literal("roads").executes(MagicCityCommand::roads))
                         .then(Commands.literal("worldtree").executes(MagicCityCommand::worldTree))
                         .then(Commands.literal("port").executes(MagicCityCommand::port))
+                        .then(Commands.literal("dragon").executes(MagicCityCommand::dragon))
                         .then(Commands.literal("dwarf").executes(MagicCityCommand::dwarf))
                         .then(Commands.literal("hamlets").executes(MagicCityCommand::hamlets))
                         .then(Commands.literal("hamlet").executes(MagicCityCommand::oneHamlet)))
@@ -88,6 +91,7 @@ public final class MagicCityCommand {
                         .then(Commands.literal("roads").executes(ctx -> remove(ctx, io.github.aswq0258.magiccity.site.Restore.roads())))
                         .then(Commands.literal("worldtree").executes(ctx -> remove(ctx, io.github.aswq0258.magiccity.site.Restore.worldTree())))
                         .then(Commands.literal("port").executes(ctx -> remove(ctx, io.github.aswq0258.magiccity.site.Restore.port())))
+                        .then(Commands.literal("dragon").executes(ctx -> remove(ctx, io.github.aswq0258.magiccity.site.Restore.dragon())))
                         .then(Commands.literal("dwarf").executes(ctx -> remove(ctx, io.github.aswq0258.magiccity.site.Restore.dwarf())))
                         .then(Commands.literal("oldcapital").executes(ctx -> remove(ctx, io.github.aswq0258.magiccity.site.Restore.oldCapital())))
                         .then(Commands.literal("city").executes(ctx -> removeCity(ctx, false)))
@@ -111,6 +115,13 @@ public final class MagicCityCommand {
                     int y = io.github.aswq0258.magiccity.world.KingdomTerrain.column(io.github.aswq0258.magiccity.site.DwarfHold.CX,
                             io.github.aswq0258.magiccity.site.DwarfHold.CZ - 50).h() + 1;
                     ctx.getSource().getPlayerOrException().teleportTo(k, x + 0.5, y, z + 0.5, 180F, 0F);
+                    return 1;
+                })))
+                .then(Commands.literal("goto").then(Commands.literal("dragon").executes(ctx -> {
+                    ServerLevel k = ctx.getSource().getServer().getLevel(io.github.aswq0258.magiccity.world.ModWorldgen.KINGDOM);
+                    if (k == null) return 0;
+                    ctx.getSource().getPlayerOrException().teleportTo(k, io.github.aswq0258.magiccity.site.DragonLair.MOUTH_X + 12.5,
+                            io.github.aswq0258.magiccity.site.DragonLair.CAVE_Y + 1, io.github.aswq0258.magiccity.site.DragonLair.MOUTH_Z + 8.5, 180F, 0F);
                     return 1;
                 })))
                 .then(Commands.literal("goto").then(Commands.literal("port").executes(ctx -> {
@@ -387,6 +398,26 @@ public final class MagicCityCommand {
         CityBuildManager.start(job);
         src.sendSuccess(() -> Component.literal(String.format("§a[마법 도시] 세계수 성역 건설 시작! 중심 (%d, %d), 건물 %d개, 청크 %d개. "
                 + "/magiccity goto worldtree 로 갈 수 있습니다.", site.cx(), site.cz(), site.featureCount(), job.chunkCount())), true);
+        return 1;
+    }
+
+    /** 고룡 봉우리 드래곤 레어 건설 */
+    private static int dragon(CommandContext<CommandSourceStack> ctx) {
+        CommandSourceStack src = ctx.getSource();
+        if (CityBuildManager.isRunning()) {
+            src.sendFailure(Component.literal("[마법 도시] 이미 건설 중입니다. /magiccity status 로 확인하세요."));
+            return 0;
+        }
+        ServerLevel k = src.getServer().getLevel(io.github.aswq0258.magiccity.world.ModWorldgen.KINGDOM);
+        if (k == null) {
+            src.sendFailure(Component.literal("[마법 도시] 왕국 대륙 차원을 찾을 수 없습니다."));
+            return 0;
+        }
+        io.github.aswq0258.magiccity.site.DragonLair site = new io.github.aswq0258.magiccity.site.DragonLair(k.getSeed() ^ 0xD4A60L);
+        CityBuildJob job = new CityBuildJob(k, site);
+        CityBuildManager.start(job);
+        src.sendSuccess(() -> Component.literal(String.format("§6[마법 도시] 고룡 봉우리 드래곤 레어 건설 시작! 청크 %d개. /magiccity goto dragon 으로 동굴 입구에 갈 수 있습니다.",
+                job.chunkCount())), true);
         return 1;
     }
 

@@ -120,7 +120,17 @@ public final class Restore implements BuildLayout {
 
     /** 왕국 대륙에 지은 것 전부 (촌락·길 거점·세계수·드워프·옛 왕도·항구도시) — 왕성도시는 따로 */
     public static List<Restore> allSites() {
-        return List.of(hamlets(), roads(), worldTree(), dwarf(), oldCapital(), port());
+        return List.of(hamlets(), roads(), worldTree(), dwarf(), oldCapital(), port(), dragon());
+    }
+
+    /** 고룡 봉우리 드래곤 레어 (지하 미궁 전체 + 동굴 입구) */
+    public static Restore dragon() {
+        int x0 = DragonLair.X0, z0 = DragonLair.Z0, sz = DragonLair.CELL * DragonLair.N;
+        return new Restore("고룡 봉우리 드래곤 레어")
+                .add(x0 - 8, z0 - 8, x0 + sz + 8, z0 + sz + 8, DragonLair.HOARD_Y - 5, DragonLair.L1 + 12)
+                .add(DragonLair.MOUTH_X - 26, DragonLair.THROAT_Z - 8, DragonLair.MOUTH_X + 26, DragonLair.MOUTH_Z + 14, DragonLair.CAVE_Y - 6, DragonLair.CAVE_Y + 22)
+                .add(DragonLair.THROAT_X - 8, DragonLair.THROAT_Z - 22, DragonLair.THROAT_X + 30, DragonLair.THROAT_Z + 8, DragonLair.L1 - 2, DragonLair.CAVE_Y + 6)
+                .done();
     }
 
     /** 동해안 항구도시 + 방파제 + 등대 섬과 잠긴 성소 */
