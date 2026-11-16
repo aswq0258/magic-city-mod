@@ -129,6 +129,27 @@ public final class KingdomRoads {
         return best;
     }
 
+    /** 실제(비틀린) 길 중심선 위의 점들 (step 블록 간격) — 비틀기를 거꾸로 풀어서 구함 */
+    public static java.util.List<double[]> centerline(Road r, double step) {
+        java.util.List<double[]> out = new java.util.ArrayList<>();
+        int[][] p = r.pts;
+        for (int i = 0; i + 1 < p.length; i++) {
+            double len = Math.hypot(p[i + 1][0] - p[i][0], p[i + 1][1] - p[i][1]);
+            for (double t = 0; t < len || (i + 2 == p.length && t <= len); t += step) {
+                double qx = p[i][0] + (p[i + 1][0] - p[i][0]) * Math.min(1, t / len), qz = p[i][1] + (p[i + 1][1] - p[i][1]) * Math.min(1, t / len);
+                double x = qx, z = qz;
+                for (int k = 0; k < 6; k++) {                                          // warp(x) = q 를 푸는 고정점 반복
+                    double nx = qx - (warpX(x, z) - x), nz = qz - (warpZ(x, z) - z);
+                    x = nx;
+                    z = nz;
+                }
+                out.add(new double[]{x, z});
+                if (t >= len) break;
+            }
+        }
+        return out;
+    }
+
     /** 비틀기 전 꺾은선 위 비율 위치의 점과 진행 방향 {x, z, dirX, dirZ} */
     public static double[] pointAt(Road r, double frac) {
         double target = r.length * Math.max(0, Math.min(1, frac)), acc = 0;

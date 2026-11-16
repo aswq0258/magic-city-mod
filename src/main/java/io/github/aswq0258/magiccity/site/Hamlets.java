@@ -310,35 +310,68 @@ public final class Hamlets implements BuildLayout {
             return st == Style.SWAMP || s.type() == Type.FISHING || s.type() == Type.FROST_PORT;
         }
 
-        /** 거리: 가장 가까운 대륙 길 쪽으로 한 갈래 (길까지 이어짐) + 나머지는 고르게 */
-        private void planStreets(java.util.Random r) {
-            double best = 1e9, a0 = 0;
-            double[] out = new double[1];
-            for (int i = 0; i < 24; i++) {
-                double a = Math.PI * 2 * i / 24;
-                int x = s.x() + (int) (Math.cos(a) * (s.half() + 30)), z = s.z() + (int) (Math.sin(a) * (s.half() + 30));
-                int ri = KingdomRoads.nearest(x, z, 400, out);
-                if (ri >= 0 && out[0] < best) {
-                    best = out[0];
-                    a0 = a;
-                }
+        /** 물(강·바다) 앞에서 멈춘 길이: 거리가 강 위에 따로 널빤지 다리를 놓지 않게 */
+        private double clipWater(double x0, double z0, double a, double len) {
+            for (double t = 4; t <= len; t += 1) {
+                KingdomTerrain.Column c = KingdomTerrain.column((int) Math.floor(x0 + Math.cos(a) * t), (int) Math.floor(z0 + Math.sin(a) * t));
+                if (c.water() != Integer.MIN_VALUE && c.h() < c.water() && st != Style.SWAMP) return Math.max(0, t - 3);
             }
+            return len;
+        }
+
+        private void lane(double x0, double z0, double a, double len, double w) {
+            len = clipWater(x0, z0, a, len);
+            if (len >= 6) streets.add(new double[]{x0, z0, x0 + Math.cos(a) * len, z0 + Math.sin(a) * len, w});
+        }
+
+        /**
+         * 거리: 대륙 길이 마을을 지나가면 큰길은 그 길 위에 겹쳐 깔고(따로 나란한 길·다리를 만들지 않음),
+         * 길이 마을 밖에 있으면 가장 가까운 길 위 지점까지 곧게 잇고, 나머지 골목은 고르게. 물 앞에서는 멈춤.
+         */
+        private void planStreets(java.util.Random r) {
             int n = Math.max(1, s.type().lanes);
             double w = s.type().paved ? 2.5 : 1.5;
-            for (int i = 0; i < n; i++) {
-                double a = a0 + Math.PI * 2 * i / n + (i == 0 ? 0 : (r.nextDouble() - 0.5) * 0.4);
-                double len = s.half() - 4;
-                if (i == 0) {                                                            // 큰길: 대륙 길까지
-                    for (int t = 10; t < s.half() + 90; t += 2) {
-                        int x = s.x() + (int) (Math.cos(a) * t), z = s.z() + (int) (Math.sin(a) * t);
-                        if (KingdomRoads.nearest(x, z, 0, null) >= 0) {
-                            len = t;
-                            break;
-                        }
+            double[] out = new double[1];
+            int ri = KingdomRoads.nearest(s.x(), s.z(), s.half() + 140, out);
+            double a0 = 0, sideBase;
+            boolean through = false;
+            if (ri >= 0) {
+                List<double[]> cl = KingdomRoads.centerline(KingdomRoads.ROADS[ri], 2);
+                int k = 0;
+                double bd = 1e9;
+                for (int i = 0; i < cl.size(); i++) {
+                    double d = Math.hypot(cl.get(i)[0] - s.x(), cl.get(i)[1] - s.z());
+                    if (d < bd) {
+                        bd = d;
+                        k = i;
                     }
                 }
-                streets.add(new double[]{s.x(), s.z(), s.x() + Math.cos(a) * len, s.z() + Math.sin(a) * len, i == 0 ? w + 0.5 : w});
+                double[] P = cl.get(k);
+                if (bd < s.half() - 6) {                                                 // 길이 마을을 지나감: 길을 따라 큰길 두 갈래
+                    through = true;
+                    for (int dir = -1; dir <= 1; dir += 2) {
+                        int j = k;
+                        while (j + dir >= 0 && j + dir < cl.size() && Math.hypot(cl.get(j + dir)[0] - s.x(), cl.get(j + dir)[1] - s.z()) < s.half() + 6) j += dir;
+                        double[] E = cl.get(j);
+                        double len = Math.hypot(E[0] - P[0], E[1] - P[1]);
+                        if (len < 12) continue;
+                        double a = Math.atan2(E[1] - P[1], E[0] - P[0]);
+                        if (dir == 1 || streets.isEmpty()) a0 = a;
+                        lane(P[0], P[1], a, len, w + 0.5);
+                    }
+                } else {                                                                 // 마을 밖의 길까지 곧게
+                    a0 = Math.atan2(P[1] - s.z(), P[0] - s.x());
+                    lane(s.x(), s.z(), a0, bd, w + 0.5);
+                }
             }
+            sideBase = through ? a0 + Math.PI / 2 : a0;
+            int others = through ? n - 1 : n - 1;
+            for (int i = 0; i < others; i++) {
+                double a = through ? sideBase + Math.PI * 2 * i / Math.max(1, others) + (r.nextDouble() - 0.5) * 0.3
+                        : a0 + Math.PI * 2 * (i + 1) / n + (r.nextDouble() - 0.5) * 0.4;
+                lane(s.x(), s.z(), a, s.half() - 4, w);
+            }
+            if (streets.isEmpty()) lane(s.x(), s.z(), a0, s.half() - 4, w);
         }
 
         private double streetDist(double x, double z) {
