@@ -103,6 +103,7 @@ public final class SewerWorks implements BuildLayout {
     @Override
     public void buildColumn(Placer p, int x, int z) {
         if (p.pass() != Placer.Pass.SOLID) return;
+        prisonRework(p, x, z);
         falls(p, x, z);
         if (x >= DX0 - 1 && x <= 127 && z >= DZ0 - 1 && z <= 451) hideout(p, x, z);
         if (x >= HALL[0] - 1 && x <= HALL[2] + 1 && z >= HALL[1] - 1 && z <= HALL[3] + 1) {
@@ -141,9 +142,9 @@ public final class SewerWorks implements BuildLayout {
         // 안쪽: 아치 천장, 가운데 물길, 양옆 보행로
         int top = F + 8 - (lat * lat) / 5;
         p.set(x, F - 1, z, brick(x, F - 1, z));
-        p.set(x, F, z, al <= 1 ? Blocks.WATER.defaultBlockState() : brick(x, F, z));
+        p.set(x, F, z, al <= 1 ? (Math.floorMod(along, 8) == 0 ? Blocks.WATER.defaultBlockState() : Blocks.AIR.defaultBlockState()) : brick(x, F, z));
         for (int y = F + 1; y <= top; y++) p.set(x, y, z, Blocks.AIR.defaultBlockState());
-        boolean fall = lat == 0 && frac < 0.85 && Math.floorMod(along, 15) == 9;            // 천장 배수구에서 떨어지는 물
+        boolean fall = lat == 0 && frac < 0.85 && Math.floorMod(along, 16) == 0;            // 천장 배수구에서 떨어지는 물
         p.set(x, top + 1, z, fall ? Blocks.WATER.defaultBlockState() : brick(x, top + 1, z));
         int k = h(x, F, z);
         // 끝: 완전히 무너짐
@@ -190,14 +191,62 @@ public final class SewerWorks implements BuildLayout {
 
     // ───────────────────────── 원래 하수로의 물 ─────────────────────────
 
-    /** 원래 하수로 물길 위 천장 배수구 (14칸마다): 물이 쏟아져 물길로 떨어짐 */
+    /**
+     * 원래 하수로 물길을 흐르는 물로: 8칸마다 물 근원(그 위 16칸마다 천장 배수구에서 물이 쏟아짐), 그 사이는 비워 두어
+     * 물이 근원에서 양쪽으로 흘러 퍼지게 함 (물길 홈이 1칸이라 보행로로 넘치지 않음).
+     */
     private void falls(Placer p, int x, int z) {
         for (int[] c : CHANNELS) {
             boolean alongX = c[0] == 1;
             int along = alongX ? x : z, lat = alongX ? z - c[1] : x - c[1];
-            if (lat != 0 || along < c[2] || along > c[3] || Math.floorMod(along, 14) != 7) continue;
-            if (!p.get(x, F + 5, z).isAir() || !p.get(x, F, z).is(Blocks.WATER)) continue;     // 등불 자리·물길 없는 곳은 건너뜀
-            p.set(x, F + 6, z, Blocks.WATER.defaultBlockState());
+            if (lat != 0 || along < c[2] || along > c[3]) continue;
+            if (!p.get(x, F - 1, z).isSolid()) continue;
+            boolean source = Math.floorMod(along, 8) == 0;
+            p.set(x, F, z, source ? Blocks.WATER.defaultBlockState() : Blocks.AIR.defaultBlockState());
+            boolean fall = Math.floorMod(along, 16) == 0 && p.get(x, F + 5, z).isAir();
+            if (fall) p.set(x, F + 6, z, Blocks.WATER.defaultBlockState());
+            else if (p.get(x, F + 6, z).is(Blocks.WATER)) p.set(x, F + 6, z, brick(x, F + 6, z));    // 예전 배수구 자리
+        }
+    }
+
+    // ───────────────────────── 왕궁·지하감옥·하수도 연결 ─────────────────────────
+
+    /**
+     * - 순환 하수로 서쪽 벽에서 왕궁 사다리로 가던 통로를 메움
+     * - 왕궁 비밀 사다리(224, 275) 아래에서 북쪽으로 지하감옥 남쪽 감방까지 새 통로
+     * - 하수로 북쪽과 지하감옥을 대놓고 잇던 굴을 막고, 감방 벽의 덩굴 뒤 좁은 틈으로만 몰래 이어지게
+     */
+    private void prisonRework(Placer p, int x, int z) {
+        // 옛 왕궁 통로 메우기 (하수로 벽 복구)
+        if (x >= 203 && x <= 223 && z >= 274 && z <= 276) {
+            for (int y = F - 1; y <= F + 7; y++) p.set(x, y, z, x <= 204 ? brick(x, y, z) : Blocks.STONE.defaultBlockState());
+            if (x == 223 && z == 276) p.set(x, F + 3, z, Blocks.STONE.defaultBlockState());
+        }
+        // 왕궁 사다리 → 지하감옥 통로 (x 221~223, z 233~276)
+        if (x >= 220 && x <= 224 && z >= 232 && z <= 277) {
+            if (x == 224 && z >= 274) return;                                                    // 사다리와 그 받침은 그대로
+            boolean inside = x >= 221 && x <= 223 && z >= 233 && z <= 276;
+            boolean door = x >= 221 && x <= 223 && z == 232;
+            for (int y = F - 1; y <= F + 5; y++) {
+                BlockState s;
+                if (inside || door) s = y == F - 1 || y == F + 5 ? brick(x, y, z) : y == F ? brick(x, y, z) : y <= F + 3 ? Blocks.AIR.defaultBlockState() : brick(x, y, z);
+                else s = brick(x, y, z);
+                if (door && y == F + 4) s = brick(x, y, z);
+                p.set(x, y, z, s);
+            }
+            if (inside && x == 222 && Math.floorMod(z, 9) == 0) p.set(x, F + 3, z, Blocks.SOUL_LANTERN.defaultBlockState().setValue(LanternBlock.HANGING, true));
+            if (x == 223 && z == 275) p.set(x, F + 1, z, Blocks.AIR.defaultBlockState());      // 사다리 발치에서 옆으로 나옴
+            return;
+        }
+        // 하수로 ↔ 지하감옥 굴 막기 (x 227~235, z 208~210), 덩굴 장막 뒤 좁은 틈 (x 231)
+        if (x >= 227 && x <= 235 && z >= 208 && z <= 210) {
+            for (int y = F - 1; y <= F + 7; y++) p.set(x, y, z, brick(x, y, z));
+            if (x == 231) {
+                for (int y = F + 1; y <= F + 2; y++) {
+                    p.set(x, y, z, z == 209 ? Blocks.AIR.defaultBlockState()
+                            : Blocks.VINE.defaultBlockState().setValue(net.minecraft.world.level.block.VineBlock.WEST, true));
+                }
+            }
         }
     }
 
