@@ -278,6 +278,12 @@ public final class WorldTree implements BuildLayout {
                 pillars.add(new double[]{px, pz, f < 0.7 ? 2.6 : 1.9, f < 0.7 ? p2y : (p2y + p3y) / 2});
             }
         }
+        // 줄기 꼭대기에서 가운데 수관 속으로 솟는 가지 5개 (줄기가 뚝 끊겨 보이지 않게)
+        for (int i = 0; i < 5; i++) {
+            double a = Math.PI * 2 * i / 5 + r.nextDouble() * 0.5;
+            double ex = Math.cos(a) * (22 + r.nextInt(12)), ez = Math.sin(a) * (22 + r.nextInt(12));
+            out.add(new double[]{Math.cos(a) * 3, TRUNK_H - 6, Math.sin(a) * 3, ex, TRUNK_H + 26 + r.nextInt(10), ez, 4.0, 1.6});
+        }
         for (double[] pl : pillars) out.add(new double[]{pl[0], -2, pl[1], pl[0] * 0.98, pl[3], pl[1] * 0.98, pl[2] + 1.6, pl[2]});
         return out.toArray(new double[0][]);
     }
@@ -351,8 +357,9 @@ public final class WorldTree implements BuildLayout {
                 for (int y = -3; y <= 150; y++) {
                     BlockState s = null;
                     // 줄기
-                    if (y >= -2 && y <= TRUNK_H) {
+                    if (y >= -2 && y <= TRUNK_H + 34) {
                         double rr = trunkR(y) * (1 + 0.1 * Math.sin(ang * 5 + y / 9.0) + 0.05 * Math.sin(ang * 11 - y / 5.0));
+                        if (y > TRUNK_H) rr -= (y - TRUNK_H) * 0.17;                    // 수관 속으로 가늘어지며 이어짐
                         if (d <= rr) s = (Math.abs(Math.sin(ang * 7 + y / 14.0)) < 0.12 && d > rr - 1.5) ? BARK2 : BARK;
                     }
                     // 뿌리
