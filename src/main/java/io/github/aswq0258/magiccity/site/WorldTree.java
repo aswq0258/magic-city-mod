@@ -31,7 +31,7 @@ import java.util.List;
 import java.util.Map;
 
 /**
- * 세계수 성역 (마스터플랜 E1, 반경 약 210) — 서부 숲길·엘프 산악길·엘프-북부 고갯길이 만나는 곳.
+ * 세계수 성역 (마스터플랜 E1, 반경 약 210) — 엘프 대수림 한가운데. 세계수 순례길(서부 숲길 → 엘프 순례촌) 끝.
  *
  *  - 세계수: 뿌리가 땅 위로 드러난 거대한 나무 (줄기 지름 약 20, 높이 약 130), 큰 가지 7개와 진달래 잎 수관,
  *    빛나는 열매 덩굴. 줄기를 감아 오르는 나선 계단과 3단 전망대, 꼭대기 "세계수의 심장" 제단
@@ -40,7 +40,7 @@ import java.util.Map;
  *  - 세계수 광장과 마을을 잇는 등불 오솔길. 성역 안은 몬스터가 출몰하지 않는 안전 지대
  */
 public final class WorldTree implements BuildLayout {
-    public static final int OX = KingdomTerrain.worldX(-950), OZ = KingdomTerrain.worldZ(-570), R = 210;
+    public static final int OX = KingdomTerrain.worldX(-1300), OZ = KingdomTerrain.worldZ(-300), R = 210;
     private static final int PLAZA_R = 40, TRUNK_H = 100, STAIR_TOP = 92, STAIR_PITCH = 30;
     private static final int[] DECKS = {30, 60, STAIR_TOP};
 
@@ -72,6 +72,10 @@ public final class WorldTree implements BuildLayout {
         take(hall.minX - 3, hall.minZ - 3, hall.maxX + 3, hall.maxZ + 3);
         paths.add(new int[]{OX, OZ - PLAZA_R, hall.cx, hall.cz + 12});
         paths.add(new int[]{OX - 28, OZ + 28, lake.cx, lake.cz - Lake.RZ - 3});
+        // 세계수 순례길 끝 → 광장 동쪽 입구로 이어지는 참배로 (그 띠에는 나무집을 짓지 않음)
+        int[] end = pilgrimRoadEnd();
+        take(Math.min(OX + PLAZA_R, end[0]) - 2, Math.min(OZ, end[1]) - 7, Math.max(OX + PLAZA_R, end[0]) + 2, Math.max(OZ, end[1]) + 7);
+        paths.add(new int[]{OX + PLAZA_R + 1, OZ, end[0], end[1]});
         java.util.Random rand = new java.util.Random(seed);
         int made = 0;
         for (int t = 0; t < 400 && made < 10; t++) {
@@ -95,6 +99,25 @@ public final class WorldTree implements BuildLayout {
                 }
             }
         }
+    }
+
+    /** 세계수 순례길이 성역 동쪽 끝에 닿는 지점 (길 비틀림을 반영해 실제 길 위 칸을 찾음) */
+    private static int[] pilgrimRoadEnd() {
+        int ex = KingdomTerrain.worldX(-1195), ez = KingdomTerrain.worldZ(-300);
+        int[] best = {ex, ez};
+        double bd = 1e9;
+        for (int dx = -50; dx <= 50; dx += 2) {
+            for (int dz = -50; dz <= 50; dz += 2) {
+                int x = ex + dx, z = ez + dz;
+                if (!KingdomTerrain.column(x, z).onRoad()) continue;
+                double d = Math.hypot(x - OX, z - OZ);
+                if (d < bd) {
+                    bd = d;
+                    best = new int[]{x, z};
+                }
+            }
+        }
+        return best;
     }
 
     private void add(Feature f) {
