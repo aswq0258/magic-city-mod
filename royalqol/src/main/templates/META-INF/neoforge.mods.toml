@@ -1,0 +1,40 @@
+modLoader="javafml"
+loaderVersion="${loader_version_range}"
+license="${mod_license}"
+
+[[mods]]
+modId="${mod_id}"
+version="${mod_version}"
+displayName="${mod_name}"
+description='''
+마법 왕국 대륙 편의 모드 (클라이언트 전용): 지역 웨이포인트, 좌표·방위·시간 HUD, 지역 진입 알림, 목적지 안내. /rq, H(HUD), G(가까운 지역 목적지)
+'''
+
+[[dependencies.${mod_id}]]
+    modId="neoforge"
+    type="required"
+    versionRange="[${neo_version},)"
+    ordering="NONE"
+    side="BOTH"
+
+[[dependencies.${mod_id}]]
+    modId="minecraft"
+    type="required"
+    versionRange="${minecraft_version_range}"
+    ordering="NONE"
+    side="BOTH"
+
+# 모드팩 구성 결정(통합문서 5절): JEI·JourneyMap 은 클라이언트 필수. API 는 호출하지 않는다
+[[dependencies.${mod_id}]]
+    modId="jei"
+    type="required"
+    versionRange="[0,)"
+    ordering="NONE"
+    side="CLIENT"
+
+[[dependencies.${mod_id}]]
+    modId="journeymap"
+    type="required"
+    versionRange="[0,)"
+    ordering="NONE"
+    side="CLIENT"

@@ -11,6 +11,8 @@
 
 코드를 고쳐서 올리면 GitHub가 자동으로 다시 빌드합니다.
 
+같은 저장소의 `royalqol/` 폴더에는 클라이언트 전용 편의 모드 **royalqol**(웨이포인트·HUD·지역 알림, `/rq`)이 따로 있습니다. jar는 Artifacts의 `royalqol-jar`. 설명은 [`royalqol/README.md`](royalqol/README.md).
+
 ## 사용법
 
 1. 크리에이티브 월드(치트 허용)에서 도시 중심이 될 땅 위에 섭니다. **발밑 블록 높이가 도시 지면**이 됩니다.

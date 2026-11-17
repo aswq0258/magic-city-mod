@@ -35,3 +35,14 @@ jobs:
           name: magic-city-mod-jar
           path: build/libs/*.jar
           if-no-files-found: error
+
+      # 편의 모드 royalqol (클라이언트 전용, 독립 빌드: royalqol/)
+      - name: Build royalqol
+        run: ./gradlew -p royalqol build --no-daemon
+
+      - name: Upload royalqol jar
+        uses: actions/upload-artifact@v4
+        with:
+          name: royalqol-jar
+          path: royalqol/build/libs/*.jar
+          if-no-files-found: error
