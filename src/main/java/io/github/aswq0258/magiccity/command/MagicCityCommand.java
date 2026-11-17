@@ -64,6 +64,7 @@ import java.util.List;
  * /magiccity fix lava [반지름]   — 내 주변(기본 512) 지표의 용암 호수·용암 샘을 물로 바꿈
  * /magiccity fix forests [반지름] — 이미 생성된 땅에 새 숲 배치(산기슭·산비탈 침엽수·들판 작은 숲)를 입힘 (기본 1024)
  * /magiccity fix deepwood   — 이미 생성된 땅의 엘프 대수림 심부에 태고의 숲(고목·이끼 바닥·선돌·버섯 고리)을 입힘
+ * /magiccity fix elfwood    — 세계수 주변 반지름 360 을 잎 천장으로 닫힌 보랏빛 숲(엘프의 성역 바이옴, 빛 구슬·수정·빛나는 버섯)으로
  * /magiccity fix seams      — 철거 영역 가장자리에서 반쪽만 남은(잘린) 나무를 고침 (태고의 숲 고목은 다시 그림)
  * /magiccity fix nature [반지름] — 내 주변(기본 256) 빈 땅에 바이옴에 맞는 나무·풀을 다시 심음
  * /magiccity remove city     — 왕성도시(구시가지 + 신시가지) 철거
@@ -116,6 +117,19 @@ public final class MagicCityCommand {
                                         .executes(ctx -> fixLava(ctx, com.mojang.brigadier.arguments.IntegerArgumentType.getInteger(ctx, "radius")))))
                         .then(Commands.literal("deepwood").executes(MagicCityCommand::fixDeepwood))
                         .then(Commands.literal("seams").executes(MagicCityCommand::fixSeams))
+                        .then(Commands.literal("elfwood").executes(ctx -> {
+                            CommandSourceStack src = ctx.getSource();
+                            if (CityBuildManager.isRunning()) {
+                                src.sendFailure(Component.literal("[마법 도시] 이미 건설 중입니다. /magiccity status 로 확인하세요."));
+                                return 0;
+                            }
+                            ServerLevel k = src.getServer().getLevel(io.github.aswq0258.magiccity.world.ModWorldgen.KINGDOM);
+                            if (k == null) return 0;
+                            io.github.aswq0258.magiccity.site.ElfWoodFix fix = new io.github.aswq0258.magiccity.site.ElfWoodFix();
+                            CityBuildManager.start(new CityBuildJob(k, fix));
+                            src.sendSuccess(() -> Component.literal(String.format("§d[마법 도시] 보랏빛 숲 입히기 시작! 청크 %d개. 끝나면 /magiccity site worldtree 와 site rootcave 를 다시 돌려 세계수도 보랏빛으로 바꾸세요.", fix.chunkCount())), true);
+                            return 1;
+                        }))
                         .then(Commands.literal("forests").executes(ctx -> fixForests(ctx, 1024))
                                 .then(Commands.argument("radius", com.mojang.brigadier.arguments.IntegerArgumentType.integer(16, 4096))
                                         .executes(ctx -> fixForests(ctx, com.mojang.brigadier.arguments.IntegerArgumentType.getInteger(ctx, "radius")))))

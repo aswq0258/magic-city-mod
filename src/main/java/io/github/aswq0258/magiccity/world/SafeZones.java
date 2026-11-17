@@ -14,7 +14,7 @@ public final class SafeZones {
     private SafeZones() {}
 
     public static boolean noMonsters(double x, double z) {
-        return Math.hypot(x - WorldTree.OX, z - WorldTree.OZ) < WorldTree.R + 20;
+        return Math.hypot(x - WorldTree.OX, z - WorldTree.OZ) < Math.max(WorldTree.R + 20, ElfWood.RZ + 10);   // 보랏빛 숲 전체
     }
 
     public static void onFinalizeSpawn(FinalizeSpawnEvent event) {

@@ -203,6 +203,8 @@ public class KingdomChunkGenerator extends ChunkGenerator {
         };
         // 세계수를 둘러싼 태고의 숲: 고목·쓰러진 통나무·선돌·버섯 고리·바닥 식물
         DeepWood.decorateChunk(acc, cp.x, cp.z, false);
+        // 세계수·엘프의 성역: 잎 천장으로 닫힌 보랏빛 숲
+        ElfWood.decorateChunk(acc, cp.x, cp.z, false);
         // 땅 위로 드러난 용암 호수·용암 샘 → 물 (지하 용암은 그대로)
         for (int x = rx0; x <= rx1; x++) {
             for (int z = rz0; z <= rz1; z++) {
