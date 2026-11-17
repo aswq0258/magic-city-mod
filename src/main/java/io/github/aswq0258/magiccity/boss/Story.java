@@ -45,7 +45,7 @@ public final class Story {
             new Chapter(2, "시드는 숲", "저주받은 숲 제단", "저주의 마녀왕", io.github.aswq0258.magiccity.site.CursedLands.ALTAR_X, io.github.aswq0258.magiccity.site.CursedLands.ALTAR_Z, "숲의 봉인", Items.EMERALD),
             new Chapter(3, "썩어가는 뿌리", "세계수 뿌리 던전 기생충의 둥지", "세계수 기생충", io.github.aswq0258.magiccity.site.RootDungeon.OX, io.github.aswq0258.magiccity.site.RootDungeon.OZ, "생명의 봉인", Items.AMETHYST_SHARD),
             new Chapter(4, "서리의 행군", "엘프 관문 북쪽 서리 결투장", "서리 거인 요툰", io.github.aswq0258.magiccity.site.FrostArena.AX, io.github.aswq0258.magiccity.site.FrostArena.AZ, null, null),
-            new Chapter(5, "꺼지지 않는 용광로", "드워프 대장간", "용광로의 거신", NewBosses.Furnace.FX, NewBosses.Furnace.FZ, "대지의 봉인", Items.RAW_GOLD),
+            new Chapter(5, "꺼지지 않는 용광로", "드워프 심층 광산 고대 용광로 홀", "용광로의 거신", NewBosses.Furnace.FX, NewBosses.Furnace.FZ, "대지의 봉인", Items.RAW_GOLD),
             new Chapter(6, "잠긴 성소", "등대 섬 앞바다 잠긴 성소", "심해의 수호자", NewBosses.DeepGuardian.SX, NewBosses.DeepGuardian.SZ, "바다의 봉인", Items.PRISMARINE_CRYSTALS),
             new Chapter(7, "잊혀진 왕", "고대 왕국 유적 왕릉", "고대왕 아르케온", io.github.aswq0258.magiccity.site.AncientRuins.CX, io.github.aswq0258.magiccity.site.AncientRuins.CZ, null, null),
             new Chapter(8, "국경의 밤", "남부 국경도시 남쪽 들판", "약탈 군주 그림발드", NewBosses.Siege.FX, NewBosses.Siege.FZ, null, null),

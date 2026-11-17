@@ -2,7 +2,6 @@ package io.github.aswq0258.magiccity.boss;
 
 import io.github.aswq0258.magiccity.site.BorderCity;
 import io.github.aswq0258.magiccity.site.CursedLands;
-import io.github.aswq0258.magiccity.site.DwarfHold;
 import io.github.aswq0258.magiccity.site.FrostArena;
 import io.github.aswq0258.magiccity.site.PortCity;
 import io.github.aswq0258.magiccity.site.RootDungeon;
@@ -216,23 +215,20 @@ public final class NewBosses {
 
     /** 드워프 대장간. 달아오른 거대 철 골렘, 내려찍기, 불길, 블레이즈 부하 */
     public static final class Furnace extends ManagedBoss {
-        public static final int FX = DwarfHold.CX - 52, FZ = DwarfHold.CZ - 145;
+        /** 드워프 심층 광산 맨 아래, 고대 용광로 홀의 섬 남쪽 (예전: 대장간 가운데) */
+        public static final int FX = io.github.aswq0258.magiccity.site.DeepMine.BOSS_X, FZ = io.github.aswq0258.magiccity.site.DeepMine.BOSS_Z;
 
         public Furnace() {
-            super("furnace", "용광로의 거신", "드워프 대장간", 5);
+            super("furnace", "용광로의 거신", "드워프 심층 광산 고대 용광로", 5);
             triggerR = 14;
             leashR = 20;
             activeR = 32;
             color = BossEvent.BossBarColor.RED;
         }
 
-        private static int floor() {
-            return KingdomTerrain.column(DwarfHold.CX, DwarfHold.CZ - 50).h();
-        }
+        @Override protected Vec3 center() { return new Vec3(FX + 0.5, io.github.aswq0258.magiccity.site.DeepMine.BOSS_Y, FZ + 0.5); }
 
-        @Override protected Vec3 center() { return new Vec3(FX + 0.5, floor() + 1, FZ + 0.5); }
-
-        @Override protected boolean inY(double y, Vec3 c) { return y > c.y - 3 && y < c.y + 13; }
+        @Override protected boolean inY(double y, Vec3 c) { return y > c.y - 3 && y < c.y + 24; }
 
         @Override
         protected Mob create(ServerLevel level, BlockPos at) {

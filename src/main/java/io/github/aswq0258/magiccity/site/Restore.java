@@ -129,7 +129,12 @@ public final class Restore implements BuildLayout {
 
     /** 왕국 대륙에 지은 것 전부 (촌락·길 거점·세계수·드워프·옛 왕도·항구도시) — 왕성도시는 따로 */
     public static List<Restore> allSites() {
-        return List.of(hamlets(), roads(), worldTree(), rootDungeon(), frostArena(), dwarf(), oldCapital(), port(), dragon(), sky(), cursed(), border(), ruins(), elfGate());
+        return List.of(hamlets(), roads(), worldTree(), rootDungeon(), frostArena(), deepMine(), dwarf(), oldCapital(), port(), dragon(), sky(), cursed(), border(), ruins(), elfGate());
+    }
+
+    /** 드워프 심층 광산 (심부 광산·고대 용광로 홀만 — 광산 층의 갱도 문 방과 계단 윗부분은 남음) */
+    public static Restore deepMine() {
+        return new Restore("드워프 심층 광산").add(DeepMine.CX + 76, DeepMine.CZ - 306, DeepMine.CX + 206, DeepMine.CZ - 176, DeepMine.A - 3, DeepMine.D + 18).done();
     }
 
     /** 세계수 뿌리 던전 (지하만 — 줄기 속 입구는 세계수 성역 쪽) */

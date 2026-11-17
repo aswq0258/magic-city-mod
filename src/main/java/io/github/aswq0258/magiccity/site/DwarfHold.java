@@ -36,7 +36,8 @@ import java.util.List;
  *  산속(지면 높이 F):
  *   - 대전당 61 x 59, 높이 24: 거대한 기둥 16개, 양옆 용암 수로, 사슬 등불, 가운데 드워프 왕 석상, 붉은 융단
  *   - 북쪽 옥좌실: 3단 단상의 금 옥좌, 보물 상자
- *   - 서쪽 대장간: 모루·용광로·숫돌·대장장이 작업대, 유리 너머로 흘러내리는 용암 폭포
+ *   - 서쪽 대장간: 모루·용광로·숫돌·대장장이 작업대, 유리 너머로 흘러내리는 용암 폭포, 장인의 5×5 작업대 단
+ *     (5장 보스 "용광로의 거신"은 이제 심층 광산 {@link DeepMine} 의 고대 용광로 홀에서 깨어남)
  *   - 동쪽 주거 회랑: 드워프 집 8칸
  *   - 회랑 끝 계단 갱도 → 16칸 아래 광산: 갱도 광장, 레일 깔린 갱도 3개, 벽마다 광맥,
  *     동쪽 끝 자수정 정동, 북쪽 끝 "잃어버린 광부의 갱도" (스포너 던전)
@@ -51,9 +52,14 @@ public final class DwarfHold implements BuildLayout {
     private final long seed;
     private final Hold hold;
 
+    /** 왕국 바닥 높이 (대전당·대장간 바닥) */
+    public static int floorAt() {
+        return KingdomTerrain.column(CX, CZ - 50).h();
+    }
+
     public DwarfHold(long seed) {
         this.seed = seed;
-        this.F = KingdomTerrain.column(CX, CZ - 50).h();
+        this.F = floorAt();
         this.hold = new Hold();
     }
 
@@ -103,6 +109,19 @@ public final class DwarfHold implements BuildLayout {
 
     private static BlockState b(Block block) {
         return block.defaultBlockState();
+    }
+
+    /** `fantasyrpg`가 5×5 작업대를 등록했으면 그 블록, 없으면 바닐라 작업대. ID 는 확정되면 맨 앞에 둠 */
+    static final String[] BENCH_IDS = {"fantasyrpg:master_workbench", "fantasyrpg:workbench_5x5", "fantasyrpg:crafting_table_5x5"};
+
+    static BlockState benchBlock() {
+        for (String id : BENCH_IDS) {
+            net.minecraft.resources.ResourceLocation rl = net.minecraft.resources.ResourceLocation.tryParse(id);
+            if (rl == null) continue;
+            java.util.Optional<Block> blk = net.minecraft.core.registries.BuiltInRegistries.BLOCK.getOptional(rl);
+            if (blk.isPresent() && blk.get() != Blocks.AIR) return blk.get().defaultBlockState();
+        }
+        return Blocks.CRAFTING_TABLE.defaultBlockState();
     }
 
     @FunctionalInterface
@@ -364,12 +383,35 @@ public final class DwarfHold implements BuildLayout {
                 p.set(fx + s * 3, F + 1, fz, b(Blocks.CAULDRON));
                 p.set(fx, F + 1, fz + s * 3, b(Blocks.SMOKER));
             }
+            masterBench(p, CX - 44, CZ - 152);
             OldCapital.chest(p, x0 + 1, F + 1, z1 - 1, Direction.EAST, seed ^ 31, BuiltInLootTables.VILLAGE_TOOLSMITH);
             OldCapital.chest(p, x0 + 1, F + 1, z1 - 3, Direction.EAST, seed ^ 32, BuiltInLootTables.VILLAGE_WEAPONSMITH);
             for (int x = x0 + 6; x <= x1 - 4; x += 10) for (int z = z0 + 10; z <= z1 - 10; z += 10) {
                 p.set(x, F + 12, z, b(Blocks.CHAIN));
                 p.set(x, F + 11, z, Blocks.LANTERN.defaultBlockState().setValue(LanternBlock.HANGING, true));
             }
+        }
+
+        /**
+         * 장인의 5×5 작업대: 대장간 북쪽의 5 x 5 단. 가운데에 `fantasyrpg` 5×5 작업대 블록을 ID 로 찾아 놓고,
+         * 없으면 바닐라 작업대를 놓음 (의존성 없이). 둘레는 금 모서리·모루·대장장이 작업대, 위에는 사슬 등불 지붕.
+         */
+        private void masterBench(Placer p, int cx, int cz) {
+            for (int dx = -2; dx <= 2; dx++) for (int dz = -2; dz <= 2; dz++) {
+                boolean corner = Math.abs(dx) == 2 && Math.abs(dz) == 2;
+                boolean edge = Math.abs(dx) == 2 || Math.abs(dz) == 2;
+                p.set(cx + dx, F, cz + dz, corner ? b(Blocks.GOLD_BLOCK) : edge ? b(Blocks.POLISHED_BLACKSTONE_BRICKS) : b(Blocks.CHISELED_POLISHED_BLACKSTONE));
+                p.set(cx + dx, F + 1, cz + dz, Blocks.AIR.defaultBlockState());
+                if (corner) for (int y = F + 1; y <= F + 5; y++) p.set(cx + dx, y, cz + dz, b(Blocks.POLISHED_BLACKSTONE_BRICK_WALL));
+                p.set(cx + dx, F + 6, cz + dz, edge ? b(Blocks.POLISHED_BLACKSTONE_BRICK_SLAB) : b(Blocks.DEEPSLATE_TILE_SLAB));
+            }
+            p.set(cx, F + 1, cz, benchBlock());
+            p.set(cx - 1, F + 1, cz, b(Blocks.SMITHING_TABLE));
+            p.set(cx + 1, F + 1, cz, b(Blocks.ANVIL));
+            p.set(cx, F + 1, cz - 1, b(Blocks.STONECUTTER));
+            for (int y = F + 7; y <= F + 12; y++) p.set(cx, y, cz, b(Blocks.CHAIN));
+            p.set(cx, F + 5, cz, Blocks.LANTERN.defaultBlockState().setValue(LanternBlock.HANGING, true));
+            for (int s = -1; s <= 1; s += 2) p.set(cx + s * 2, F + 6, cz + 3, Royal.redBanner(Direction.SOUTH));
         }
 
         // ── 주거 회랑 ──
@@ -528,7 +570,7 @@ public final class DwarfHold implements BuildLayout {
         @Override
         public void spawn(ServerLevel level, CityLayout city) {
             String[] names = {"드워프 왕 브롬하르", "대장장이 구른", "광부 도린", "보석세공사 니무", "맥주 양조사 볼그", "상인 탈린", "경비대장 오르크", "룬 각인사 에드"};
-            int[][] at = {{CX, CZ - 195}, {CX - 52, CZ - 140}, {CX + 110, CZ - 145}, {CX + 60, CZ - 145}, {CX + 45, CZ - 145}, {CX - 18, CZ - 50}, {CX, CZ - 120}, {CX - 10, CZ - 160}};
+            int[][] at = {{CX, CZ - 195}, {CX - 44, CZ - 148}, {CX + 110, CZ - 145}, {CX + 60, CZ - 145}, {CX + 45, CZ - 145}, {CX - 18, CZ - 50}, {CX, CZ - 120}, {CX - 10, CZ - 160}};
             for (int i = 0; i < names.length; i++) {
                 int y = i == 0 ? F + 1 : i == 2 ? F - 15 : F + 1;
                 Mob m = EntityType.VILLAGER.spawn(level, new BlockPos(at[i][0], y, at[i][1]), MobSpawnType.STRUCTURE);
