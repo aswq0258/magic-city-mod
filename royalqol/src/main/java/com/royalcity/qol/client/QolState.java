@@ -24,7 +24,7 @@ public final class QolState {
     public static Waypoint destination;
     /** 지난 틱에 있던 지역 이름 (진입 알림용) */
     public static String lastRegion;
-    /** G 키 순환 위치 */
+    /** 가까운 지역 키(Y) 순환 위치 */
     public static int cycle = -1;
 
     private QolState() {}

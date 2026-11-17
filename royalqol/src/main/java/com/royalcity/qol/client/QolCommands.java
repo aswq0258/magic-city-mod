@@ -69,7 +69,7 @@ public final class QolCommands {
 
     private static int help(CommandContext<CommandSourceStack> c) {
         say(c, "/rq list · near · go <이름> · stop · info · add [반경] <이름> · remove <이름> · hud · reload\n"
-                + "단축키: H = HUD 켜기/끄기, G = 가까운 지역 5곳을 목적지로 차례대로");
+                + "단축키: H = HUD 켜기/끄기, Y = 가까운 지역 5곳을 목적지로 차례대로");
         return 1;
     }
 

@@ -7,7 +7,7 @@ modId="${mod_id}"
 version="${mod_version}"
 displayName="${mod_name}"
 description='''
-마법 왕국 대륙 편의 모드 (클라이언트 전용): 지역 웨이포인트, 좌표·방위·시간 HUD, 지역 진입 알림, 목적지 안내. /rq, H(HUD), G(가까운 지역 목적지)
+마법 왕국 대륙 편의 모드 (클라이언트 전용): 지역 웨이포인트, 좌표·방위·시간 HUD, 지역 진입 알림, 목적지 안내. /rq, H(HUD), Y(가까운 지역 목적지)
 '''
 
 [[dependencies.${mod_id}]]

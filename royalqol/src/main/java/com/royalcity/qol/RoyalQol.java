@@ -37,7 +37,7 @@ public final class RoyalQol {
 
     private static final String CATEGORY = "key.categories.royalqol";
     public static final KeyMapping KEY_HUD = new KeyMapping("key.royalqol.hud", InputConstants.Type.KEYSYM, GLFW.GLFW_KEY_H, CATEGORY);
-    public static final KeyMapping KEY_NEAR = new KeyMapping("key.royalqol.near", InputConstants.Type.KEYSYM, GLFW.GLFW_KEY_G, CATEGORY);
+    public static final KeyMapping KEY_NEAR = new KeyMapping("key.royalqol.near", InputConstants.Type.KEYSYM, GLFW.GLFW_KEY_Y, CATEGORY);
 
     public RoyalQol(IEventBus modBus, ModContainer container) {
         modBus.addListener(RegisterKeyMappingsEvent.class, e -> {
