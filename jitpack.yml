@@ -1,0 +1,7 @@
+# JitPack 빌드 설정 — 다른 모드(fantasyrpg)가 컴파일할 때 magiccity 를 의존성으로 받아 가기 위한 것
+# 좌표: com.github.aswq0258:magic-city-mod:<커밋 해시 또는 태그>
+jdk:
+  - openjdk21
+install:
+  - chmod +x gradlew
+  - ./gradlew publishToMavenLocal --no-daemon --no-configuration-cache

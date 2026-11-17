@@ -26,6 +26,9 @@ jobs:
           chmod +x gradlew
           ./gradlew build --no-daemon
 
+      - name: Check Maven publication (same as JitPack)
+        run: ./gradlew publishToMavenLocal --no-daemon --no-configuration-cache
+
       - name: Upload mod jar
         uses: actions/upload-artifact@v4
         with:

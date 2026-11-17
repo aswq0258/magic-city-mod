@@ -167,6 +167,7 @@ neoForge.ideSyncTask generateModMetadata
 publishing {
     publications {
         register('mavenJava', MavenPublication) {
+            artifactId = 'magic-city-mod'
             from components.java
         }
     }

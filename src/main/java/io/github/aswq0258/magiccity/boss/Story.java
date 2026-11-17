@@ -107,6 +107,23 @@ public final class Story {
         d.setDirty();
     }
 
+    /**
+     * 처음 완료일 때만 기록하고 {@link io.github.aswq0258.magiccity.api.ChapterFirstClearEvent} 를 발행한다.
+     * 이미 완료한 챕터면 아무것도 하지 않고 false. 서버 스레드에서만 불리므로 같은 완료가 두 번 발행되지 않는다.
+     */
+    public static boolean recordFirstClear(ServerPlayer p, int chapter) {
+        if (chapter < 1 || chapter > 12 || cleared(p, chapter)) return false;
+        int before = ProgressionRules.completed(mask(p));
+        set(p, chapter, true);
+        int after = ProgressionRules.completed(mask(p));
+        net.neoforged.neoforge.common.NeoForge.EVENT_BUS.post(new io.github.aswq0258.magiccity.api.ChapterFirstClearEvent(p, chapter,
+                before, after,
+                ProgressionRules.grade(before), ProgressionRules.grade(after),
+                ProgressionRules.levelCap(before), ProgressionRules.levelCap(after),
+                ProgressionRules.craftGrid(before), ProgressionRules.craftGrid(after)));
+        return true;
+    }
+
     public static void reset(ServerPlayer p) {
         data(p.server).done.remove(p.getUUID());
         data(p.server).setDirty();
@@ -119,11 +136,9 @@ public final class Story {
         Chapter ch = CHAPTERS.get(chapter - 1);
         for (ServerPlayer p : level.players()) {
             if (p.isSpectator() || p.blockPosition().distSqr(at) > 64 * 64) continue;
-            boolean first = !cleared(p, chapter);
-            if (!first) continue;                                                       // 반복 처치는 진행도에 다시 반영하지 않음
-            int before = Progression.completed(p);
-            set(p, chapter, true);
-            int after = before + 1;
+            if (!recordFirstClear(p, chapter)) continue;                                // 반복 처치는 진행도에 다시 반영하지 않음
+            int after = Progression.completed(p);
+            int before = after - 1;
             title(p, "§6" + chapter + "장 완료", "§f" + ch.title());
             p.playNotifySound(SoundEvents.UI_TOAST_CHALLENGE_COMPLETE, SoundSource.PLAYERS, 1F, 1F);
             if (ch.seal() != null) {

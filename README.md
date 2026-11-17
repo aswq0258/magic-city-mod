@@ -161,4 +161,19 @@
 - 설정 `config/magiccity-progression.json`: `enabled`(등급 조정 켜기/끄기), `boss_basic`(등급별 보스 기본 공격), `hp_scale`(등급별 보스 체력 배율, 기본 1.0 = 기존 체력). `/magiccity story config` 로 다시 읽기
 - 새 챕터 보스 (외형은 임시로 바닐라 몹을 키운 모습): 1장 하수도의 역병 술사(왕성 하수도 납골당) · 3장 세계수 기생충(뿌리 던전) · 4장 서리 거인 요툰(`site frost` 서리 결투장) · 5장 용광로의 거신(드워프 대장간) · 6장 심해의 수호자(잠긴 성소, 이제 다가가면 깨어나는 관리형) · 8장 약탈 군주 그림발드(국경도시 남쪽 들판, 습격 3단계 뒤) · 10장 심연의 감시자(심연 균열 바닥)
 - `/magiccity site sewer` — 왕성 하수도 확장 (build 다음에). 왕궁 아래 순환 하수로 벽의 쇠창살 너머로 도시 끝까지 뻗은 거대한 간선 하수도 4개와 집수 홀이 보이지만 들어갈 수는 없음. 하수로 물길은 8칸마다 솟는 물이 흘러 퍼지고 16칸마다 천장 배수구에서 물이 쏟아짐. 왕궁 비밀 사다리는 이제 지하감옥 남쪽 감방으로 이어지고, 하수로와 지하감옥은 감방 벽 덩굴 뒤 좁은 틈으로만 몰래 이어짐. 슬럼가 맨홀 하수로 서쪽 벽의 덩굴 장막 뒤(또는 맨홀 사다리 중간의 덩굴 뒤)에 암시장 은신처(암시장 상인·정보상·위조 장인·그림자 길드 중개인, 노름판, 장물 창고). 1장 보스는 순환 하수로 남쪽의 초대 왕의 납골당
-- 시험용: `/magiccity story give <장>` 완료 표시, `/magiccity story reset` 초기화, `/magiccity story config` 진행도 설정 다시 읽기
+- 시험용: `/magiccity story give <장>` 처음 완료로 기록(완료 이벤트 발행), `/magiccity story mark <장>` 이벤트 없이 완료 표시, `/magiccity story reset` 초기화, `/magiccity story config` 진행도 설정 다시 읽기
+
+## 다른 모드에서 쓰기 (API)
+- 공개 API는 `io.github.aswq0258.magiccity.api` 패키지만 쓴다 (나머지는 내부 구현).
+  - `MagicCityApi.completed / grade / levelCap / craftGrid / cleared(ServerPlayer)` — 서버 쪽, 읽기 전용. `API_VERSION` = 1
+  - `ChapterFirstClearEvent` — 플레이어가 메인 챕터를 처음 완료하면 `NeoForge.EVENT_BUS`에 한 번 발행 (완료 기록이 반영된 뒤). 재처치에서는 발행하지 않음. 챕터, 완료 수·등급·레벨 상한·작업대 크기의 전·후 값을 담음
+- Gradle 의존성 (JitPack, 저장소가 공개라 바로 쓸 수 있음):
+```groovy
+repositories { maven { url 'https://jitpack.io' } }
+dependencies {
+    compileOnly  "com.github.aswq0258:magic-city-mod:<커밋 해시>"
+    localRuntime "com.github.aswq0258:magic-city-mod:<커밋 해시>"   // 개발용 실행에만
+}
+```
+- 쓰는 쪽 `neoforge.mods.toml`에 `modId="magiccity"`, `type="required"`, `ordering="AFTER"`를 선언한다. magiccity는 NeoForge 21.1.266 이상이 필요하다.
+
