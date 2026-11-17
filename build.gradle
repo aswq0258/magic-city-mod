@@ -116,6 +116,11 @@ configurations {
 }
 
 dependencies {
+    // 단위 테스트 (순수 계산 클래스만, Minecraft 없이 실행)
+    testImplementation platform('org.junit:junit-bom:5.11.4')
+    testImplementation 'org.junit.jupiter:junit-jupiter'
+    testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
+
     // Example optional mod dependency with JEI
     // The JEI API is declared for compile time use, while the full JEI artifact is used at runtime
     // compileOnly "mezz.jei:jei-${mc_version}-common-api:${jei_version}"
@@ -187,5 +192,14 @@ idea {
     module {
         downloadSources = true
         downloadJavadoc = true
+    }
+}
+
+// 단위 테스트: build 때 함께 실행되고, CI 로그에 테스트별 결과가 남는다
+tasks.named('test', Test) {
+    useJUnitPlatform()
+    testLogging {
+        events "passed", "failed", "skipped"
+        exceptionFormat "full"
     }
 }
