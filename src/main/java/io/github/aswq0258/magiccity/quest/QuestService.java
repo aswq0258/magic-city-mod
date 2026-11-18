@@ -238,7 +238,7 @@ public final class QuestService {
         }
     }
 
-    /** 왕국 대륙에 처음 있을 때 한 번: 받지 않은 시작 퀘스트(hint 있는 것)의 NPC 를 찾아가라는 안내 */
+    /** 왕국 대륙에 들어올 때: 받지 않은 시작 퀘스트(hint 있는 것)의 NPC 를 찾아가라는 안내. NPC 자리를 알게 된 뒤로는 한 번만 */
     private static void hint(ServerPlayer p) {
         if (p.level().dimension() != ModWorldgen.KINGDOM) return;
         QuestData d = data(p);
@@ -249,8 +249,10 @@ public final class QuestService {
             p.sendSystemMessage(Component.literal("§e[퀘스트] §f" + q.hint()
                     + (at != null ? " §7(" + at.getX() + ", " + at.getY() + ", " + at.getZ() + ")" : "")
                     + " §8— /quest 로 진행 확인"));
-            d.hinted.add(p.getUUID());
-            d.setDirty();
+            if (at != null) {                                   // NPC 가 아직 없으면(도시 건설 전) 다음에 다시 안내
+                d.hinted.add(p.getUUID());
+                d.setDirty();
+            }
             return;
         }
     }
