@@ -43,10 +43,18 @@ public class MagicCityMod {
         NeoForge.EVENT_BUS.addListener(io.github.aswq0258.magiccity.boss.TombBoss::onServerTick);
         NeoForge.EVENT_BUS.addListener(io.github.aswq0258.magiccity.boss.TombBoss::onDeath);
         NeoForge.EVENT_BUS.addListener(io.github.aswq0258.magiccity.boss.Progression::onIncomingDamage);
+        // 개인 퀘스트·퀘스트 NPC (2026-11-19)
+        NeoForge.EVENT_BUS.addListener(io.github.aswq0258.magiccity.quest.QuestManager::onAddReloadListeners);
+        NeoForge.EVENT_BUS.addListener(io.github.aswq0258.magiccity.quest.QuestNpcs::onInteract);
+        NeoForge.EVENT_BUS.addListener(io.github.aswq0258.magiccity.quest.QuestService::onServerTick);
+        NeoForge.EVENT_BUS.addListener(io.github.aswq0258.magiccity.quest.QuestService::onLogin);
+        NeoForge.EVENT_BUS.addListener(io.github.aswq0258.magiccity.quest.QuestService::onChangeDimension);
+        NeoForge.EVENT_BUS.addListener(io.github.aswq0258.magiccity.quest.QuestService::onChapterClear);
         NeoForge.EVENT_BUS.addListener((net.neoforged.neoforge.event.server.ServerStartingEvent e) -> io.github.aswq0258.magiccity.boss.Progression.load());
     }
 
     private static void onRegisterCommands(RegisterCommandsEvent event) {
         MagicCityCommand.register(event.getDispatcher());
+        io.github.aswq0258.magiccity.quest.QuestCommand.register(event.getDispatcher());
     }
 }

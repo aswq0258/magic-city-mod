@@ -123,6 +123,11 @@ public final class CityLayout implements io.github.aswq0258.magiccity.build.Buil
         }
     }
 
+    /** 모든 건물 (읽기 전용, /magiccity fix npcs 처럼 설계도를 다시 만들어 한 건물만 다룰 때) */
+    public List<Feature> features() {
+        return java.util.Collections.unmodifiableList(features);
+    }
+
     @Override
     public int cx() {
         return cx;

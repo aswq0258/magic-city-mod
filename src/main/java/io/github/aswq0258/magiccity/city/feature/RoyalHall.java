@@ -56,6 +56,33 @@ public class RoyalHall extends Feature {
         this.fh = kind == Kind.THRONE ? 22 : kind == Kind.CHAPEL ? 18 : 9;
     }
 
+    public Kind kind() {
+        return kind;
+    }
+
+    /** 왕좌의 전당이면 서장 NPC(왕실 시종장)를 소환 */
+    @Override
+    public boolean needsSpawn() {
+        return kind == Kind.THRONE;
+    }
+
+    @Override
+    public void spawn(net.minecraft.server.level.ServerLevel level, CityLayout city) {
+        if (kind == Kind.THRONE) spawnSteward(level);
+    }
+
+    /** 서장 NPC: 옥좌 단 앞 붉은 카펫 위(가운데에서 오른쪽 2칸), 정문 쪽을 바라봄. /magiccity fix npcs 로도 부름 */
+    public void spawnSteward(net.minecraft.server.level.ServerLevel level) {
+        final int y = groundY + lift;
+        boolean ns = front == Direction.NORTH || front == Direction.SOUTH;
+        int W = ns ? hx1 - hx0 - 1 : hz1 - hz0 - 1;
+        int D = ns ? hz1 - hz0 - 1 : hx1 - hx0 - 1;
+        Frame f = new Frame((hx0 + 1 + hx1 - 1) >> 1, (hz0 + 1 + hz1 - 1) >> 1, front, W, D);
+        int u = W / 2 + 2, v = D - 10;
+        io.github.aswq0258.magiccity.quest.QuestNpcs.spawn(level, io.github.aswq0258.magiccity.quest.QuestNpcs.STEWARD,
+                f.x(u, v) + 0.5, y + 1 + 1 / 16.0, f.z(u, v) + 0.5, front.toYRot());
+    }
+
     @Override
     public boolean occupies(int x, int z) {
         return x >= hx0 - 2 && x <= hx1 + 2 && z >= hz0 - 2 && z <= hz1 + 2;

@@ -37,4 +37,18 @@ public final class MagicCityApi {
     public static int levelCapFor(int completed) { return ProgressionRules.levelCap(completed); }
 
     public static int craftGridFor(int completed) { return ProgressionRules.craftGrid(completed); }
+
+    // ───────── 개인 퀘스트 (API 버전 1 그대로: 추가만 함, 2026-11-19) ─────────
+
+    /**
+     * 다른 모드가 보내는 퀘스트 신호. 진행 중인 퀘스트 중 지금 단계가 이 신호를 기다리면 다음 단계로 넘긴다.
+     * @return 넘긴 퀘스트가 하나라도 있으면 true
+     */
+    public static boolean questSignal(ServerPlayer p, String signal) { return io.github.aswq0258.magiccity.quest.QuestService.signal(p, signal); }
+
+    /** 퀘스트 진행 값: -1 받지 않음, 0 ~ 단계 수 - 1 진행 중인 단계, 단계 수 이상 완료. 모르는 퀘스트도 -1 */
+    public static int questState(ServerPlayer p, String quest) { return io.github.aswq0258.magiccity.quest.QuestService.state(p, quest); }
+
+    /** 퀘스트를 끝냈는지 */
+    public static boolean questDone(ServerPlayer p, String quest) { return io.github.aswq0258.magiccity.quest.QuestService.done(p, quest); }
 }

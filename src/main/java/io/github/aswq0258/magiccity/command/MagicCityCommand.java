@@ -60,6 +60,8 @@ import java.util.List;
  * /magiccity site hamlet     — 가장 가까운 촌락 한 곳만 건설 (remove hamlet 뒤 다시 지을 때)
  * /magiccity hamlets         — 가까운 촌락 목록
  * /magiccity remove <hamlets|hamlet|roads|worldtree|dwarf|oldcapital> — 왕국 대륙 건축물 철거 (원래 지형으로)
+ * /magiccity fix npcs      — 기록된 왕성도시의 퀘스트 NPC(왕좌의 전당 왕실 시종장)를 다시 소환 (이미 지은 월드용)
+ * /magiccity quest list|start|set|reset|signal — 개인 퀘스트 시험 (/quest 는 모든 플레이어)
  * /magiccity fix roads      — 이미 생성된 대륙에서 길·강·길가 나무만 그 자리에서 고침 (+ 신시가지 다시 짓기)
  * /magiccity fix lava [반지름]   — 내 주변(기본 512) 지표의 용암 호수·용암 샘을 물로 바꿈
  * /magiccity fix forests [반지름] — 이미 생성된 땅에 새 숲 배치(산기슭·산비탈 침엽수·들판 작은 숲)를 입힘 (기본 1024)
@@ -110,7 +112,9 @@ public final class MagicCityCommand {
                         .then(Commands.literal("dwarf").executes(MagicCityCommand::dwarf))
                         .then(Commands.literal("hamlets").executes(MagicCityCommand::hamlets))
                         .then(Commands.literal("hamlet").executes(MagicCityCommand::oneHamlet)))
+                .then(io.github.aswq0258.magiccity.quest.QuestCommand.admin())
                 .then(Commands.literal("fix").then(Commands.literal("roads").executes(MagicCityCommand::fixRoads))
+                        .then(Commands.literal("npcs").executes(MagicCityCommand::fixNpcs))
                         .then(Commands.literal("lava").executes(ctx -> fixLava(ctx, 512))
                                 .then(Commands.argument("radius", com.mojang.brigadier.arguments.IntegerArgumentType.integer(16, 4096))
                                         .executes(ctx -> fixLava(ctx, com.mojang.brigadier.arguments.IntegerArgumentType.getInteger(ctx, "radius")))))
@@ -961,6 +965,34 @@ public final class MagicCityCommand {
         src.sendSuccess(() -> Component.literal(String.format("§a[마법 도시] 나무 다시 심기 시작! (%d, %d) 주변 %d블록, 청크 %d개. 우거진 숲·길가·건축물 자리는 건드리지 않습니다.",
                 x, z, radius, job.chunkCount())), true);
         return 1;
+    }
+
+    /** 기록된 왕성도시 설계도를 다시 만들어 왕좌의 전당 자리에 서장 NPC 를 소환 */
+    private static int fixNpcs(CommandContext<CommandSourceStack> ctx) {
+        CommandSourceStack src = ctx.getSource();
+        io.github.aswq0258.magiccity.build.CityRecord rec = io.github.aswq0258.magiccity.build.CityRecord.get(src.getServer());
+        if (!rec.present()) {
+            src.sendFailure(Component.literal("[마법 도시] 기록된 왕성도시가 없습니다 (/magiccity build 또는 kingdom 으로 지은 도시만)."));
+            return 0;
+        }
+        ServerLevel level = src.getServer().getLevel(net.minecraft.resources.ResourceKey.create(net.minecraft.core.registries.Registries.DIMENSION,
+                net.minecraft.resources.ResourceLocation.parse(rec.dim)));
+        if (level == null) {
+            src.sendFailure(Component.literal("[마법 도시] 도시가 있는 차원을 찾을 수 없습니다: " + rec.dim));
+            return 0;
+        }
+        CityLayout layout = new CityLayout(rec.cx, rec.cz, rec.base, rec.seed);
+        int n = 0;
+        for (var f : layout.features()) {
+            if (f instanceof io.github.aswq0258.magiccity.city.feature.RoyalHall h && h.kind() == io.github.aswq0258.magiccity.city.feature.RoyalHall.Kind.THRONE) {
+                h.spawnSteward(level);
+                n++;
+            }
+        }
+        BlockPos at = io.github.aswq0258.magiccity.quest.QuestNpcs.position(src.getServer(), io.github.aswq0258.magiccity.quest.QuestNpcs.STEWARD);
+        final int count = n;
+        src.sendSuccess(() -> Component.literal("§e[마법 도시] 퀘스트 NPC " + count + "명 소환" + (at != null ? " — 왕실 시종장 (" + at.getX() + ", " + at.getY() + ", " + at.getZ() + ")" : "")), true);
+        return count > 0 ? 1 : 0;
     }
 
     private static int fixRoads(CommandContext<CommandSourceStack> ctx) {
