@@ -1,0 +1,8 @@
+{
+  "name": "역병 웅덩이",
+  "shape": "at_players",
+  "radius": 3,
+  "percent": 0.2,
+  "cooldown_seconds": 22,
+  "warn": "발밑에 역병이 고인다! 자리를 옮겨라!"
+}

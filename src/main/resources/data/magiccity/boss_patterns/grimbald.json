@@ -1,0 +1,8 @@
+{
+  "name": "일제 사격",
+  "shape": "at_players",
+  "radius": 4,
+  "flat": 8,
+  "cooldown_seconds": 22,
+  "warn": "약탈자들이 활을 겨눈다! 자리를 옮겨라!"
+}

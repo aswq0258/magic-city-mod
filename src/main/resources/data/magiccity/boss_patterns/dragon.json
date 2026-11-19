@@ -1,0 +1,8 @@
+{
+  "name": "용염 낙하",
+  "shape": "at_players",
+  "radius": 5,
+  "flat": 12,
+  "cooldown_seconds": 25,
+  "warn": "하늘에서 용의 불길이 떨어진다! 자리를 옮겨라!"
+}

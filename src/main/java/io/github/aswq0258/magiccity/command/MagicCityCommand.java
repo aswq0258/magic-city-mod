@@ -294,6 +294,13 @@ public final class MagicCityCommand {
                     io.github.aswq0258.magiccity.boss.GateKeeper.reset(ctx.getSource().getServer());
                     ctx.getSource().sendSuccess(() -> Component.literal("§e[마법 도시] 심연의 문지기를 다시 소환할 수 있게 했습니다 (마계문은 닫힘)."), true);
                     return 1;
+                })).then(Commands.literal("pattern").executes(ctx -> {
+                    String msg = io.github.aswq0258.magiccity.boss.BossPatterns.forceNearest(ctx.getSource().getPlayerOrException());
+                    ctx.getSource().sendSuccess(() -> Component.literal(msg), false);
+                    return 1;
+                })).then(Commands.literal("patterns").executes(ctx -> {
+                    ctx.getSource().sendSuccess(() -> Component.literal(io.github.aswq0258.magiccity.boss.BossPatterns.list()), false);
+                    return 1;
                 })))
                 .then(Commands.literal("status").executes(ctx -> {
                     ctx.getSource().sendSuccess(() -> Component.literal(CityBuildManager.status()), false);

@@ -1,0 +1,9 @@
+{
+  "name": "해일 고리",
+  "shape": "ring",
+  "inner": 4,
+  "outer": 14,
+  "percent": 0.25,
+  "cooldown_seconds": 25,
+  "warn": "해일이 밀려온다! 수호자 곁으로 붙어라!"
+}

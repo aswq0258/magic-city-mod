@@ -1,0 +1,8 @@
+{
+  "name": "용융 분출",
+  "shape": "around_boss",
+  "radius": 8,
+  "flat": 10,
+  "cooldown_seconds": 25,
+  "warn": "거신의 몸이 붉게 달아오른다! 멀리 떨어져라!"
+}

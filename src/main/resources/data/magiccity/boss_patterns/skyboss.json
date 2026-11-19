@@ -1,0 +1,8 @@
+{
+  "name": "낙뢰",
+  "shape": "at_players",
+  "radius": 3,
+  "percent": 0.3,
+  "cooldown_seconds": 22,
+  "warn": "머리 위에 번개가 모인다! 자리를 옮겨라!"
+}

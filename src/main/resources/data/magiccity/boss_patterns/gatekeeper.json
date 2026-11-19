@@ -1,0 +1,9 @@
+{
+  "name": "마계문 개방",
+  "shape": "ring",
+  "inner": 4,
+  "outer": 20,
+  "percent": 0.35,
+  "cooldown_seconds": 30,
+  "warn": "마계문이 열린다! 문지기 곁으로 붙어라!"
+}

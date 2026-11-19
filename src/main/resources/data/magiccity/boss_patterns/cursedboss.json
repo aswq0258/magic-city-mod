@@ -1,0 +1,8 @@
+{
+  "name": "저주의 낙인",
+  "shape": "at_players",
+  "radius": 3,
+  "percent": 0.25,
+  "cooldown_seconds": 22,
+  "warn": "발밑에 저주의 낙인이 새겨진다! 자리를 옮겨라!"
+}

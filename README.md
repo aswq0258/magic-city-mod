@@ -34,6 +34,7 @@
 - `/magiccity site oldcapital` — 몰락한 옛 왕도 (월드 -3960, 3260) + 연합군 봉쇄 요새 건설
 - `/magiccity goto oldcapital` — 봉쇄 요새로 이동
 - `/magiccity boss reset` — 심연의 문지기 재도전 (마계문 닫힘)
+- `/magiccity boss pattern` / `boss patterns` — 고정 피해 패턴 시험 발동 / 목록
 - `/magiccity site roads` — 길 10개에 쉼터·몬스터 둥지·필드보스 결투장 건설
 - `/magiccity roads` — 길(지역) 목록과 필드보스 위치
 - `/magiccity map` — 가 보지 않은 곳까지 그려진 지역 지도 (내 위치 중심 2048 x 2048, 쉼터·둥지·필드보스 표시). `/magiccity map <x> <z>` 로 다른 곳
@@ -165,6 +166,14 @@
 - `/magiccity site sewer` — 왕성 하수도 확장 (build 다음에). 왕궁 아래 순환 하수로 벽의 쇠창살 너머로 도시 끝까지 뻗은 거대한 간선 하수도 4개와 집수 홀이 보이지만 들어갈 수는 없음. 하수로 물길은 8칸마다 솟는 물이 흘러 퍼지고 16칸마다 천장 배수구에서 물이 쏟아짐. 왕궁 비밀 사다리는 이제 지하감옥 남쪽 감방으로 이어지고, 하수로와 지하감옥은 감방 벽 덩굴 뒤 좁은 틈으로만 몰래 이어짐. 슬럼가 맨홀 하수로 서쪽 벽의 덩굴 장막 뒤(또는 맨홀 사다리 중간의 덩굴 뒤)에 암시장 은신처(암시장 상인·정보상·위조 장인·그림자 길드 중개인, 노름판, 장물 창고). 1장 보스는 순환 하수로 남쪽의 초대 왕의 납골당
 - 시험용: `/magiccity story give <장>` 처음 완료로 기록(완료 이벤트 발행), `/magiccity story mark <장>` 이벤트 없이 완료 표시, `/magiccity story reset` 초기화, `/magiccity story config` 진행도 설정 다시 읽기
 
+## 보스 고정 피해 패턴 (2026-11-19)
+- 12장 보스마다 패턴 1개: 바닥에 빨간 범위를 2초(1·2급 3초) 예고 → 발동 순간 범위 안 플레이어만 피해, 밖이면 0. 시작할 때 채팅·액션바 경고와 소리, 끝나기 0.5초 전 소리 한 번 더
+- 모양: `around_boss`(보스 주변 원, 멀어지면 안전) · `at_players`(예고 시작 때 플레이어마다 발밑에 찍힌 원, 옮기면 안전) · `ring`(보스 둘레 고리, 흰 안쪽 원 안으로 붙으면 안전)
+- 피해 유형 `magiccity:boss_fixed`: 방어력·강도·보호 인챈트·저항 효과·방패·무적 시간을 건너뜀, 흡수 체력부터 깎임, 난이도 배율 없음, 등급 배율(`Progression`) 없음
+- 크기: 비율형 = 최대 체력 × `percent`(등급 무관), 고정형 = `flat`(6급 기준) × 등급 계수(1급 0.5 … 6급 1.0). 첫 사용은 깨어난 뒤 10초, 이후 `cooldown_seconds`, 체력 25% 이하면 쿨타임 ×0.8
+- 데이터: `data/magiccity/boss_patterns/<보스 키>.json` (보스 태그 `magiccity_<키>`, 데이터팩으로 덮어쓰기). 검사: 비율 ≤ 0.5, 고정 ≤ 14, 둘 중 하나만, 쿨타임 ≥ 5초
+- 시험용: `/magiccity boss pattern`(48칸 안 가장 가까운 보스가 바로 예고 시작, 계산된 피해 표시) · `/magiccity boss patterns`(목록)
+
 ## 개인 퀘스트·퀘스트 NPC (최소판, 2026-11-19)
 - 왕좌의 전당 옥좌 앞에 서장 NPC **왕실 시종장 에드윈**이 생김 (도시를 지을 때 자동, 이미 지은 월드는 `/magiccity fix npcs` — 지역 의뢰 NPC 도 함께 다시 놓음). 움직이지 않고 무적. 오른쪽 클릭하면 거래 창 대신 채팅 대화와 클릭 선택지
 - 1장 퀘스트 "왕의 소명": 수락 → 직업 선택(fantasyrpg 화면) → 왕성 하수도로 내려가기 → 하수도의 역병 술사 처치
@@ -181,6 +190,7 @@
   - `MagicCityApi.completed / grade / levelCap / craftGrid / cleared(ServerPlayer)` — 서버 쪽, 읽기 전용. `API_VERSION` = 1
   - `MagicCityApi.questSignal(player, signal)` — 지금 단계가 그 신호를 기다리는 퀘스트를 다음 단계로. `questState / questDone` — 진행 확인
   - `NpcActionEvent` — 퀘스트 NPC 행동 선택지(예: `choose_class`)를 서버가 확인한 뒤 발행. `QuestStepStartEvent` — 단계가 시작될 때·접속할 때 발행 (신호 단계를 이미 만족했으면 바로 신호를 보내도 됨)
+  - `MagicCityApi.isBossFixed(DamageSource)` / `BOSS_FIXED_DAMAGE` — 보스 고정 피해 패턴의 피해인지. 다른 모드는 자기 피해 감소·무효 처리를 이 피해에 적용하지 않는다 (fantasyrpg 직업 방어 기술도 통과)
   - `ChapterFirstClearEvent` — 플레이어가 메인 챕터를 처음 완료하면 `NeoForge.EVENT_BUS`에 한 번 발행 (완료 기록이 반영된 뒤). 재처치에서는 발행하지 않음. 챕터, 완료 수·등급·레벨 상한·작업대 크기의 전·후 값을 담음
 - Gradle 의존성 (JitPack, 저장소가 공개라 바로 쓸 수 있음):
 ```groovy

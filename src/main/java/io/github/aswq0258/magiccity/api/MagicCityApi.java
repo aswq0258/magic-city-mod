@@ -51,4 +51,15 @@ public final class MagicCityApi {
 
     /** 퀘스트를 끝냈는지 */
     public static boolean questDone(ServerPlayer p, String quest) { return io.github.aswq0258.magiccity.quest.QuestService.done(p, quest); }
+
+    // ───────── 보스 고정 피해 (API 버전 1 그대로: 추가만 함, 2026-11-19) ─────────
+
+    /** 보스 고정 피해 패턴의 피해 유형 id (magiccity:boss_fixed) */
+    public static final net.minecraft.resources.ResourceLocation BOSS_FIXED_DAMAGE = io.github.aswq0258.magiccity.boss.BossPatterns.BOSS_FIXED.location();
+
+    /**
+     * 보스 고정 피해 패턴의 피해인지. 이 피해는 예고된 범위 안에서만 맞고 모든 감소를 무시하도록 설계됐으므로,
+     * 다른 모드는 자기 피해 감소·무효 처리를 이 피해에 적용하지 않는다(흡수 체력은 바닐라가 먼저 깎음).
+     */
+    public static boolean isBossFixed(net.minecraft.world.damagesource.DamageSource source) { return io.github.aswq0258.magiccity.boss.BossPatterns.isFixed(source); }
 }

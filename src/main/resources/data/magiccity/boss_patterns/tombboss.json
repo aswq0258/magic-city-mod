@@ -1,0 +1,8 @@
+{
+  "name": "왕의 심판",
+  "shape": "at_players",
+  "radius": 4,
+  "flat": 10,
+  "cooldown_seconds": 25,
+  "warn": "고대왕이 너를 가리킨다! 자리를 옮겨라!"
+}

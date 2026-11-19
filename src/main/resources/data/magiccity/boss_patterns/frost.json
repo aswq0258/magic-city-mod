@@ -1,0 +1,9 @@
+{
+  "name": "눈사태 고리",
+  "shape": "ring",
+  "inner": 5,
+  "outer": 16,
+  "percent": 0.25,
+  "cooldown_seconds": 25,
+  "warn": "눈사태가 몰려온다! 거인 발치로 파고들어라!"
+}

@@ -130,6 +130,7 @@ public final class Progression {
     /** 보스가 플레이어에게 주는 피해에 등급 배율을 곱함 */
     public static void onIncomingDamage(LivingIncomingDamageEvent event) {
         if (!(event.getEntity() instanceof ServerPlayer)) return;
+        if (BossPatterns.isFixed(event.getSource())) return; // 고정 피해 패턴은 크기를 따로 정함 (밸런스 6-1절)
         Entity src = event.getSource().getEntity();
         if (src == null) src = event.getSource().getDirectEntity();
         if (src == null) return;

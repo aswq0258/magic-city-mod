@@ -1,0 +1,8 @@
+{
+  "name": "심연 파동",
+  "shape": "around_boss",
+  "radius": 10,
+  "percent": 0.3,
+  "cooldown_seconds": 28,
+  "warn": "감시자가 심연의 힘을 모은다! 멀리 떨어져라!"
+}

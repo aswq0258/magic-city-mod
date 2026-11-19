@@ -1,0 +1,8 @@
+{
+  "name": "뿌리 분출",
+  "shape": "around_boss",
+  "radius": 7,
+  "flat": 8,
+  "cooldown_seconds": 25,
+  "warn": "기생충 주변 땅이 들끓는다! 멀리 떨어져라!"
+}
