@@ -181,6 +181,7 @@
 - 1장 퀘스트 "왕의 소명": 수락 → 직업 선택(fantasyrpg 화면) → 왕성 하수도로 내려가기 → 하수도의 역병 술사 처치
 - 2~12장 챕터 퀘스트: 지역마다 의뢰 NPC(숲지기 브란·세계수 사제 엘리아·관문 수비대장 시렌·대장장이 길드장 브롬·항구 관리관 마렌·발굴단장 오웬·국경 사령관 하인리히·천문학자 셀레스·심연 감시인 모르가, 11·12장은 시종장). 사연 → 보스 자리 48칸 안 도착 → 보스 처치. 받는 조건은 보스 입장 조건과 같고(2~10장 = 1장 뒤, 11장 = 1~10장, 12장 = 11장), 이미 깬 장은 건네지 않음. 의뢰 NPC 는 플레이어가 그 지역 거점 48칸 안에 처음 오면 지면에 생김(`quest_npcs` 의 `spawn.anchor`, 자리 이름은 `QuestAnchors`)
 - `/quest` 에 받을 수 있는 의뢰 목록(이름 — NPC — 좌표)
+- 장별 중간 단계 (2026-11-19): 2·3·5·6·7·9·10·11장은 보스 자리로 가기 전에 지역의 장소를 따라감(예: 5장 갱도 문지기 도른 → 갇힌 광부 3명 구출 → 고대 용광로 홀 → 압력 밸브 3개). **안내형**: 하지 않아도 보스는 깨어나고, 장을 깨면 남은 단계는 건너뛰고 완료. 단계 종류 `talk_npcs`(여러 NPC 를 아무 순서로), `use_blocks`(정해진 자리 블록을 아무 순서로 오른쪽 클릭), 자리 이름 `mark`(코드가 계산하는 좌표·높이 범위, `QuestMarks`). 퀘스트 `version` 이 저장된 판과 다르면 진행 중인 퀘스트를 첫 단계부터 다시. 지하 NPC 는 `quest_npcs` 의 `spawn.anchor` 에 높이가 있는 자리 이름, `spawn.scale` 로 크기
 - `/quest` (모든 플레이어) — 내 퀘스트 진행. 진행 중이면 30초마다 액션바에 목표 한 줄. 왕국 대륙에 처음 오면 시작 안내 한 번
 - 선택지는 `/quest npc <NPC> accept|act|decline ...` 명령으로 들어오지만 서버가 NPC 표식·6칸 거리·지금 단계를 다시 확인함 (직접 쳐도 할 수 있는 것은 같음)
 - 데이터: `data/<ns>/quests/<id>.json` (단계 `talk_npc`·`signal`·`enter_area`·`chapter_clear`), `data/<ns>/quest_npcs/<id>.json` (이름·평소 대사·상시 선택지 `services`). 데이터팩으로 덮어쓰기 가능
@@ -193,6 +194,7 @@
   - `MagicCityApi.questSignal(player, signal)` — 지금 단계가 그 신호를 기다리는 퀘스트를 다음 단계로. `questState / questDone` — 진행 확인
   - `NpcActionEvent` — 퀘스트 NPC 행동 선택지(예: `choose_class`)를 서버가 확인한 뒤 발행. `QuestStepStartEvent` — 단계가 시작될 때·접속할 때 발행 (신호 단계를 이미 만족했으면 바로 신호를 보내도 됨)
   - `MagicCityApi.isBossFixed(DamageSource)` / `BOSS_FIXED_DAMAGE` — 보스 고정 피해 패턴의 피해인지. 다른 모드는 자기 피해 감소·무효 처리를 이 피해에 적용하지 않는다 (fantasyrpg 직업 방어 기술도 통과)
+  - `QuestStepCompleteEvent` — 플레이어가 퀘스트 단계를 직접 끝냈을 때(장을 깨서 건너뛴 단계는 없음). `isMidStep()` = 장 퀘스트의 중간 단계 (fantasyrpg 가 경험치를 줌)
   - `ChapterFirstClearEvent` — 플레이어가 메인 챕터를 처음 완료하면 `NeoForge.EVENT_BUS`에 한 번 발행 (완료 기록이 반영된 뒤). 재처치에서는 발행하지 않음. 챕터, 완료 수·등급·레벨 상한·작업대 크기의 전·후 값을 담음
 - Gradle 의존성 (JitPack, 저장소가 공개라 바로 쓸 수 있음):
 ```groovy
