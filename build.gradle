@@ -119,6 +119,8 @@ dependencies {
     // 단위 테스트 (순수 계산 클래스만, Minecraft 없이 실행)
     testImplementation platform('org.junit:junit-bom:5.11.4')
     testImplementation 'org.junit.jupiter:junit-jupiter'
+    // 퀘스트 정의 파싱 테스트 (게임 실행 때는 Minecraft 에 들어 있는 Gson 을 씀)
+    testImplementation 'com.google.code.gson:gson:2.10.1'
     testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
 
     // Example optional mod dependency with JEI
