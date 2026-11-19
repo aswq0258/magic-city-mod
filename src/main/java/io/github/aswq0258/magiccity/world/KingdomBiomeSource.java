@@ -32,14 +32,20 @@ public class KingdomBiomeSource extends BiomeSource {
             Biomes.DARK_FOREST,          // DEEPWOOD: 세계수를 둘러싼 태고의 숲 (고목은 DeepWood 가 따로 심음)
     };
 
+    /** 세계수·엘프의 성역 (보랏빛 숲) */
+    public static final ResourceKey<Biome> ELF_SANCTUM = ResourceKey.create(Registries.BIOME,
+            net.minecraft.resources.ResourceLocation.fromNamespaceAndPath("magiccity", "elf_sanctum"));
+
     private final HolderGetter<Biome> biomes;
     private final Holder<Biome>[] byKind;
+    private final Holder<Biome> elf;
 
     @SuppressWarnings("unchecked")
     public KingdomBiomeSource(HolderGetter<Biome> biomes) {
         this.biomes = biomes;
         this.byKind = new Holder[KingdomTerrain.Kind.values().length];
         for (KingdomTerrain.Kind k : KingdomTerrain.Kind.values()) byKind[k.ordinal()] = biomes.getOrThrow(KEYS[k.ordinal()]);
+        this.elf = biomes.getOrThrow(ELF_SANCTUM);
     }
 
     @Override
@@ -49,11 +55,13 @@ public class KingdomBiomeSource extends BiomeSource {
 
     @Override
     protected Stream<Holder<Biome>> collectPossibleBiomes() {
-        return Stream.of(byKind);
+        return Stream.concat(Stream.of(byKind), Stream.of(elf));
     }
 
     @Override
     public Holder<Biome> getNoiseBiome(int qx, int qy, int qz, Climate.Sampler sampler) {
-        return byKind[KingdomTerrain.column(qx << 2, qz << 2).kind().ordinal()];
+        int x = qx << 2, z = qz << 2;
+        if (ElfWood.in(x, z)) return elf;
+        return byKind[KingdomTerrain.column(x, z).kind().ordinal()];
     }
 }

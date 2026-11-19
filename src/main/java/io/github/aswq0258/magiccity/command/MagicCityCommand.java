@@ -56,6 +56,8 @@ import java.util.List;
  * /magiccity goto elfgate    — 관문 아치 아래로 이동
  * /magiccity site dwarf      — 드워프 광산왕국 (산의 문·대전당·옥좌실·대장간·광산) 건설
  * /magiccity goto dwarf      — 드워프 교역 마당으로 이동
+ * /magiccity site deepmine   — 드워프 심층 광산 (5장 던전: 봉쇄된 갱도 문 → 심부 광산 → 고대 용광로 홀 보스) 건설. site dwarf 다음에
+ * /magiccity goto deepmine   — 봉쇄된 갱도 문 앞 / goto furnace — 고대 용광로 홀 / remove deepmine — 철거
  * /magiccity site hamlets    — 대륙 곳곳의 테마 촌락 건설 (바닐라 마을 대신)
  * /magiccity site hamlet     — 가장 가까운 촌락 한 곳만 건설 (remove hamlet 뒤 다시 지을 때)
  * /magiccity hamlets         — 가까운 촌락 목록
@@ -66,6 +68,7 @@ import java.util.List;
  * /magiccity fix lava [반지름]   — 내 주변(기본 512) 지표의 용암 호수·용암 샘을 물로 바꿈
  * /magiccity fix forests [반지름] — 이미 생성된 땅에 새 숲 배치(산기슭·산비탈 침엽수·들판 작은 숲)를 입힘 (기본 1024)
  * /magiccity fix deepwood   — 이미 생성된 땅의 엘프 대수림 심부에 태고의 숲(고목·이끼 바닥·선돌·버섯 고리)을 입힘
+ * /magiccity fix elfwood    — 세계수 주변 반지름 360 을 잎 천장으로 닫힌 보랏빛 숲(엘프의 성역 바이옴, 빛 구슬·수정·빛나는 버섯)으로
  * /magiccity fix seams      — 철거 영역 가장자리에서 반쪽만 남은(잘린) 나무를 고침 (태고의 숲 고목은 다시 그림)
  * /magiccity fix nature [반지름] — 내 주변(기본 256) 빈 땅에 바이옴에 맞는 나무·풀을 다시 심음
  * /magiccity remove city     — 왕성도시(구시가지 + 신시가지) 철거
@@ -110,6 +113,7 @@ public final class MagicCityCommand {
                             return 1;
                         }))
                         .then(Commands.literal("dwarf").executes(MagicCityCommand::dwarf))
+                        .then(Commands.literal("deepmine").executes(MagicCityCommand::deepMine))
                         .then(Commands.literal("hamlets").executes(MagicCityCommand::hamlets))
                         .then(Commands.literal("hamlet").executes(MagicCityCommand::oneHamlet)))
                 .then(io.github.aswq0258.magiccity.quest.QuestCommand.admin())
@@ -120,6 +124,19 @@ public final class MagicCityCommand {
                                         .executes(ctx -> fixLava(ctx, com.mojang.brigadier.arguments.IntegerArgumentType.getInteger(ctx, "radius")))))
                         .then(Commands.literal("deepwood").executes(MagicCityCommand::fixDeepwood))
                         .then(Commands.literal("seams").executes(MagicCityCommand::fixSeams))
+                        .then(Commands.literal("elfwood").executes(ctx -> {
+                            CommandSourceStack src = ctx.getSource();
+                            if (CityBuildManager.isRunning()) {
+                                src.sendFailure(Component.literal("[마법 도시] 이미 건설 중입니다. /magiccity status 로 확인하세요."));
+                                return 0;
+                            }
+                            ServerLevel k = src.getServer().getLevel(io.github.aswq0258.magiccity.world.ModWorldgen.KINGDOM);
+                            if (k == null) return 0;
+                            io.github.aswq0258.magiccity.site.ElfWoodFix fix = new io.github.aswq0258.magiccity.site.ElfWoodFix();
+                            CityBuildManager.start(new CityBuildJob(k, fix));
+                            src.sendSuccess(() -> Component.literal(String.format("§d[마법 도시] 보랏빛 숲 입히기 시작! 청크 %d개. 끝나면 /magiccity site worldtree 와 site rootcave 를 다시 돌려 세계수도 보랏빛으로 바꾸세요.", fix.chunkCount())), true);
+                            return 1;
+                        }))
                         .then(Commands.literal("forests").executes(ctx -> fixForests(ctx, 1024))
                                 .then(Commands.argument("radius", com.mojang.brigadier.arguments.IntegerArgumentType.integer(16, 4096))
                                         .executes(ctx -> fixForests(ctx, com.mojang.brigadier.arguments.IntegerArgumentType.getInteger(ctx, "radius")))))
@@ -144,6 +161,7 @@ public final class MagicCityCommand {
                         .then(Commands.literal("rootcave").executes(ctx -> remove(ctx, io.github.aswq0258.magiccity.site.Restore.rootDungeon())))
                         .then(Commands.literal("frost").executes(ctx -> remove(ctx, io.github.aswq0258.magiccity.site.Restore.frostArena())))
                         .then(Commands.literal("dwarf").executes(ctx -> remove(ctx, io.github.aswq0258.magiccity.site.Restore.dwarf())))
+                        .then(Commands.literal("deepmine").executes(ctx -> remove(ctx, io.github.aswq0258.magiccity.site.Restore.deepMine())))
                         .then(Commands.literal("oldcapital").executes(ctx -> remove(ctx, io.github.aswq0258.magiccity.site.Restore.oldCapital())))
                         .then(Commands.literal("city").executes(ctx -> removeCity(ctx, false)))
                         .then(Commands.literal("all").executes(ctx -> removeCity(ctx, true))))
@@ -159,6 +177,20 @@ public final class MagicCityCommand {
                     src.sendSuccess(() -> Component.literal(msg), false);
                     return 1;
                 }))
+                .then(Commands.literal("goto").then(Commands.literal("deepmine").executes(ctx -> {
+                    ServerLevel k = ctx.getSource().getServer().getLevel(io.github.aswq0258.magiccity.world.ModWorldgen.KINGDOM);
+                    if (k == null) return 0;
+                    ctx.getSource().getPlayerOrException().teleportTo(k, io.github.aswq0258.magiccity.site.DeepMine.GATE_X + 0.5,
+                            io.github.aswq0258.magiccity.site.DeepMine.M + 1, io.github.aswq0258.magiccity.site.DeepMine.GATE_Z + 0.5, 0F, 0F);
+                    return 1;
+                })))
+                .then(Commands.literal("goto").then(Commands.literal("furnace").executes(ctx -> {
+                    ServerLevel k = ctx.getSource().getServer().getLevel(io.github.aswq0258.magiccity.world.ModWorldgen.KINGDOM);
+                    if (k == null) return 0;
+                    ctx.getSource().getPlayerOrException().teleportTo(k, io.github.aswq0258.magiccity.site.DeepMine.HX + 0.5,
+                            io.github.aswq0258.magiccity.site.DeepMine.A + 1, io.github.aswq0258.magiccity.site.DeepMine.HZ + 24.5, 180F, 0F);
+                    return 1;
+                })))
                 .then(Commands.literal("goto").then(Commands.literal("dwarf").executes(ctx -> {
                     ServerLevel k = ctx.getSource().getServer().getLevel(io.github.aswq0258.magiccity.world.ModWorldgen.KINGDOM);
                     if (k == null) return 0;
@@ -758,6 +790,26 @@ public final class MagicCityCommand {
         src.sendSuccess(() -> Component.literal(String.format("§6[마법 도시] 드워프 광산왕국 건설 시작! 산의 문 (%d, %d, %d), 청크 %d개. "
                 + "/magiccity goto dwarf 로 갈 수 있습니다.", io.github.aswq0258.magiccity.site.DwarfHold.CX, site.floorY() + 1,
                 io.github.aswq0258.magiccity.site.DwarfHold.CZ - 95, job.chunkCount())), true);
+        return 1;
+    }
+
+    /** 드워프 심층 광산 (5장 던전) 건설 */
+    private static int deepMine(CommandContext<CommandSourceStack> ctx) {
+        CommandSourceStack src = ctx.getSource();
+        if (CityBuildManager.isRunning()) {
+            src.sendFailure(Component.literal("[마법 도시] 이미 건설 중입니다. /magiccity status 로 확인하세요."));
+            return 0;
+        }
+        ServerLevel k = src.getServer().getLevel(io.github.aswq0258.magiccity.world.ModWorldgen.KINGDOM);
+        if (k == null) {
+            src.sendFailure(Component.literal("[마법 도시] 왕국 대륙 차원을 찾을 수 없습니다."));
+            return 0;
+        }
+        io.github.aswq0258.magiccity.site.DeepMine site = new io.github.aswq0258.magiccity.site.DeepMine(k.getSeed() ^ 0xDEE9L);
+        CityBuildJob job = new CityBuildJob(k, site);
+        CityBuildManager.start(job);
+        src.sendSuccess(() -> Component.literal(String.format("§6[마법 도시] 드워프 심층 광산 건설 시작! 청크 %d개. /magiccity goto deepmine 으로 광산의 봉쇄된 갱도 문, "
+                + "goto furnace 로 고대 용광로 홀(용광로의 거신)에 갈 수 있습니다.", job.chunkCount())), true);
         return 1;
     }
 

@@ -234,7 +234,9 @@ public final class DeepWood {
                 double edge = r * (0.85 + 0.3 * rnd(cx + dx, cz + dz, seed + dy));
                 if (d > edge) continue;
                 double k = rnd(cx + dx, cz + dz, seed * 13 + dy);
-                BlockState s = k < 0.025 ? Blocks.SHROOMLIGHT.defaultBlockState()
+                boolean elf = ElfWood.in(cx, cz);
+                BlockState s = k < 0.025 ? (elf ? Blocks.PEARLESCENT_FROGLIGHT.defaultBlockState() : Blocks.SHROOMLIGHT.defaultBlockState())
+                        : elf ? ElfWood.leaf((k - 0.025) / 0.975)
                         : k < 0.6 ? leaf(Blocks.OAK_LEAVES) : k < 0.85 ? leaf(Blocks.AZALEA_LEAVES) : leaf(Blocks.FLOWERING_AZALEA_LEAVES);
                 putSoft(a, cx + dx, cy + dy, cz + dz, s);
             }

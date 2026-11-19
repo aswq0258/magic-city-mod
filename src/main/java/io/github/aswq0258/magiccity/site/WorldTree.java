@@ -55,9 +55,10 @@ public final class WorldTree implements BuildLayout {
     private static final BlockState BARK = Blocks.OAK_WOOD.defaultBlockState();
     private static final BlockState BARK2 = Blocks.STRIPPED_OAK_WOOD.defaultBlockState();
     private static final BlockState MOSS = Blocks.MOSS_BLOCK.defaultBlockState();
-    private static final BlockState LEAF = Blocks.AZALEA_LEAVES.defaultBlockState().setValue(LeavesBlock.PERSISTENT, true);
-    private static final BlockState LEAF_FLOWER = Blocks.FLOWERING_AZALEA_LEAVES.defaultBlockState().setValue(LeavesBlock.PERSISTENT, true);
-    private static final BlockState BIRCH_LEAF = Blocks.BIRCH_LEAVES.defaultBlockState().setValue(LeavesBlock.PERSISTENT, true);
+    /** 보랏빛 숲: 참나무 잎(바이옴 색으로 보라색), 벚나무 잎(분홍) */
+    private static final BlockState LEAF = Blocks.OAK_LEAVES.defaultBlockState().setValue(LeavesBlock.PERSISTENT, true);
+    private static final BlockState LEAF_FLOWER = Blocks.CHERRY_LEAVES.defaultBlockState().setValue(LeavesBlock.PERSISTENT, true);
+    private static final BlockState BIRCH_LEAF = Blocks.OAK_LEAVES.defaultBlockState().setValue(LeavesBlock.PERSISTENT, true);
 
     public WorldTree(long seed) {
         this.seed = seed;
@@ -387,7 +388,7 @@ public final class WorldTree implements BuildLayout {
                         double n = 0.18 * Math.sin(dx / 3.0 + y / 4.0) * Math.cos(dz / 3.5 - y / 5.0);
                         if (e < 1 + n) {
                             int kk = h(x, z + y * 7, 3) % 100;
-                            if (e < 0.5 && kk < 3) s = Blocks.SHROOMLIGHT.defaultBlockState();
+                            if (e < 0.5 && kk < 3) s = Blocks.PEARLESCENT_FROGLIGHT.defaultBlockState();
                             else if (e > 0.75 && kk < 2) s = null;                   // 군데군데 빈틈
                             else s = kk < 28 ? LEAF_FLOWER : LEAF;
                             if (s != null) lowestLeaf = Math.min(lowestLeaf, y);
