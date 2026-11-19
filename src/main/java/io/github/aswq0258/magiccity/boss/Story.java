@@ -133,9 +133,15 @@ public final class Story {
 
     /** 챕터 보스를 쓰러뜨림: 64칸 안 플레이어에게 완료 기록 + 처음이면 봉인 아이템과 화면 제목 */
     public static void credit(ServerLevel level, BlockPos at, int chapter) {
+        List<ServerPlayer> near = new java.util.ArrayList<>();
+        for (ServerPlayer p : level.players()) if (!p.isSpectator() && p.blockPosition().distSqr(at) <= 64 * 64) near.add(p);
+        creditPlayers(near, chapter);
+    }
+
+    /** 전장 참가자에게 장 완료 기록 (2026-11-19 인스턴스 전장: 관전 중인 쓰러진 참가자 포함) */
+    public static void creditPlayers(List<ServerPlayer> players, int chapter) {
         Chapter ch = CHAPTERS.get(chapter - 1);
-        for (ServerPlayer p : level.players()) {
-            if (p.isSpectator() || p.blockPosition().distSqr(at) > 64 * 64) continue;
+        for (ServerPlayer p : players) {
             if (!recordFirstClear(p, chapter)) continue;                                // 반복 처치는 진행도에 다시 반영하지 않음
             int after = Progression.completed(p);
             int before = after - 1;
@@ -180,7 +186,7 @@ public final class Story {
         return n;
     }
 
-    private static String requirementText(ServerPlayer p, int chapter) {
+    public static String requirementText(ServerPlayer p, int chapter) {
         if (chapter <= 10) return "§e먼저 서장을 끝내야 한다 §7(1장 — 왕성도시 지하 하수도 납골당)";
         if (chapter == 11) return "§6고룡은 모든 시련을 마치고 다섯 봉인을 가진 자에게만 깨어난다 §7(1~10장 " + clearedMain(p) + "/10, 봉인 " + seals(p) + "/5)";
         return "§5마계문을 닫으려면 왕관 봉인이 필요하다 §7(11장 고룡 이그나르)";

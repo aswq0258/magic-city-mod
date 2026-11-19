@@ -330,7 +330,18 @@ public final class MagicCityCommand {
                     String msg = io.github.aswq0258.magiccity.boss.BossPatterns.forceNearest(ctx.getSource().getPlayerOrException());
                     ctx.getSource().sendSuccess(() -> Component.literal(msg), false);
                     return 1;
-                })).then(Commands.literal("patterns").executes(ctx -> {
+                })).then(Commands.literal("arena").executes(ctx -> {
+                    ctx.getSource().sendSuccess(() -> Component.literal(io.github.aswq0258.magiccity.arena.ArenaManager.status()), false);
+                    return 1;
+                })).then(Commands.literal("arena-start").then(Commands.argument("chapter", com.mojang.brigadier.arguments.IntegerArgumentType.integer(1, 12)).executes(ctx -> {
+                    String err = io.github.aswq0258.magiccity.arena.ArenaManager.forceStart(ctx.getSource().getPlayerOrException(), com.mojang.brigadier.arguments.IntegerArgumentType.getInteger(ctx, "chapter"));
+                    ctx.getSource().sendSuccess(() -> Component.literal(err == null ? "§e[보스전] 시험 입장 (혼자, 입장 조건 무시)" : "§c" + err), false);
+                    return 1;
+                }))).then(Commands.literal("arena-stop").then(Commands.argument("chapter", com.mojang.brigadier.arguments.IntegerArgumentType.integer(1, 12)).executes(ctx -> {
+                    boolean ok = io.github.aswq0258.magiccity.arena.ArenaManager.stop(ctx.getSource().getServer(), com.mojang.brigadier.arguments.IntegerArgumentType.getInteger(ctx, "chapter"));
+                    ctx.getSource().sendSuccess(() -> Component.literal(ok ? "§e[보스전] 전장을 닫았습니다" : "§c그 장의 전장이 열려 있지 않음"), false);
+                    return 1;
+                }))).then(Commands.literal("patterns").executes(ctx -> {
                     ctx.getSource().sendSuccess(() -> Component.literal(io.github.aswq0258.magiccity.boss.BossPatterns.list()), false);
                     return 1;
                 })))

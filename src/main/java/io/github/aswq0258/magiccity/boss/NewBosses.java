@@ -294,6 +294,11 @@ public final class NewBosses {
 
         @Override protected Vec3 center() { return new Vec3(SX + 0.5, floor() + 6, SZ + 0.5); }
 
+        /** 전장: 물로 찬 돔, 바닥에서 6칸 위 물속 */
+        @Override public String arenaShape() { return "water"; }
+
+        @Override public double arenaYOffset() { return 5; }
+
         @Override protected boolean inY(double y, Vec3 c) { return y > c.y - 8 && y < c.y + 12; }
 
         @Override
@@ -345,6 +350,20 @@ public final class NewBosses {
         @Override protected Vec3 center() { return new Vec3(FX + 0.5, KingdomTerrain.column(FX, FZ).h() + 1, FZ + 0.5); }
 
         @Override protected boolean inY(double y, Vec3 c) { return y > c.y - 15 && y < c.y + 40; }
+
+        /** 들판 습격 3단계를 막아야 제단이 열림 (보스전만 전장, 2026-11-19) */
+        @Override public boolean hasPreFight() { return true; }
+
+        @Override
+        public void resetPreFight() {
+            super.resetPreFight();
+            wave = 0;
+        }
+
+        @Override
+        protected void onPreFightCleared(ServerLevel level, Vec3 c) {
+            say(level, BlockPos.containing(c), "§a[국경의 밤] 습격을 모두 막아냈다! 들판의 봉인 제단에서 약탈 군주 " + name + "(와)과 결판을 내라.");
+        }
 
         @Override
         protected boolean preFight(ServerLevel level, List<ServerPlayer> near, Vec3 c) {

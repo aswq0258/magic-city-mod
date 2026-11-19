@@ -22,6 +22,7 @@ import net.minecraft.sounds.SoundSource;
 import net.minecraft.util.profiling.ProfilerFiller;
 import net.minecraft.world.damagesource.DamageSource;
 import net.minecraft.world.damagesource.DamageType;
+import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.Mob;
 import net.minecraft.world.phys.Vec3;
 import net.neoforged.neoforge.event.AddReloadListenerEvent;
@@ -100,11 +101,17 @@ public final class BossPatterns {
 
     public static void onServerTick(ServerTickEvent.Post event) {
         if (++ticks % 5 != 0) return;
-        ServerLevel level = event.getServer().getLevel(ModWorldgen.KINGDOM);
-        if (level == null) return;
-        if (ticks % 200 == 0) STATES.keySet().removeIf(id -> !(level.getEntity(id) instanceof Mob m) || !m.isAlive());
-        if (level.players().isEmpty() || patterns.isEmpty()) return;
-        for (Mob boss : bosses(level)) step(level, boss, patterns.get(patternTag(boss)));
+        ServerLevel kingdom = event.getServer().getLevel(ModWorldgen.KINGDOM);
+        ServerLevel arena = event.getServer().getLevel(io.github.aswq0258.magiccity.arena.ArenaManager.ARENA);
+        if (ticks % 200 == 0) STATES.keySet().removeIf(id -> {
+            Entity a = kingdom == null ? null : kingdom.getEntity(id), b = arena == null ? null : arena.getEntity(id);
+            return !(a instanceof Mob ma && ma.isAlive()) && !(b instanceof Mob mb && mb.isAlive());
+        });
+        if (patterns.isEmpty()) return;
+        for (ServerLevel level : new ServerLevel[]{kingdom, arena}) {                       // 2026-11-19: 보스전은 전장 차원에서
+            if (level == null || level.players().isEmpty()) continue;
+            for (Mob boss : bosses(level)) step(level, boss, patterns.get(patternTag(boss)));
+        }
     }
 
     /** 플레이어 근처의 패턴 있는 보스 */

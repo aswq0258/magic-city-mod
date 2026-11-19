@@ -22,11 +22,28 @@ public class MagicCityMod {
 
     public MagicCityMod(IEventBus modBus) {
         io.github.aswq0258.magiccity.world.ModWorldgen.register(modBus);
+        io.github.aswq0258.magiccity.item.ModItems.register(modBus);
+        // 챕터 보스 인스턴스 전장·보스 꾸러미 (2026-11-19)
+        NeoForge.EVENT_BUS.addListener(io.github.aswq0258.magiccity.arena.ArenaManager::onServerTick);
+        NeoForge.EVENT_BUS.addListener(net.neoforged.bus.api.EventPriority.LOWEST, io.github.aswq0258.magiccity.arena.ArenaManager::onDeath);
+        NeoForge.EVENT_BUS.addListener(io.github.aswq0258.magiccity.arena.ArenaManager::onLogin);
+        NeoForge.EVENT_BUS.addListener(io.github.aswq0258.magiccity.arena.ArenaManager::onLogout);
+        NeoForge.EVENT_BUS.addListener(io.github.aswq0258.magiccity.arena.ArenaManager::onChangeDimension);
+        NeoForge.EVENT_BUS.addListener(io.github.aswq0258.magiccity.arena.ArenaManager::onBreak);
+        NeoForge.EVENT_BUS.addListener(io.github.aswq0258.magiccity.arena.ArenaManager::onPlace);
+        NeoForge.EVENT_BUS.addListener(io.github.aswq0258.magiccity.arena.ArenaManager::onExplode);
+        NeoForge.EVENT_BUS.addListener(io.github.aswq0258.magiccity.arena.ArenaManager::onUseItem);
+        NeoForge.EVENT_BUS.addListener(io.github.aswq0258.magiccity.arena.ArenaManager::onUseOnBlock);
+        NeoForge.EVENT_BUS.addListener(io.github.aswq0258.magiccity.arena.ArenaManager::onJoin);
+        NeoForge.EVENT_BUS.addListener(io.github.aswq0258.magiccity.arena.ArenaManager::onPearl);
+        NeoForge.EVENT_BUS.addListener(io.github.aswq0258.magiccity.arena.ArenaManager::onChorus);
+        NeoForge.EVENT_BUS.addListener(io.github.aswq0258.magiccity.arena.SealAltar::onUse);
+        NeoForge.EVENT_BUS.addListener(io.github.aswq0258.magiccity.item.Pouches::onServerTick);
+        NeoForge.EVENT_BUS.addListener(io.github.aswq0258.magiccity.item.Pouches::onLogout);
         NeoForge.EVENT_BUS.addListener(MagicCityMod::onRegisterCommands);
         NeoForge.EVENT_BUS.addListener(CityBuildManager::onServerTick);
         NeoForge.EVENT_BUS.addListener(CityBuildManager::onServerStopping);
         NeoForge.EVENT_BUS.addListener(io.github.aswq0258.magiccity.boss.GateKeeper::onServerTick);
-        NeoForge.EVENT_BUS.addListener(io.github.aswq0258.magiccity.boss.GateKeeper::onDeath);
         NeoForge.EVENT_BUS.addListener(io.github.aswq0258.magiccity.boss.GateKeeper::onTravel);
         NeoForge.EVENT_BUS.addListener(io.github.aswq0258.magiccity.boss.FieldBosses::onServerTick);
         NeoForge.EVENT_BUS.addListener(io.github.aswq0258.magiccity.boss.FieldBosses::onDeath);
@@ -34,16 +51,9 @@ public class MagicCityMod {
         NeoForge.EVENT_BUS.addListener(io.github.aswq0258.magiccity.world.SafeZones::onFinalizeSpawn);
         NeoForge.EVENT_BUS.addListener(io.github.aswq0258.magiccity.boss.ManagedBoss::onServerTick);
         NeoForge.EVENT_BUS.addListener(io.github.aswq0258.magiccity.boss.ManagedBoss::onDeath);
-        NeoForge.EVENT_BUS.addListener(io.github.aswq0258.magiccity.boss.DragonBoss::onServerTick);
-        NeoForge.EVENT_BUS.addListener(io.github.aswq0258.magiccity.boss.DragonBoss::onDeath);
-        NeoForge.EVENT_BUS.addListener(io.github.aswq0258.magiccity.boss.SkyBoss::onServerTick);
-        NeoForge.EVENT_BUS.addListener(io.github.aswq0258.magiccity.boss.SkyBoss::onDeath);
-        NeoForge.EVENT_BUS.addListener(io.github.aswq0258.magiccity.boss.CursedBoss::onServerTick);
-        NeoForge.EVENT_BUS.addListener(io.github.aswq0258.magiccity.boss.CursedBoss::onDeath);
-        NeoForge.EVENT_BUS.addListener(io.github.aswq0258.magiccity.boss.TombBoss::onServerTick);
-        NeoForge.EVENT_BUS.addListener(io.github.aswq0258.magiccity.boss.TombBoss::onDeath);
         NeoForge.EVENT_BUS.addListener(io.github.aswq0258.magiccity.boss.Progression::onIncomingDamage);
         NeoForge.EVENT_BUS.addListener(io.github.aswq0258.magiccity.boss.BossPatterns::onAddReloadListeners);
+        NeoForge.EVENT_BUS.addListener(io.github.aswq0258.magiccity.boss.FieldLoot::onAddReloadListeners);
         NeoForge.EVENT_BUS.addListener(io.github.aswq0258.magiccity.boss.BossPatterns::onServerTick);
         // 개인 퀘스트·퀘스트 NPC (2026-11-19)
         NeoForge.EVENT_BUS.addListener(io.github.aswq0258.magiccity.quest.QuestManager::onAddReloadListeners);
@@ -59,5 +69,6 @@ public class MagicCityMod {
     private static void onRegisterCommands(RegisterCommandsEvent event) {
         MagicCityCommand.register(event.getDispatcher());
         io.github.aswq0258.magiccity.quest.QuestCommand.register(event.getDispatcher());
+        io.github.aswq0258.magiccity.arena.ArenaCommand.register(event.getDispatcher());
     }
 }

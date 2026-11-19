@@ -1,5 +1,6 @@
 {
   "death.attack.magiccity.boss_fixed": "%1$s failed to dodge %2$s's strike",
   "death.attack.magiccity.boss_fixed.player": "%1$s failed to dodge %2$s's strike",
-  "death.attack.magiccity.boss_fixed.item": "%1$s failed to dodge %2$s's strike"
+  "death.attack.magiccity.boss_fixed.item": "%1$s failed to dodge %2$s's strike",
+  "item.magiccity.loot_pouch": "Boss Loot Pouch"
 }

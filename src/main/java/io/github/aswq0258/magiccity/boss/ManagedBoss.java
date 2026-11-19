@@ -32,9 +32,12 @@ import java.util.List;
 import java.util.UUID;
 
 /**
- * 챕터 보스 공용 틀 (초안): 자리에 다가가면 깨어남 → 체력바 → 고유 기술 → 66%·33% 부하 소환 → 25% 광폭화
- * → 쓰러뜨리면 전리품·챕터 완료, 30분 뒤 다시 나타남. 모두 떠나면 1분 뒤 다시 잠듦.
- * 보스마다 바탕 몹·능력치·기술·부하·전리품만 다르게 정의 (NewBosses).
+ * 챕터 보스 공용 틀: 체력바 → 고유 기술 → 66%·33% 부하 소환 → 25% 광폭화 → 쓰러뜨리면 전리품·챕터 완료.
+ * 보스마다 바탕 몹·능력치·기술·부하·전리품만 다르게 정의 (NewBosses, ClassicBosses).
+ *
+ * <p>2026-11-19 인스턴스 전장: 보스는 더 이상 지역 자리에서 깨어나지 않는다. 지역 자리({@link #center()})에는 봉인 제단이 놓이고,
+ * 전투는 {@code arena.ArenaManager} 가 전용 차원에서 {@link #arenaSpawn}·{@link #arenaTick} 으로 진행한다.
+ * 지역 쪽 틱은 습격 같은 사전 단계({@link #preFight})와 예전 판에서 남은 보스 정리만 한다.
  */
 public abstract class ManagedBoss {
     protected final String tag, minionTag, name, region;
@@ -89,9 +92,72 @@ public abstract class ManagedBoss {
         return Story.mayWake(level, trigger, chapter);
     }
 
-    /** 보스가 없을 때도 매번 불림 (습격 이벤트처럼 보스 전에 할 일이 있으면) — true 를 돌려주면 그 틱은 깨우지 않음 */
+    /**
+     * 지역 자리에서 보스 전에 할 일(습격 등). 끝났으면 false — 그때 {@link #onPreFightCleared} 가 불리고 제단이 열린다.
+     * 기본은 할 일 없음(false).
+     */
     protected boolean preFight(ServerLevel level, List<ServerPlayer> near, Vec3 c) {
         return false;
+    }
+
+    /** 사전 단계가 있는 보스인지 (제단이 처음부터 열려 있지 않음) */
+    public boolean hasPreFight() {
+        return false;
+    }
+
+    private boolean preCleared;
+
+    /** 사전 단계가 끝나 제단이 열렸는지 (사전 단계가 없으면 늘 true) */
+    public boolean altarOpen() {
+        return !hasPreFight() || preCleared;
+    }
+
+    /** 사전 단계를 막아 낸 순간 */
+    protected void onPreFightCleared(ServerLevel level, Vec3 c) {
+        say(level, BlockPos.containing(c), "§e[" + region + "] 봉인 제단이 깨어났다. 제단을 눌러 " + name + "(와)과의 결전에 나서라.");
+    }
+
+    /** 전장 승리 뒤 사전 단계를 처음으로 되돌림 */
+    public void resetPreFight() {
+        preCleared = false;
+    }
+
+    /** 전장 입장 조건 (기본: 챕터 입장 조건을 참가자 중 한 명이라도 만족). 막히면 이유, 열리면 null */
+    public String entryBlocked(ServerLevel level, List<ServerPlayer> party) {
+        if (!altarOpen()) return "아직 제단이 잠들어 있다 (" + region + "의 사전 단계를 먼저 끝내야 함)";
+        for (ServerPlayer p : party) if (Story.requirementMet(p, chapter)) return null;
+        return party.isEmpty() ? "참가자가 없음" : Story.requirementText(party.get(0), chapter);
+    }
+
+    public String key() {
+        return tag.substring("magiccity_".length());
+    }
+
+    public String name() {
+        return name;
+    }
+
+    public String region() {
+        return region;
+    }
+
+    public int chapter() {
+        return chapter;
+    }
+
+    /** 지역 쪽 제단 자리 (보스가 깨어나던 자리) */
+    public Vec3 altarCenter() {
+        return center();
+    }
+
+    /** 전장에서 보스가 설 자리 높이 (전장 바닥 + 1 기준 보정, 예: 6장 물속은 위로) */
+    public double arenaYOffset() {
+        return 0;
+    }
+
+    /** 이 보스가 쓰는 전장 모양 (6장 물로 찬 돔 등) */
+    public String arenaShape() {
+        return "basic";
     }
 
     protected void onEnrage(ServerLevel level, Mob boss) {}
@@ -105,20 +171,55 @@ public abstract class ManagedBoss {
         return dx * dx + dz * dz < r * r && inY(p.getY(), c);
     }
 
+    /** 지역 쪽 틱 (5틱마다): 사전 단계만 진행하고, 예전 판에서 지역에 남아 있던 보스는 치움 */
     final void tick(ServerLevel level) {
         Vec3 c = center();
         List<ServerPlayer> near = level.getPlayers(p -> !p.isSpectator() && inside(p, c, activeR));
-        if (near.isEmpty() && id == null) return;
-        Mob boss = find(level, c);
-        if (boss == null) {
-            clearBar();
-            if (level.getGameTime() < deadUntil || level.getDifficulty() == Difficulty.PEACEFUL) return;
-            if (preFight(level, near, c)) return;
-            List<ServerPlayer> trig = near.stream().filter(p -> !p.isCreative() && inside(p, c, triggerR)).toList();
-            if (!trig.isEmpty() && mayWake(level, trig)) wake(level, c, trig);
-            return;
+        if (hasPreFight() && !preCleared && level.getDifficulty() != Difficulty.PEACEFUL && !preFight(level, near, c)) {
+            preCleared = true;
+            onPreFightCleared(level, c);
         }
+        if (near.isEmpty()) return;
+        Mob stray = find(level, c);
+        if (stray != null) {
+            stray.discard();
+            id = null;
+            clearBar();
+        }
+    }
+
+    // ── 전장 (arena.ArenaManager 가 부름)
+
+    /** 전장에서 보스 소환. 등급은 참가자 중 최고 진행도 (지금 규칙 그대로) */
+    public Mob arenaSpawn(ServerLevel level, Vec3 c, List<ServerPlayer> party) {
+        clearBar();
+        id = null;
+        wake(level, c, party);
+        return id == null ? null : level.getEntity(id) instanceof Mob m ? m : null;
+    }
+
+    /** 전장 전투 틱 (5틱마다). gameTick 은 기술 주기용 */
+    public void arenaTick(ServerLevel level, Mob boss, List<ServerPlayer> near, Vec3 c, int gameTick) {
+        this.tick = gameTick;
         fight(level, boss, near, c);
+    }
+
+    /** 전장이 끝날 때 상태 정리 */
+    public void arenaEnd() {
+        clearBar();
+        id = null;
+        s66 = s33 = enraged = false;
+    }
+
+    /** 전리품 (전장은 꾸러미로 줌) */
+    public ItemStack[] lootStacks() {
+        return loot();
+    }
+
+    /** 처치 연출·후처리 (전장 승리 때 ArenaManager 가 부름) */
+    public void defeated(ServerLevel level, LivingEntity boss) {
+        say(level, boss.blockPosition(), "§6§l[" + region + "] " + name + "(을)를 쓰러뜨렸다!");
+        onDefeat(level, boss);
     }
 
     private Mob find(ServerLevel level, Vec3 c) {
@@ -157,13 +258,7 @@ public abstract class ManagedBoss {
         bar.setProgress(hp);
         for (ServerPlayer p : near) bar.addPlayer(p);
         for (ServerPlayer p : new ArrayList<>(bar.getPlayers())) if (!near.contains(p)) bar.removePlayer(p);
-        if (near.isEmpty()) {
-            if ((empty += 5) > 1200) {
-                boss.discard();
-                clearBar();
-            }
-            return;
-        }
+        if (near.isEmpty()) return;                                                          // 전장: 전멸·시간 초과는 ArenaManager 가 판정
         empty = 0;
         if (boss.position().distanceToSqr(c) > leashR * leashR) boss.teleportTo(c.x, c.y, c.z);
         ServerPlayer target = null;
@@ -209,16 +304,9 @@ public abstract class ManagedBoss {
         }
     }
 
-    final boolean died(LivingEntity e) {
-        if (!(e.level() instanceof ServerLevel level) || !e.getTags().contains(tag)) return false;
-        clearBar();
-        id = null;
-        deadUntil = level.getGameTime() + respawnTicks;
-        say(level, e.blockPosition(), "§6§l[" + region + "] " + name + "(을)를 쓰러뜨렸다!");
-        for (ItemStack s : loot()) level.addFreshEntity(new ItemEntity(level, e.getX(), e.getY() + 1, e.getZ(), s));
-        onDefeat(level, e);
-        Story.credit(level, e.blockPosition(), chapter);
-        return true;
+    /** 이 보스의 엔티티인지 */
+    public boolean isMine(LivingEntity e) {
+        return e.getTags().contains(tag);
     }
 
     private void clearBar() {
@@ -263,9 +351,17 @@ public abstract class ManagedBoss {
 
     // ───────────────────────── 등록 ─────────────────────────
 
+    /** 챕터 보스 12종 (장 순서) */
     public static final List<ManagedBoss> ALL = List.of(
-            new NewBosses.Sewer(), new NewBosses.Parasite(), new NewBosses.FrostGiant(), new NewBosses.Furnace(),
-            new NewBosses.DeepGuardian(), new NewBosses.Siege(), new NewBosses.AbyssWatcher());
+            new NewBosses.Sewer(), new ClassicBosses.Cursed(), new NewBosses.Parasite(), new NewBosses.FrostGiant(), new NewBosses.Furnace(),
+            new NewBosses.DeepGuardian(), new ClassicBosses.Tomb(), new NewBosses.Siege(), new ClassicBosses.Sky(), new NewBosses.AbyssWatcher(),
+            new ClassicBosses.Dragon(), new ClassicBosses.Gate());
+
+    /** 그 장의 보스 */
+    public static ManagedBoss forChapter(int chapter) {
+        for (ManagedBoss b : ALL) if (b.chapter == chapter) return b;
+        return null;
+    }
 
     private static int ticks;
 
@@ -279,7 +375,7 @@ public abstract class ManagedBoss {
         }
     }
 
+    /** 지역 쪽 보스 죽음은 더 이상 없음 (전장 승리는 arena.ArenaManager 가 처리) */
     public static void onDeath(LivingDeathEvent event) {
-        for (ManagedBoss b : ALL) if (b.died(event.getEntity())) return;
     }
 }

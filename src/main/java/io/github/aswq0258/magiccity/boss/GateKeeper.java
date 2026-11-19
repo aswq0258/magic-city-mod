@@ -101,9 +101,6 @@ public final class GateKeeper {
         state(k).defeated = false;
         state(k).setDirty();
         setPortal(k, false);
-        Entity e = bossId == null ? null : k.getEntity(bossId);
-        if (e != null) e.discard();
-        clearBar();
     }
 
     // ───────────────────────── 틱 ─────────────────────────
@@ -114,166 +111,26 @@ public final class GateKeeper {
         pendingReturn.clear();
         ServerLevel level = server.getLevel(ModWorldgen.KINGDOM);
         if (level == null) return;
-        if (++tick % 5 != 0) return;
+        if (++tick % 100 != 0) return;
         BlockPos center = new BlockPos(OldCapital.OX, OldCapital.Y + 1, OldCapital.OZ);
-        if (!level.isLoaded(center)) return;
-        List<ServerPlayer> near = level.getPlayers(p -> p.distanceToSqr(Vec3.atCenterOf(center)) < 64 * 64 && !p.isSpectator());
-        State st = state(level);
-        if (st.defeated) {
-            if (tick % 100 == 0 && !near.isEmpty() && !level.getBlockState(new BlockPos(OldCapital.OX, OldCapital.PORTAL_Y0 + 1, OldCapital.OZ)).is(Blocks.NETHER_PORTAL)) {
-                setPortal(level, true);
-            }
-            return;
-        }
-        WitherSkeleton boss = bossId == null ? null : (level.getEntity(bossId) instanceof WitherSkeleton w && w.isAlive() ? w : null);
-        if (boss == null) {                                                   // 서버를 다시 켠 경우: 남아 있던 보스를 다시 찾음
-            List<WitherSkeleton> found = level.getEntitiesOfClass(WitherSkeleton.class, new AABB(center).inflate(64), w -> w.getTags().contains(TAG) && w.isAlive());
-            if (!found.isEmpty()) {
-                boss = found.get(0);
-                bossId = boss.getUUID();
-                if (bar == null) bar = new ServerBossEvent(Component.literal("심연의 문지기"), BossEvent.BossBarColor.RED, BossEvent.BossBarOverlay.NOTCHED_10);
-            }
-        }
-        if (boss == null) {
-            clearBar();
-            bossId = null;
-            boolean inArena = near.stream().anyMatch(p -> p.distanceToSqr(Vec3.atCenterOf(center)) < ARENA_R * ARENA_R && !p.isCreative());
-            List<ServerPlayer> trig = near.stream().filter(p -> p.distanceToSqr(Vec3.atCenterOf(center)) < ARENA_R * ARENA_R && !p.isCreative()).toList();
-            if (inArena && Story.mayWake(level, trig, 12)) spawnBoss(level, center, trig);
-            return;
-        }
-        // 체력바
-        bar.setProgress(boss.getHealth() / boss.getMaxHealth());
-        for (ServerPlayer p : near) bar.addPlayer(p);
-        for (ServerPlayer p : new ArrayList<>(bar.getPlayers())) if (!near.contains(p)) bar.removePlayer(p);
-        // 아무도 없으면 1분 뒤 사라짐
-        if (near.isEmpty()) {
-            if ((emptyTicks += 5) > 1200) {
-                boss.discard();
-                clearBar();
-            }
-            return;
-        }
-        emptyTicks = 0;
-        // 광장 밖으로 끌려가면 제자리로
-        if (boss.distanceToSqr(Vec3.atCenterOf(center)) > LEASH_R * LEASH_R) {
-            boss.teleportTo(center.getX() + 0.5, center.getY() + 1, center.getZ() - 8.5);
-        }
-        abilities(level, boss, near);
-    }
-
-    private static void spawnBoss(ServerLevel level, BlockPos center, List<ServerPlayer> party) {
-        WitherSkeleton w = EntityType.WITHER_SKELETON.spawn(level, center.offset(0, 1, -8), MobSpawnType.EVENT);
-        if (w == null) return;
-        w.addTag(TAG);
-        w.setCustomName(Component.literal("§4§l심연의 문지기"));
-        w.setCustomNameVisible(true);
-        w.setPersistenceRequired();
-        w.getAttribute(Attributes.SCALE).setBaseValue(3.0);
-        w.getAttribute(Attributes.MAX_HEALTH).setBaseValue(600);
-        w.getAttribute(Attributes.ATTACK_DAMAGE).setBaseValue(16);
-        w.getAttribute(Attributes.ARMOR).setBaseValue(14);
-        w.getAttribute(Attributes.KNOCKBACK_RESISTANCE).setBaseValue(1.0);
-        w.getAttribute(Attributes.MOVEMENT_SPEED).setBaseValue(0.3);
-        w.getAttribute(Attributes.FOLLOW_RANGE).setBaseValue(48);
-        Progression.apply(w, 12, party);
-        w.setHealth(w.getMaxHealth());
-        w.setItemSlot(EquipmentSlot.MAINHAND, new ItemStack(Items.NETHERITE_SWORD));
-        w.setItemSlot(EquipmentSlot.HEAD, new ItemStack(Items.NETHERITE_HELMET));
-        for (EquipmentSlot s : EquipmentSlot.values()) w.setDropChance(s, 0F);
-        bossId = w.getUUID();
-        bar = new ServerBossEvent(Component.literal("심연의 문지기"), BossEvent.BossBarColor.RED, BossEvent.BossBarOverlay.NOTCHED_10);
-        bar.setDarkenScreen(true);
-        phase2Announced = phase3Announced = false;
-        lastSummon = tick;
-        level.playSound(null, center, SoundEvents.WITHER_SPAWN, SoundSource.HOSTILE, 2F, 0.7F);
-        broadcast(level, "§4[옛 왕도] 봉인된 마계문 앞에 심연의 문지기가 깨어났다!");
-    }
-
-    private static void abilities(ServerLevel level, WitherSkeleton boss, List<ServerPlayer> near) {
-        float hp = boss.getHealth() / boss.getMaxHealth();
-        if (hp <= 0.66F && !phase2Announced) {
-            phase2Announced = true;
-            broadcast(level, "§c[옛 왕도] 문지기가 마계의 졸개를 부른다!");
-            summon(level, boss);
-        }
-        if (hp <= 0.33F && !phase3Announced) {
-            phase3Announced = true;
-            broadcast(level, "§4[옛 왕도] 마계문의 불길이 문지기를 감싼다!");
-            boss.addEffect(new MobEffectInstance(MobEffects.MOVEMENT_SPEED, 20 * 600, 1));
-            boss.addEffect(new MobEffectInstance(MobEffects.DAMAGE_BOOST, 20 * 600, 0));
-            boss.addEffect(new MobEffectInstance(MobEffects.FIRE_RESISTANCE, 20 * 600, 0));
-        }
-        // 1페이즈부터: 6초마다 내려찍기
-        if (tick % 120 == 0) {
-            level.playSound(null, boss.blockPosition(), SoundEvents.GENERIC_EXPLODE.value(), SoundSource.HOSTILE, 1.2F, 0.6F);
-            for (ServerPlayer p : near) {
-                if (p.distanceToSqr(boss) < 7 * 7) {
-                    p.hurt(level.damageSources().mobAttack(boss), 8F);
-                    Vec3 push = p.position().subtract(boss.position()).normalize().scale(1.4);
-                    p.push(push.x, 0.7, push.z);
-                    p.hurtMarked = true;
-                }
-            }
-        }
-        // 2페이즈: 화염구 연사, 30초마다 졸개
-        if (hp <= 0.66F) {
-            if (tick % 40 == 0) {
-                for (ServerPlayer p : near) {
-                    if (p.distanceToSqr(boss) > 40 * 40 || p.isCreative()) continue;
-                    Vec3 from = boss.position().add(0, boss.getBbHeight() * 0.8, 0);
-                    Vec3 dir = p.position().add(0, 1, 0).subtract(from).normalize();
-                    SmallFireball fb = new SmallFireball(level, boss, dir);
-                    fb.setPos(from.x, from.y, from.z);
-                    level.addFreshEntity(fb);
-                }
-            }
-            if (tick - lastSummon > 600) {
-                lastSummon = tick;
-                summon(level, boss);
-            }
-        }
-        // 3페이즈: 화염구 고리 + 번개
-        if (hp <= 0.33F && tick % 100 == 0) {
-            Vec3 from = boss.position().add(0, boss.getBbHeight() * 0.6, 0);
-            for (int i = 0; i < 12; i++) {
-                double a = Math.PI * 2 * i / 12;
-                SmallFireball fb = new SmallFireball(level, boss, new Vec3(Math.cos(a), -0.05, Math.sin(a)));
-                fb.setPos(from.x, from.y, from.z);
-                level.addFreshEntity(fb);
-            }
-            ServerPlayer t = near.get(level.random.nextInt(near.size()));
-            LightningBolt bolt = EntityType.LIGHTNING_BOLT.create(level);
-            if (bolt != null) {
-                bolt.moveTo(t.getX(), t.getY(), t.getZ());
-                bolt.setVisualOnly(false);
-                level.addFreshEntity(bolt);
-            }
-        }
-    }
-
-    private static void summon(ServerLevel level, WitherSkeleton boss) {
-        BlockPos at = boss.blockPosition();
-        long count = level.getEntitiesOfClass(Monster.class, new AABB(at).inflate(30), m -> m.getTags().contains("magiccity_minion")).size();
-        if (count >= 8) return;
-        for (int i = 0; i < 4; i++) {
-            EntityType<? extends Monster> type = i % 2 == 0 ? EntityType.BLAZE : EntityType.WITHER_SKELETON;
-            BlockPos pos = at.offset(level.random.nextInt(11) - 5, 1, level.random.nextInt(11) - 5);
-            Monster m = type.spawn(level, pos, MobSpawnType.MOB_SUMMONED);
-            if (m != null) m.addTag("magiccity_minion");
+        if (!level.isLoaded(center) || !state(level).defeated) return;
+        boolean near = !level.getPlayers(p -> p.distanceToSqr(Vec3.atCenterOf(center)) < 64 * 64 && !p.isSpectator()).isEmpty();
+        if (near && !level.getBlockState(new BlockPos(OldCapital.OX, OldCapital.PORTAL_Y0 + 1, OldCapital.OZ)).is(Blocks.NETHER_PORTAL)) {
+            setPortal(level, true);
         }
     }
 
     // ───────────────────────── 처치 · 포탈 ─────────────────────────
 
-    public static void onDeath(LivingDeathEvent event) {
-        LivingEntity e = event.getEntity();
-        if (!(e.level() instanceof ServerLevel level) || !e.getTags().contains(TAG)) return;
+    /**
+     * 심연의 문지기를 쓰러뜨림 (2026-11-19부터 전장에서, ClassicBosses.Gate): 기록 → 지역의 마계문을 열고 알림.
+     */
+    public static void markDefeated(MinecraftServer server) {
+        ServerLevel level = server.getLevel(ModWorldgen.KINGDOM);
+        if (level == null) return;
         State st = state(level);
         st.defeated = true;
         st.setDirty();
-        clearBar();
-        bossId = null;
         setPortal(level, true);
         BlockPos c = new BlockPos(OldCapital.OX, OldCapital.PORTAL_Y0 + 6, OldCapital.OZ);
         LightningBolt bolt = EntityType.LIGHTNING_BOLT.create(level);
@@ -283,11 +140,8 @@ public final class GateKeeper {
             level.addFreshEntity(bolt);
         }
         level.playSound(null, c, SoundEvents.END_PORTAL_SPAWN, SoundSource.BLOCKS, 3F, 0.8F);
-        ItemStack[] loot = {new ItemStack(Items.NETHERITE_INGOT, 2), new ItemStack(Items.DIAMOND, 8),
-                new ItemStack(Items.ENCHANTED_GOLDEN_APPLE, 1), new ItemStack(Items.WITHER_SKELETON_SKULL, 1), new ItemStack(Items.EXPERIENCE_BOTTLE, 32)};
-        for (ItemStack s : loot) level.addFreshEntity(new ItemEntity(level, e.getX(), e.getY() + 1, e.getZ(), s));
-        Story.credit(level, e.blockPosition(), 12);
-        broadcast(level, "§6[옛 왕도] 심연의 문지기가 쓰러졌다. 봉인된 마계문이 열려, 네더로 가는 길이 활성화되었다!");
+        for (ServerPlayer p : server.getPlayerList().getPlayers())
+            p.sendSystemMessage(Component.literal("§6[옛 왕도] 심연의 문지기가 쓰러졌다. 봉인된 마계문이 열려, 네더로 가는 길이 활성화되었다!"));
     }
 
     /** 포탈 틀 안을 네더 포탈로 채우거나 비움 */

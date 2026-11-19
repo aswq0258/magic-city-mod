@@ -210,6 +210,7 @@ public final class FieldBosses {
     public static void onDeath(LivingDeathEvent event) {
         LivingEntity e = event.getEntity();
         if (!(e.level() instanceof ServerLevel level) || !e.getTags().contains(TAG)) return;
+        ServerPlayer killer = event.getSource().getEntity() instanceof ServerPlayer sp ? sp : null;
         for (Map.Entry<Integer, Fight> en : FIGHTS.entrySet()) {
             Fight f = en.getValue();
             if (!e.getUUID().equals(f.id)) continue;
@@ -218,10 +219,12 @@ public final class FieldBosses {
             f.deadUntil = level.getGameTime() + RESPAWN_TICKS;
             RoadTheme t = RoadTheme.THEMES[en.getKey()];
             say(level, e.blockPosition(), "§6[" + t.region() + "] " + t.boss().name() + "(을)를 쓰러뜨렸다! " + KingdomRoads.ROADS[en.getKey()].name() + "이(가) 잠시 평온해진다.");
+            // 2026-11-19: 바닥에 한 벌 대신 처치한 사람·파티원에게 꾸러미 (첫 처치 큰 보상 / 반복 작은 보상)
+            Vec3 room = e.position();
+            for (RoadSites.Site s : arenas == null ? arenas() : arenas) if (s.road() == en.getKey()) room = new Vec3(s.x() + 0.5, s.y() + 1, s.z() + 0.5);
+            FieldLoot.reward(level, en.getKey(), room, killer, t.boss().name());
+            return;
         }
-        ItemStack[] loot = {new ItemStack(Items.DIAMOND, 3), new ItemStack(Items.EMERALD, 12), new ItemStack(Items.GOLDEN_APPLE, 2),
-                new ItemStack(Items.EXPERIENCE_BOTTLE, 16), new ItemStack(Items.IRON_INGOT, 10)};
-        for (ItemStack s : loot) level.addFreshEntity(new ItemEntity(level, e.getX(), e.getY() + 1, e.getZ(), s));
     }
 
     private static void clear(Fight f) {
