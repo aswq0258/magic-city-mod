@@ -165,9 +165,19 @@
 - `/magiccity site sewer` — 왕성 하수도 확장 (build 다음에). 왕궁 아래 순환 하수로 벽의 쇠창살 너머로 도시 끝까지 뻗은 거대한 간선 하수도 4개와 집수 홀이 보이지만 들어갈 수는 없음. 하수로 물길은 8칸마다 솟는 물이 흘러 퍼지고 16칸마다 천장 배수구에서 물이 쏟아짐. 왕궁 비밀 사다리는 이제 지하감옥 남쪽 감방으로 이어지고, 하수로와 지하감옥은 감방 벽 덩굴 뒤 좁은 틈으로만 몰래 이어짐. 슬럼가 맨홀 하수로 서쪽 벽의 덩굴 장막 뒤(또는 맨홀 사다리 중간의 덩굴 뒤)에 암시장 은신처(암시장 상인·정보상·위조 장인·그림자 길드 중개인, 노름판, 장물 창고). 1장 보스는 순환 하수로 남쪽의 초대 왕의 납골당
 - 시험용: `/magiccity story give <장>` 처음 완료로 기록(완료 이벤트 발행), `/magiccity story mark <장>` 이벤트 없이 완료 표시, `/magiccity story reset` 초기화, `/magiccity story config` 진행도 설정 다시 읽기
 
+## 개인 퀘스트·퀘스트 NPC (최소판, 2026-11-19)
+- 왕좌의 전당 옥좌 앞에 서장 NPC **왕실 시종장 에드윈**이 생김 (도시를 지을 때 자동, 이미 지은 월드는 `/magiccity fix npcs`). 움직이지 않고 무적. 오른쪽 클릭하면 거래 창 대신 채팅 대화와 클릭 선택지
+- 1장 퀘스트 "왕의 소명": 수락 → 직업 선택(fantasyrpg 화면) → 왕성 하수도로 내려가기 → 하수도의 역병 술사 처치
+- `/quest` (모든 플레이어) — 내 퀘스트 진행. 진행 중이면 30초마다 액션바에 목표 한 줄. 왕국 대륙에 처음 오면 시작 안내 한 번
+- 선택지는 `/quest npc <NPC> accept|act|decline ...` 명령으로 들어오지만 서버가 NPC 표식·6칸 거리·지금 단계를 다시 확인함 (직접 쳐도 할 수 있는 것은 같음)
+- 데이터: `data/<ns>/quests/<id>.json` (단계 `talk_npc`·`signal`·`enter_area`·`chapter_clear`), `data/<ns>/quest_npcs/<id>.json` (이름·평소 대사). 데이터팩으로 덮어쓰기 가능
+- 시험용: `/magiccity quest list|start <퀘스트>|set <퀘스트> <단계>|reset <퀘스트>|signal <신호>`
+
 ## 다른 모드에서 쓰기 (API)
 - 공개 API는 `io.github.aswq0258.magiccity.api` 패키지만 쓴다 (나머지는 내부 구현).
   - `MagicCityApi.completed / grade / levelCap / craftGrid / cleared(ServerPlayer)` — 서버 쪽, 읽기 전용. `API_VERSION` = 1
+  - `MagicCityApi.questSignal(player, signal)` — 지금 단계가 그 신호를 기다리는 퀘스트를 다음 단계로. `questState / questDone` — 진행 확인
+  - `NpcActionEvent` — 퀘스트 NPC 행동 선택지(예: `choose_class`)를 서버가 확인한 뒤 발행. `QuestStepStartEvent` — 단계가 시작될 때·접속할 때 발행 (신호 단계를 이미 만족했으면 바로 신호를 보내도 됨)
   - `ChapterFirstClearEvent` — 플레이어가 메인 챕터를 처음 완료하면 `NeoForge.EVENT_BUS`에 한 번 발행 (완료 기록이 반영된 뒤). 재처치에서는 발행하지 않음. 챕터, 완료 수·등급·레벨 상한·작업대 크기의 전·후 값을 담음
 - Gradle 의존성 (JitPack, 저장소가 공개라 바로 쓸 수 있음):
 ```groovy
