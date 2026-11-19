@@ -28,7 +28,7 @@ public final class NpcActionEvent extends Event {
     /** NPC id (예: steward) */
     public String getNpc() { return npc; }
 
-    /** 퀘스트 id (예: kings_call) */
+    /** 퀘스트 id (예: kings_call). NPC 상시 선택지(quest_npcs 의 services)면 빈 문자열 */
     public String getQuest() { return quest; }
 
     /** 행동 id (예: choose_class) */

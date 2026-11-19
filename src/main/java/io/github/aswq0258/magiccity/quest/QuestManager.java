@@ -25,8 +25,16 @@ import java.util.TreeMap;
 public final class QuestManager {
     private QuestManager() {}
 
-    /** NPC 이름과 평소 대사 */
-    public record NpcDef(String id, String name, List<String> idle) {}
+    /** NPC 상시 선택지 (퀘스트와 상관없이 늘 보이는 것, 예: 유산을 다시 부른다). 누르면 NpcActionEvent(퀘스트 id 빈 문자열) */
+    public record Service(String id, String label) {}
+
+    /** NPC 이름, 평소 대사, 상시 선택지 */
+    public record NpcDef(String id, String name, List<String> idle, List<Service> services) {
+        public boolean offers(String serviceId) {
+            for (Service s : services) if (s.id().equals(serviceId)) return true;
+            return false;
+        }
+    }
 
     private static final Gson GSON = new Gson();
     private static volatile Map<String, QuestDef> quests = Map.of();
@@ -63,7 +71,12 @@ public final class QuestManager {
                         JsonObject o = e.getValue().getAsJsonObject();
                         List<String> idle = new ArrayList<>();
                         if (o.has("idle")) for (JsonElement l : o.getAsJsonArray("idle")) idle.add(l.getAsString());
-                        out.put(id, new NpcDef(id, o.has("name") ? o.get("name").getAsString() : id, List.copyOf(idle)));
+                        List<Service> services = new ArrayList<>();
+                        if (o.has("services")) for (JsonElement sv : o.getAsJsonArray("services")) {
+                            JsonObject so = sv.getAsJsonObject();
+                            services.add(new Service(so.get("id").getAsString(), so.has("label") ? so.get("label").getAsString() : so.get("id").getAsString()));
+                        }
+                        out.put(id, new NpcDef(id, o.has("name") ? o.get("name").getAsString() : id, List.copyOf(idle), List.copyOf(services)));
                     } catch (RuntimeException ex) {
                         MagicCityMod.LOGGER.error("[퀘스트] NPC {} 읽기 실패: {}", e.getKey(), ex.getMessage());
                     }
@@ -85,6 +98,6 @@ public final class QuestManager {
     /** 데이터에 없으면 id 를 이름으로 쓰는 빈 정의 */
     public static NpcDef npc(String id) {
         NpcDef d = npcs.get(id);
-        return d != null ? d : new NpcDef(id, id, List.of());
+        return d != null ? d : new NpcDef(id, id, List.of(), List.of());
     }
 }

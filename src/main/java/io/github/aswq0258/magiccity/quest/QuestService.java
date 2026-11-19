@@ -118,8 +118,19 @@ public final class QuestService {
 
     // ───────────────────────── 대화 ─────────────────────────
 
-    /** NPC 오른쪽 클릭 */
+    /** NPC 오른쪽 클릭: 퀘스트 대화 뒤에 상시 선택지(services)를 붙임 */
     public static void talk(ServerPlayer p, Entity npc, String npcId) {
+        talkQuest(p, npc, npcId);
+        QuestManager.NpcDef def = QuestManager.npc(npcId);
+        if (def.services().isEmpty()) return;
+        MutableComponent row = Component.literal("  ");
+        for (QuestManager.Service s : def.services()) {
+            row.append(button(s.label(), "/quest npc " + npc.getUUID() + " service " + s.id(), ChatFormatting.AQUA)).append(Component.literal("  "));
+        }
+        p.sendSystemMessage(row);
+    }
+
+    private static void talkQuest(ServerPlayer p, Entity npc, String npcId) {
         QuestManager.NpcDef def = QuestManager.npc(npcId);
         // 1) 진행 중 퀘스트의 지금 단계가 이 NPC
         for (QuestDef q : QuestManager.quests()) {
@@ -167,6 +178,11 @@ public final class QuestService {
         String npcId = npc == null ? null : QuestNpcs.npcId(npc);
         if (npcId == null || !npc.isAlive()) return "그 NPC 를 찾을 수 없습니다.";
         if (npc.distanceToSqr(p) > TALK_RANGE * TALK_RANGE) return "NPC 에게 더 가까이 가야 합니다.";
+        if (kind.equals("service")) {
+            if (!QuestManager.npc(npcId).offers(actionId)) return "이 NPC 에게는 그런 선택지가 없습니다.";
+            NeoForge.EVENT_BUS.post(new NpcActionEvent(p, npcId, "", actionId));
+            return null;
+        }
         if (kind.equals("decline")) {
             p.sendSystemMessage(Component.literal("§7(마음이 정해지면 다시 말을 걸면 된다)"));
             return null;

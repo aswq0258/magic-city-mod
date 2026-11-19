@@ -170,7 +170,8 @@
 - 1장 퀘스트 "왕의 소명": 수락 → 직업 선택(fantasyrpg 화면) → 왕성 하수도로 내려가기 → 하수도의 역병 술사 처치
 - `/quest` (모든 플레이어) — 내 퀘스트 진행. 진행 중이면 30초마다 액션바에 목표 한 줄. 왕국 대륙에 처음 오면 시작 안내 한 번
 - 선택지는 `/quest npc <NPC> accept|act|decline ...` 명령으로 들어오지만 서버가 NPC 표식·6칸 거리·지금 단계를 다시 확인함 (직접 쳐도 할 수 있는 것은 같음)
-- 데이터: `data/<ns>/quests/<id>.json` (단계 `talk_npc`·`signal`·`enter_area`·`chapter_clear`), `data/<ns>/quest_npcs/<id>.json` (이름·평소 대사). 데이터팩으로 덮어쓰기 가능
+- 데이터: `data/<ns>/quests/<id>.json` (단계 `talk_npc`·`signal`·`enter_area`·`chapter_clear`), `data/<ns>/quest_npcs/<id>.json` (이름·평소 대사·상시 선택지 `services`). 데이터팩으로 덮어쓰기 가능
+- 상시 선택지: 퀘스트와 상관없이 대화 끝에 늘 나오는 버튼(예: 시종장 `[유산을 다시 부른다]`). 누르면 서버가 NPC 표식·6칸·목록을 확인한 뒤 `NpcActionEvent`(퀘스트 id 빈 문자열) 발행 → fantasyrpg 가 처리
 - 시험용: `/magiccity quest list|start <퀘스트>|set <퀘스트> <단계>|reset <퀘스트>|signal <신호>`
 
 ## 다른 모드에서 쓰기 (API)

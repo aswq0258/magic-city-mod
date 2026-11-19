@@ -20,7 +20,7 @@ import static com.mojang.brigadier.arguments.StringArgumentType.word;
  * 퀘스트 명령.
  * <ul>
  *   <li>{@code /quest} (권한 0) — 내 퀘스트 진행</li>
- *   <li>{@code /quest npc <엔티티> accept <퀘스트> | act <퀘스트> <행동> | decline} (권한 0) — 대화 선택지가 보내는 명령.
+ *   <li>{@code /quest npc <엔티티> accept <퀘스트> | act <퀘스트> <행동> | service <행동> | decline} (권한 0) — 대화 선택지가 보내는 명령.
  *       서버가 NPC 표식·거리·단계를 다시 확인하므로 직접 쳐도 할 수 있는 것은 같음 (D-3 보안 규칙)</li>
  *   <li>{@code /magiccity quest list|start|set|reset|signal} (권한 2) — 시험용</li>
  * </ul>
@@ -37,6 +37,8 @@ public final class QuestCommand {
                 })
                 .then(Commands.literal("npc").then(Commands.argument("npc", UuidArgument.uuid())
                         .then(Commands.literal("decline").executes(c -> choose(c, "decline", "", "")))
+                        .then(Commands.literal("service").then(Commands.argument("action", word())
+                                .executes(c -> choose(c, "service", "", getString(c, "action")))))
                         .then(Commands.literal("accept").then(Commands.argument("quest", word())
                                 .executes(c -> choose(c, "accept", getString(c, "quest"), ""))))
                         .then(Commands.literal("act").then(Commands.argument("quest", word()).then(Commands.argument("action", word())
