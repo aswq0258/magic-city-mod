@@ -37,6 +37,7 @@ public class MagicCityMod {
         NeoForge.EVENT_BUS.addListener(io.github.aswq0258.magiccity.arena.ArenaManager::onJoin);
         NeoForge.EVENT_BUS.addListener(io.github.aswq0258.magiccity.arena.ArenaManager::onPearl);
         NeoForge.EVENT_BUS.addListener(io.github.aswq0258.magiccity.arena.ArenaManager::onChorus);
+        NeoForge.EVENT_BUS.addListener(io.github.aswq0258.magiccity.arena.ArenaManager::onGrief);
         NeoForge.EVENT_BUS.addListener(io.github.aswq0258.magiccity.arena.SealAltar::onUse);
         NeoForge.EVENT_BUS.addListener(io.github.aswq0258.magiccity.item.Pouches::onServerTick);
         NeoForge.EVENT_BUS.addListener(io.github.aswq0258.magiccity.item.Pouches::onLogout);

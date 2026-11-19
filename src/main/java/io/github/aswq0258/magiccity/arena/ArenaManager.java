@@ -416,15 +416,19 @@ public final class ArenaManager {
 
     /** 끝: 참가자를 제단으로, 전장 정리 */
     private static void finish(MinecraftServer s, ServerLevel arena, Run r, String msg) {
-        if (msg != null) tell(s, r.members, text(msg));
-        for (UUID u : r.members) {
+        // 먼저 목록에서 뺀다: 아래 귀환 이동이 차원 이동 이벤트(onChangeDimension)를 부르는데,
+        // 그때 이 전투가 아직 목록에 있으면 참가자 목록을 고치거나 finish 를 다시 불러 서버가 멈춘다 (v0.19 게임 확인에서 발견)
+        if (RUNS.get(r.chapter) != r) return;
+        RUNS.remove(r.chapter);
+        List<UUID> members = new ArrayList<>(r.members);
+        if (msg != null) tell(s, members, text(msg));
+        for (UUID u : members) {
             ServerPlayer p = online(s, u);
             if (p != null) sendBack(p);
         }
         r.boss.arenaEnd();
         clearEntities(arena, r);
         for (ChunkPos c : r.forced) arena.setChunkForced(c.x, c.z, false);
-        RUNS.remove(r.chapter);
     }
 
     private static void clearEntities(ServerLevel arena, Run r) {
@@ -554,6 +558,11 @@ public final class ArenaManager {
     public static void onJoin(EntityJoinLevelEvent event) {
         if (inArena(event.getLevel()) && (event.getEntity() instanceof Boat || event.getEntity() instanceof AbstractMinecart || event.getEntity() instanceof ThrownEnderpearl))
             event.setCanceled(true);
+    }
+
+    /** 전장에서는 몹이 블록을 바꾸지 못함 (좀벌레가 돌벽돌 바닥에 숨어 보스가 사라지던 문제, 약탈수 잎 부수기 등) */
+    public static void onGrief(net.neoforged.neoforge.event.entity.EntityMobGriefingEvent event) {
+        if (inArena(event.getEntity().level())) event.setCanGrief(false);
     }
 
     public static void onPearl(EntityTeleportEvent.EnderPearl event) {
