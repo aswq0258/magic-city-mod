@@ -111,6 +111,49 @@ class QuestRulesTest {
         assertThrows(IllegalArgumentException.class, () -> QuestDef.parse("x", obj("{\"giver\":\"n\",\"steps\":[]}")));
     }
 
+    @Test
+    @DisplayName("챕터 의뢰: 이미 깬 장이면 건네지 않고, 먼저 깨야 하는 장을 모두 깨야 건넴 (2~10장 = 1장 뒤, 11장 = 1~10장)")
+    void chapterOffer() {
+        QuestDef q2 = QuestDef.parse("ch2", obj("{\"giver\":\"bran\",\"chapter\":2,\"requires_chapters\":[1],"
+                + "\"steps\":[{\"type\":\"enter_area\",\"goal\":\"g\",\"at_chapter\":2,\"radius\":48},"
+                + "{\"type\":\"chapter_clear\",\"chapter\":2,\"goal\":\"g\",\"at_chapter\":2}]}"));
+        assertFalse(QuestRules.offerable(q2, QuestRules.NOT_STARTED, "bran", Set.of(), Set.of()));
+        assertTrue(QuestRules.offerable(q2, QuestRules.NOT_STARTED, "bran", Set.of(), Set.of(1)));
+        assertFalse(QuestRules.offerable(q2, QuestRules.NOT_STARTED, "bran", Set.of(), Set.of(1, 2)));
+        assertTrue(QuestRules.available(q2, QuestRules.NOT_STARTED, Set.of(), Set.of(1, 5)));
+        assertTrue(q2.steps().get(0).hasPos());
+        assertEquals(2, q2.steps().get(0).atChapter());
+        QuestDef q11 = QuestDef.parse("ch11", obj("{\"giver\":\"steward\",\"chapter\":11,\"requires_chapters\":[1,2,3,4,5,6,7,8,9,10],"
+                + "\"steps\":[{\"type\":\"chapter_clear\",\"chapter\":11,\"goal\":\"g\"}]}"));
+        assertFalse(QuestRules.offerable(q11, QuestRules.NOT_STARTED, "steward", Set.of(), Set.of(1, 2, 3, 4, 5, 6, 7, 8, 9)));
+        assertTrue(QuestRules.offerable(q11, QuestRules.NOT_STARTED, "steward", Set.of(), Set.of(1, 2, 3, 4, 5, 6, 7, 8, 9, 10)));
+    }
+
+    @Test
+    @DisplayName("배포 퀘스트 12개(1~12장) 모두 읽힘: 장마다 하나, 2~12장은 도착 → 처치, 받는 조건은 보스 입장 조건과 같음")
+    void allShippedQuests() throws Exception {
+        java.util.Map<Integer, QuestDef> byChapter = new java.util.HashMap<>();
+        try (var files = Files.list(Path.of("src/main/resources/data/magiccity/quests"))) {
+            for (Path f : files.toList()) {
+                String id = f.getFileName().toString().replace(".json", "");
+                QuestDef q = QuestDef.parse(id, JsonParser.parseString(Files.readString(f, StandardCharsets.UTF_8)).getAsJsonObject());
+                if (q.chapter() > 0) byChapter.put(q.chapter(), q);
+            }
+        }
+        assertEquals(11, byChapter.size());
+        for (int c = 2; c <= 12; c++) {
+            QuestDef q = byChapter.get(c);
+            assertEquals(QuestDef.Type.ENTER_AREA, q.steps().get(0).type());
+            assertEquals(c, q.steps().get(0).atChapter());
+            assertEquals(QuestDef.Type.CHAPTER_CLEAR, q.steps().get(1).type());
+            assertEquals(c, q.steps().get(1).chapter());
+            assertEquals(3, q.offer().size());
+        }
+        assertEquals(List.of(1), byChapter.get(5).requiresChapters());
+        assertEquals(10, byChapter.get(11).requiresChapters().size());
+        assertEquals(List.of(11), byChapter.get(12).requiresChapters());
+    }
+
     private static JsonObject obj(String s) {
         return JsonParser.parseString(s).getAsJsonObject();
     }

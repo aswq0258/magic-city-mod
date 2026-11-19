@@ -60,7 +60,7 @@ import java.util.List;
  * /magiccity site hamlet     — 가장 가까운 촌락 한 곳만 건설 (remove hamlet 뒤 다시 지을 때)
  * /magiccity hamlets         — 가까운 촌락 목록
  * /magiccity remove <hamlets|hamlet|roads|worldtree|dwarf|oldcapital> — 왕국 대륙 건축물 철거 (원래 지형으로)
- * /magiccity fix npcs      — 기록된 왕성도시의 퀘스트 NPC(왕좌의 전당 왕실 시종장)를 다시 소환 (이미 지은 월드용)
+ * /magiccity fix npcs      — 퀘스트 NPC 를 모두 다시 소환: 왕좌의 전당 시종장(기록된 왕성도시) + 지역 의뢰 NPC 9명(데이터 자리)
  * /magiccity quest list|start|set|reset|signal — 개인 퀘스트 시험 (/quest 는 모든 플레이어)
  * /magiccity fix roads      — 이미 생성된 대륙에서 길·강·길가 나무만 그 자리에서 고침 (+ 신시가지 다시 짓기)
  * /magiccity fix lava [반지름]   — 내 주변(기본 512) 지표의 용암 호수·용암 샘을 물로 바꿈
@@ -987,6 +987,13 @@ public final class MagicCityCommand {
             if (f instanceof io.github.aswq0258.magiccity.city.feature.RoyalHall h && h.kind() == io.github.aswq0258.magiccity.city.feature.RoyalHall.Kind.THRONE) {
                 h.spawnSteward(level);
                 n++;
+            }
+        }
+        // 지역 의뢰 NPC (quest_npcs 의 spawn 자리)
+        ServerLevel kingdom = src.getServer().getLevel(io.github.aswq0258.magiccity.world.ModWorldgen.KINGDOM);
+        if (kingdom != null) {
+            for (var def : io.github.aswq0258.magiccity.quest.QuestManager.npcs()) {
+                if (!def.spawnAnchor().isEmpty() && io.github.aswq0258.magiccity.quest.QuestNpcs.placeAtAnchor(kingdom, def)) n++;
             }
         }
         BlockPos at = io.github.aswq0258.magiccity.quest.QuestNpcs.position(src.getServer(), io.github.aswq0258.magiccity.quest.QuestNpcs.STEWARD);

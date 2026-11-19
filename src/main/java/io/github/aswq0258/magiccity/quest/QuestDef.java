@@ -31,7 +31,14 @@ import java.util.Locale;
  * </pre>
  */
 public record QuestDef(String id, String title, String giver, String hint, List<String> requires,
-                       List<String> offer, String accept, String decline, List<Step> steps, List<String> complete) {
+                       List<String> offer, String accept, String decline, List<Step> steps, List<String> complete,
+                       int chapter, List<Integer> requiresChapters) {
+
+    /** 예전 형식(챕터 정보 없음) */
+    public QuestDef(String id, String title, String giver, String hint, List<String> requires,
+                    List<String> offer, String accept, String decline, List<Step> steps, List<String> complete) {
+        this(id, title, giver, hint, requires, offer, accept, decline, steps, complete, 0, List.of());
+    }
 
     public enum Type {
         TALK_NPC, SIGNAL, ENTER_AREA, CHAPTER_CLEAR;
@@ -48,11 +55,18 @@ public record QuestDef(String id, String title, String giver, String hint, List<
     /**
      * 단계 하나. 쓰지 않는 칸은 빈 문자열·0.
      * @param hasPos 목표 좌표(x, z)가 있는지 (안내에 좌표를 붙일지)
+     * @param atChapter 0 이 아니면 좌표를 그 챕터 보스 자리로 채움 (QuestManager 가 읽을 때)
      */
     public record Step(Type type, String goal, String npc, List<String> lines, String actionId, String actionLabel,
-                       String signal, String dimension, boolean hasPos, int x, int z, int radius, int yMin, int yMax, int chapter) {
+                       String signal, String dimension, boolean hasPos, int x, int z, int radius, int yMin, int yMax, int chapter,
+                       int atChapter) {
         public boolean hasAction() {
             return !actionId.isEmpty();
+        }
+
+        /** 좌표 채우기 */
+        public Step at(int nx, int nz) {
+            return new Step(type, goal, npc, lines, actionId, actionLabel, signal, dimension, true, nx, nz, radius, yMin, yMax, chapter, atChapter);
         }
     }
 
@@ -74,8 +88,17 @@ public record QuestDef(String id, String title, String giver, String hint, List<
                 throw new IllegalArgumentException("steps[" + i + "]: " + e.getMessage(), e);
             }
         }
+        List<Integer> reqCh = new ArrayList<>();
+        if (o.has("requires_chapters")) for (JsonElement e : o.getAsJsonArray("requires_chapters")) {
+            int c = e.getAsInt();
+            if (c < 1 || c > 12) throw new IllegalArgumentException("requires_chapters 는 1~12");
+            reqCh.add(c);
+        }
+        int chapter = o.has("chapter") ? o.get("chapter").getAsInt() : 0;
+        if (chapter < 0 || chapter > 12) throw new IllegalArgumentException("chapter 는 0~12");
         return new QuestDef(id, title, giver, str(o, "hint", ""), list(o, "requires"), list(o, "offer"),
-                str(o, "accept", "수락한다"), str(o, "decline", "나중에"), List.copyOf(steps), list(o, "complete"));
+                str(o, "accept", "수락한다"), str(o, "decline", "나중에"), List.copyOf(steps), list(o, "complete"),
+                chapter, List.copyOf(reqCh));
     }
 
     private static Step step(JsonObject s) {
@@ -93,8 +116,10 @@ public record QuestDef(String id, String title, String giver, String hint, List<
         }
         String signal = str(s, "signal", "");
         int chapter = s.has("chapter") ? s.get("chapter").getAsInt() : 0;
-        boolean hasPos = s.has("x") && s.has("z");
-        int x = hasPos ? s.get("x").getAsInt() : 0, z = hasPos ? s.get("z").getAsInt() : 0;
+        int atChapter = s.has("at_chapter") ? s.get("at_chapter").getAsInt() : 0;
+        if (atChapter < 0 || atChapter > 12) throw new IllegalArgumentException("at_chapter 는 1~12");
+        boolean hasPos = (s.has("x") && s.has("z")) || atChapter > 0;
+        int x = s.has("x") ? s.get("x").getAsInt() : 0, z = s.has("z") ? s.get("z").getAsInt() : 0;
         int radius = s.has("radius") ? s.get("radius").getAsInt() : 0;
         int yMin = s.has("y_min") ? s.get("y_min").getAsInt() : Integer.MIN_VALUE;
         int yMax = s.has("y_max") ? s.get("y_max").getAsInt() : Integer.MAX_VALUE;
@@ -102,13 +127,13 @@ public record QuestDef(String id, String title, String giver, String hint, List<
             case TALK_NPC -> { if (npc.isEmpty()) throw new IllegalArgumentException("talk_npc 는 npc 가 있어야 함"); }
             case SIGNAL -> { if (signal.isEmpty()) throw new IllegalArgumentException("signal 이 없음"); }
             case ENTER_AREA -> {
-                if (!hasPos || radius <= 0) throw new IllegalArgumentException("enter_area 는 x, z, radius(>0) 가 있어야 함");
+                if (!hasPos || radius <= 0) throw new IllegalArgumentException("enter_area 는 x, z(또는 at_chapter), radius(>0) 가 있어야 함");
                 if (yMin > yMax) throw new IllegalArgumentException("y_min > y_max");
             }
             case CHAPTER_CLEAR -> { if (chapter < 1 || chapter > 12) throw new IllegalArgumentException("chapter 는 1~12"); }
         }
         return new Step(t, goal, npc, list(s, "lines"), actionId, actionLabel, signal,
-                str(s, "dimension", "magiccity:kingdom"), hasPos, x, z, radius, yMin, yMax, chapter);
+                str(s, "dimension", "magiccity:kingdom"), hasPos, x, z, radius, yMin, yMax, chapter, atChapter);
     }
 
     private static String str(JsonObject o, String k, String def) {

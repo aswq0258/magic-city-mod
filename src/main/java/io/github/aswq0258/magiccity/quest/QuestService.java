@@ -102,6 +102,30 @@ public final class QuestService {
         for (String line : q.complete()) p.sendSystemMessage(say(giver, line));
         p.sendSystemMessage(Component.literal("§6[퀘스트 완료] §f" + q.title()));
         p.playNotifySound(SoundEvents.UI_TOAST_CHALLENGE_COMPLETE, SoundSource.PLAYERS, 0.8F, 1F);
+        announceAvailable(p);
+    }
+
+    /** 받을 수 있는 퀘스트 (어느 NPC 든) */
+    private static List<QuestDef> available(ServerPlayer p) {
+        Set<String> done = doneQuests(p);
+        Set<Integer> cleared = clearedChapters(p);
+        List<QuestDef> out = new ArrayList<>();
+        for (QuestDef q : QuestManager.quests()) if (QuestRules.available(q, state(p, q.id()), done, cleared)) out.add(q);
+        return out;
+    }
+
+    private static void announceAvailable(ServerPlayer p) {
+        int n = available(p).size();
+        if (n > 0) p.sendSystemMessage(Component.literal("§e[퀘스트] 왕국 곳곳에 그대를 찾는 사람들이 있다 — 받을 수 있는 의뢰 " + n + "개 §8(/quest)"));
+    }
+
+    /** NPC 자리: 소환된 자리, 없으면 데이터의 거점 좌표 */
+    private static String npcWhere(net.minecraft.server.MinecraftServer server, String npcId) {
+        BlockPos at = QuestNpcs.position(server, npcId);
+        if (at != null) return " (" + at.getX() + ", " + at.getY() + ", " + at.getZ() + ")";
+        QuestManager.NpcDef def = QuestManager.npc(npcId);
+        int[] a = def.spawnAnchor().isEmpty() ? null : QuestAnchors.resolve(def.spawnAnchor());
+        return a == null ? "" : " (" + a[0] + ", " + a[1] + ")";
     }
 
     /** 다른 모드 신호 ({@link io.github.aswq0258.magiccity.api.MagicCityApi#questSignal}) */
@@ -147,8 +171,9 @@ public final class QuestService {
         }
         // 2) 이 NPC 가 건넬 수 있는 새 퀘스트
         Set<String> done = doneQuests(p);
+        Set<Integer> cleared = clearedChapters(p);
         for (QuestDef q : QuestManager.quests()) {
-            if (!QuestRules.offerable(q, state(p, q.id()), npcId, done)) continue;
+            if (!QuestRules.offerable(q, state(p, q.id()), npcId, done, cleared)) continue;
             for (String line : q.offer()) p.sendSystemMessage(say(def, line));
             p.sendSystemMessage(Component.literal("  ")
                     .append(button(q.accept(), "/quest npc " + npc.getUUID() + " accept " + q.id(), ChatFormatting.GREEN))
@@ -192,7 +217,7 @@ public final class QuestService {
         int s = state(p, q.id());
         switch (kind) {
             case "accept" -> {
-                if (!QuestRules.offerable(q, s, npcId, doneQuests(p))) return "지금은 받을 수 없는 퀘스트입니다.";
+                if (!QuestRules.offerable(q, s, npcId, doneQuests(p), clearedChapters(p))) return "지금은 받을 수 없는 퀘스트입니다.";
                 p.sendSystemMessage(Component.literal("§e[퀘스트] §f" + q.title() + " §e수락"));
                 setState(p, q, 0);
                 return null;
@@ -214,6 +239,7 @@ public final class QuestService {
         var server = event.getServer();
         long t = server.overworld().getGameTime();
         if (t % 20 != 0) return;
+        if (t % 40 == 0) QuestNpcs.tickPlacement(server);
         for (ServerPlayer p : server.getPlayerList().getPlayers()) {
             if (p.isSpectator()) continue;
             String dim = p.level().dimension().location().toString();
@@ -252,6 +278,7 @@ public final class QuestService {
         for (QuestDef q : new ArrayList<>(QuestManager.quests())) {
             if (QuestRules.chapterCompletes(q, state(p, q.id()), cleared)) advance(p, q);
         }
+        if (event.getChapter() == 10 || event.getChapter() == 11) announceAvailable(p);   // 11·12장 의뢰가 새로 열림
     }
 
     /** 왕국 대륙에 들어올 때: 받지 않은 시작 퀘스트(hint 있는 것)의 NPC 를 찾아가라는 안내. NPC 자리를 알게 된 뒤로는 한 번만 */
@@ -291,12 +318,13 @@ public final class QuestService {
                         .append(st.goal()).append(where(p, st));
             }
         }
-        if (n == 0) {
-            sb.append("\n§7받은 퀘스트가 없습니다.");
-            for (QuestDef q : QuestManager.quests()) {
-                if (q.hint().isEmpty()) continue;
-                BlockPos at = QuestNpcs.position(p.server, q.giver());
-                sb.append("\n§7").append(q.hint()).append(at != null ? " (" + at.getX() + ", " + at.getY() + ", " + at.getZ() + ")" : "");
+        if (n == 0) sb.append("\n§7받은 퀘스트가 없습니다.");
+        List<QuestDef> av = available(p);
+        if (!av.isEmpty()) {
+            sb.append("\n§6── 받을 수 있는 의뢰 ──");
+            for (QuestDef q : av) {
+                sb.append("\n§e◇ ").append(q.title()).append(" §7— ").append(QuestManager.npc(q.giver()).name())
+                        .append(npcWhere(p.server, q.giver()));
             }
         }
         return Component.literal(sb.toString());

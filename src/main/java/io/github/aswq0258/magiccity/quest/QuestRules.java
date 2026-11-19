@@ -32,7 +32,21 @@ public final class QuestRules {
 
     /** NPC가 이 퀘스트를 건넬 수 있는지: 그 NPC가 주는 퀘스트이고, 받지 않았고, 먼저 끝낼 퀘스트를 모두 끝냄 */
     public static boolean offerable(QuestDef q, int state, String npc, Collection<String> doneQuests) {
-        return q.giver().equals(npc) && !started(state) && doneQuests.containsAll(q.requires());
+        return offerable(q, state, npc, doneQuests, Set.of());
+    }
+
+    /**
+     * 챕터 조건까지: 퀘스트의 장을 아직 깨지 않았고(깼으면 건네지 않음), 먼저 깨야 하는 장을 모두 깸.
+     */
+    public static boolean offerable(QuestDef q, int state, String npc, Collection<String> doneQuests, Set<Integer> clearedChapters) {
+        if (!q.giver().equals(npc) || started(state) || !doneQuests.containsAll(q.requires())) return false;
+        if (q.chapter() > 0 && clearedChapters.contains(q.chapter())) return false;
+        return clearedChapters.containsAll(q.requiresChapters());
+    }
+
+    /** 어느 NPC든 지금 건넬 수 있는지 (목록 표시용) */
+    public static boolean available(QuestDef q, int state, Collection<String> doneQuests, Set<Integer> clearedChapters) {
+        return offerable(q, state, q.giver(), doneQuests, clearedChapters);
     }
 
     /** 다른 모드 신호가 지금 단계를 끝내는지 */

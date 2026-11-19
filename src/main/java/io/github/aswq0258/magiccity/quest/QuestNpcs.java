@@ -74,6 +74,40 @@ public final class QuestNpcs {
         return QuestData.get(server).npcs.get(npcId);
     }
 
+    /**
+     * 자리가 데이터로 정해진 NPC(quest_npcs 의 spawn) 를 플레이어가 48칸 안에 처음 오면 그 자리 지면에 소환.
+     * 지역을 지은 순서와 상관없이 생기고, 한 번 놓으면 자리를 기록해 다시 놓지 않음 (/magiccity fix npcs 로 다시).
+     */
+    public static void tickPlacement(net.minecraft.server.MinecraftServer server) {
+        ServerLevel k = server.getLevel(io.github.aswq0258.magiccity.world.ModWorldgen.KINGDOM);
+        if (k == null || k.players().isEmpty()) return;
+        QuestData d = QuestData.get(server);
+        for (QuestManager.NpcDef def : QuestManager.npcs()) {
+            if (def.spawnAnchor().isEmpty() || d.npcs.containsKey(def.id())) continue;
+            int[] at = QuestAnchors.resolve(def.spawnAnchor());
+            if (at == null) continue;
+            boolean near = false;
+            for (ServerPlayer p : k.players()) {
+                double dx = p.getX() - at[0], dz = p.getZ() - at[1];
+                if (dx * dx + dz * dz <= 48 * 48) {
+                    near = true;
+                    break;
+                }
+            }
+            if (!near || !k.hasChunkAt(new BlockPos(at[0], 64, at[1]))) continue;
+            placeAtAnchor(k, def);
+        }
+    }
+
+    /** 데이터 자리에 놓기 (지면 높이는 지금 월드 기준) */
+    public static boolean placeAtAnchor(ServerLevel k, QuestManager.NpcDef def) {
+        int[] at = QuestAnchors.resolve(def.spawnAnchor());
+        if (at == null) return false;
+        k.getChunk(at[0] >> 4, at[1] >> 4);
+        int y = k.getHeight(net.minecraft.world.level.levelgen.Heightmap.Types.MOTION_BLOCKING_NO_LEAVES, at[0], at[1]);
+        return spawn(k, def.id(), at[0] + 0.5, y, at[1] + 0.5, def.yaw()) != null;
+    }
+
     /** 오른쪽 클릭: 거래 창 대신 대화 */
     public static void onInteract(PlayerInteractEvent.EntityInteract event) {
         String id = npcId(event.getTarget());
