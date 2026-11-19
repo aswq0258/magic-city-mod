@@ -27,6 +27,10 @@ public final class QuestData extends SavedData {
     final Map<UUID, Map<String, Integer>> players = new HashMap<>();
     final Set<UUID> hinted = new HashSet<>();
     final Map<String, BlockPos> npcs = new HashMap<>();
+    /** UUID → (퀘스트 id → 지금 단계의 여러 개 중 끝낸 것 표시값, talk_npcs·use_blocks) */
+    final Map<UUID, Map<String, Integer>> marks = new HashMap<>();
+    /** UUID → (퀘스트 id → 받을 때의 퀘스트 판). 없으면 1 */
+    final Map<UUID, Map<String, Integer>> versions = new HashMap<>();
 
     static QuestData load(CompoundTag tag, HolderLookup.Provider p) {
         QuestData d = new QuestData();
@@ -49,7 +53,33 @@ public final class QuestData extends SavedData {
         }
         CompoundTag n = tag.getCompound("npcs");
         for (String k : n.getAllKeys()) d.npcs.put(k, BlockPos.of(n.getLong(k)));
+        readNested(tag.getCompound("marks"), d.marks);
+        readNested(tag.getCompound("versions"), d.versions);
         return d;
+    }
+
+    private static void readNested(CompoundTag root, Map<UUID, Map<String, Integer>> into) {
+        for (String k : root.getAllKeys()) {
+            try {
+                UUID u = UUID.fromString(k);
+                CompoundTag q = root.getCompound(k);
+                Map<String, Integer> m = new HashMap<>();
+                for (String id : q.getAllKeys()) m.put(id, q.getInt(id));
+                into.put(u, m);
+            } catch (IllegalArgumentException ignored) {
+            }
+        }
+    }
+
+    private static CompoundTag writeNested(Map<UUID, Map<String, Integer>> from) {
+        CompoundTag root = new CompoundTag();
+        for (var e : from.entrySet()) {
+            if (e.getValue().isEmpty()) continue;
+            CompoundTag q = new CompoundTag();
+            e.getValue().forEach(q::putInt);
+            root.put(e.getKey().toString(), q);
+        }
+        return root;
     }
 
     @Override
@@ -67,6 +97,8 @@ public final class QuestData extends SavedData {
         CompoundTag n = new CompoundTag();
         npcs.forEach((k, v) -> n.putLong(k, v.asLong()));
         tag.put("npcs", n);
+        tag.put("marks", writeNested(marks));
+        tag.put("versions", writeNested(versions));
         return tag;
     }
 
@@ -81,13 +113,45 @@ public final class QuestData extends SavedData {
         return m == null ? QuestRules.NOT_STARTED : m.getOrDefault(quest, QuestRules.NOT_STARTED);
     }
 
+    /** 진행 값 바꾸기. 단계가 바뀌므로 여러 개 표시값은 비움 */
     void setState(UUID player, String quest, int state) {
         if (state == QuestRules.NOT_STARTED) {
             Map<String, Integer> m = players.get(player);
             if (m != null) m.remove(quest);
+            Map<String, Integer> v = versions.get(player);
+            if (v != null) v.remove(quest);
         } else {
             players.computeIfAbsent(player, u -> new HashMap<>()).put(quest, state);
         }
+        Map<String, Integer> mk = marks.get(player);
+        if (mk != null) mk.remove(quest);
         setDirty();
+    }
+
+    int mark(UUID player, String quest) {
+        Map<String, Integer> m = marks.get(player);
+        return m == null ? 0 : m.getOrDefault(quest, 0);
+    }
+
+    void setMark(UUID player, String quest, int mask) {
+        marks.computeIfAbsent(player, u -> new HashMap<>()).put(quest, mask);
+        setDirty();
+    }
+
+    int version(UUID player, String quest) {
+        Map<String, Integer> m = versions.get(player);
+        return m == null ? 1 : m.getOrDefault(quest, 1);
+    }
+
+    void setVersion(UUID player, String quest, int version) {
+        versions.computeIfAbsent(player, u -> new HashMap<>()).put(quest, version);
+        setDirty();
+    }
+
+    /** 지역을 다시 지을 때: 그 NPC 들의 기록된 자리를 지워 근처에 오면 다시 소환되게 함 */
+    public static void forgetNpcs(MinecraftServer server, String... ids) {
+        QuestData d = get(server);
+        for (String id : ids) d.npcs.remove(id);
+        d.setDirty();
     }
 }

@@ -62,6 +62,26 @@ public final class DeepMine implements BuildLayout {
     public static final int GATE_X = CX + 140, GATE_Z = CZ - 152;
 
     private static final int PX = CX + 174, PZ = CZ - 195, PRX = 22, PRZ = 19;   // 노천 채굴장
+    /** 퀘스트 NPC 자리 {x, y, z}: 갇힌 광부 브루크(서쪽 채굴조)·할다(북쪽 붕괴 갱도)·퀸(채굴장 언덕), 갱도 문지기 도른 */
+    public static final int[] BRUK = {CX + 81, D + 1, CZ - 185}, HALDA = {CX + 146, D + 1, CZ - 243},
+            QUIN = {PX + 15, D + 1, PZ - 12}, DOREN = {CX + 140, M + 1, CZ - 151};
+    /** 압력 밸브 다리 방향 (홀 중심 기준 각도) */
+    private static final double[] VALVE_ANG = {Math.PI / 2, Math.PI / 2 + Math.PI * 2 / 3, Math.PI / 2 + Math.PI * 4 / 3};
+
+    /** 압력 밸브 레버 자리 {x, y, z} (i = 0..2) */
+    public static int[] valve(int i) {
+        double ang = VALVE_ANG[i];
+        int vx = HX + (int) Math.round(Math.cos(ang) * 24.5), vz = HZ + (int) Math.round(Math.sin(ang) * 24.5);
+        Direction face = valveFace(ang);
+        vx += face.getAxis() == Direction.Axis.X ? 0 : 2;
+        vz += face.getAxis() == Direction.Axis.Z ? 0 : 2;
+        return new int[]{vx, A + 3, vz};
+    }
+
+    private static Direction valveFace(double ang) {
+        return Math.abs(Math.cos(ang)) > Math.abs(Math.sin(ang)) ? (Math.cos(ang) > 0 ? Direction.WEST : Direction.EAST)
+                : (Math.sin(ang) > 0 ? Direction.NORTH : Direction.SOUTH);
+    }
     private static final int SPX = CX + 174, SPZ = CZ - 234;                     // 봉인문 아래 나선
 
     private final long seed;
@@ -386,7 +406,7 @@ public final class DeepMine implements BuildLayout {
         // ── 3. 고대 용광로 홀 ──
         private void hall(Placer p) {
             final int moatIn = 17, moatOut = 20;
-            final double[] bridges = {Math.PI / 2, Math.PI / 2 + Math.PI * 2 / 3, Math.PI / 2 + Math.PI * 4 / 3};
+            final double[] bridges = VALVE_ANG;
             p.forColumns(HX - HALL_R - 3, HZ - HALL_R - 3, HX + HALL_R + 3, HZ + HALL_R + 3, (x, z) -> {
                 double d = Math.hypot(x - HX, z - HZ), ang = Math.atan2(z - HZ, x - HX);
                 if (d > HALL_R + 2.5) return;
@@ -481,13 +501,13 @@ public final class DeepMine implements BuildLayout {
 
         /** 다리 바깥 끝의 압력 밸브 장치: 구리 관, 레버, 레드스톤 램프 */
         private void valve(Placer p, double ang) {
-            int vx = HX + (int) Math.round(Math.cos(ang) * 24.5), vz = HZ + (int) Math.round(Math.sin(ang) * 24.5);
-            Direction face = Math.abs(Math.cos(ang)) > Math.abs(Math.sin(ang)) ? (Math.cos(ang) > 0 ? Direction.WEST : Direction.EAST)
-                    : (Math.sin(ang) > 0 ? Direction.NORTH : Direction.SOUTH);
+            int i = 0;
+            while (i < 2 && Math.abs(VALVE_ANG[i] - ang) > 1e-9) i++;
+            Direction face = valveFace(ang);
             int sx = face.getAxis() == Direction.Axis.X ? 0 : 2, sz = face.getAxis() == Direction.Axis.Z ? 0 : 2;
-            // 옆으로 비켜 둠 (다리 길을 막지 않게)
-            vx += sx;
-            vz += sz;
+            // 옆으로 비켜 둠 (다리 길을 막지 않게) — 자리 계산은 valve(i) 와 같음 (퀘스트가 이 자리를 씀)
+            int[] at = DeepMine.valve(i);
+            int vx = at[0], vz = at[2];
             p.set(vx, A + 1, vz, b(Blocks.OXIDIZED_COPPER));
             p.set(vx, A + 2, vz, b(Blocks.WAXED_OXIDIZED_CUT_COPPER));
             p.set(vx, A + 3, vz, Blocks.LEVER.defaultBlockState().setValue(LeverBlock.FACE, AttachFace.FLOOR).setValue(LeverBlock.FACING, face));
@@ -534,19 +554,10 @@ public final class DeepMine implements BuildLayout {
             return true;
         }
 
-        /** 갇힌 광부 셋 (작은 키), 갱도 문지기 */
+        /** 갇힌 광부 셋과 갱도 문지기는 2026-11-19부터 퀘스트 NPC (quest_npcs 의 spawn 자리 deep_*): 근처에 오면 생김 */
         @Override
         public void spawn(ServerLevel level, CityLayout city) {
-            String[] names = {"실종 광부 브루크", "실종 광부 할다", "실종 광부 퀸", "갱도 문지기 도른"};
-            int[][] at = {{CX + 81, D + 1, CZ - 185}, {CX + 146, D + 1, CZ - 243}, {PX + 15, D + 1, PZ - 12}, {CX + 140, M + 1, CZ - 151}};
-            for (int i = 0; i < names.length; i++) {
-                Mob m = EntityType.VILLAGER.spawn(level, new BlockPos(at[i][0], at[i][1], at[i][2]), MobSpawnType.STRUCTURE);
-                if (m == null) continue;
-                m.setPersistenceRequired();
-                m.setCustomName(Component.literal(names[i]));
-                AttributeInstance sc = m.getAttribute(Attributes.SCALE);
-                if (sc != null) sc.setBaseValue(0.72);
-            }
+            io.github.aswq0258.magiccity.quest.QuestData.forgetNpcs(level.getServer(), "gate_doren", "miner_bruk", "miner_halda", "miner_quin");
         }
 
         @Override

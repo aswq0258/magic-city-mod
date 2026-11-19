@@ -82,6 +82,72 @@ public final class QuestRules {
         return dx * dx + dz * dz <= (double) s.radius() * s.radius();
     }
 
+    // ───────── 여러 개를 아무 순서로 (talk_npcs·use_blocks, 2026-11-19) ─────────
+
+    /** 모든 부분을 끝낸 표시값 */
+    public static int fullMask(int parts) {
+        return parts >= 31 ? -1 >>> 1 : (1 << parts) - 1;
+    }
+
+    /**
+     * 이 NPC 와 대화한 뒤의 표시값. 지금 단계가 talk_npcs 이고 그 NPC 가 목록에 있으면 그 비트를 켠 값, 아니면 -1.
+     */
+    public static int talkNpcsMark(QuestDef q, int state, int mask, String npc) {
+        QuestDef.Step s = current(q, state);
+        if (s == null || s.type() != QuestDef.Type.TALK_NPCS) return -1;
+        int i = s.npcs().indexOf(npc);
+        return i < 0 ? -1 : mask | (1 << i);
+    }
+
+    /** 이 블록 자리를 쓴 뒤의 표시값. 지금 단계가 use_blocks 이고 그 자리가 목록에 있으면 비트를 켠 값, 아니면 -1 */
+    public static int useBlocksMark(QuestDef q, int state, int mask, int x, int y, int z) {
+        QuestDef.Step s = current(q, state);
+        if (s == null || s.type() != QuestDef.Type.USE_BLOCKS) return -1;
+        for (int i = 0; i < s.blockPos().size(); i++) {
+            int[] b = s.blockPos().get(i);
+            if (b[0] == x && b[1] == y && b[2] == z) return mask | (1 << i);
+        }
+        return -1;
+    }
+
+    /** 지금 단계의 부분을 모두 끝냈는지 */
+    public static boolean partsDone(QuestDef q, int state, int mask) {
+        QuestDef.Step s = current(q, state);
+        if (s == null || s.parts() == 0) return false;
+        int full = fullMask(s.parts());
+        return (mask & full) == full;
+    }
+
+    /** 끝낸 부분 수 */
+    public static int partsCount(int mask) {
+        return Integer.bitCount(mask);
+    }
+
+    // ───────── 장별 중간 단계 (2026-11-19) ─────────
+
+    /**
+     * 중간 단계인지: 장 퀘스트(chapter &gt; 0)에서 보스 자리 도착(at_chapter)·보스 처치(chapter_clear)가 아닌 단계.
+     * 끝낼 때 보상(경험치)을 받는 단계.
+     */
+    public static boolean midStep(QuestDef q, int index) {
+        if (q.chapter() <= 0 || index < 0 || index >= q.size()) return false;
+        QuestDef.Step s = q.steps().get(index);
+        return s.type() != QuestDef.Type.CHAPTER_CLEAR && s.atChapter() == 0;
+    }
+
+    /**
+     * 장을 깨면 남은 단계를 건너뛰고 완료 (안내형, 초안 4절 A안). 건너뛸 수 있으면 완료 값(단계 수), 아니면 지금 값 그대로.
+     */
+    public static int skipOnChapter(QuestDef q, int state, Set<Integer> clearedChapters) {
+        if (q.chapter() > 0 && inProgress(q, state) && clearedChapters.contains(q.chapter())) return q.size();
+        return state;
+    }
+
+    /** 저장된 판(없으면 1)이 지금 정의와 달라 진행 중인 퀘스트를 첫 단계부터 다시 해야 하는지 */
+    public static boolean needsRestart(QuestDef q, int state, int savedVersion) {
+        return inProgress(q, state) && savedVersion != q.version();
+    }
+
     /** 다음 진행 값 (완료 뒤에는 그대로) */
     public static int advance(QuestDef q, int state) {
         return inProgress(q, state) ? state + 1 : state;

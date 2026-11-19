@@ -50,7 +50,9 @@ public final class CursedLands implements BuildLayout {
     public static final int ALTAR_X = WX - 80, ALTAR_Z = WZ - 60, HUT_X = WX + 80, HUT_Z = WZ + 70;
     /** 균열 방향 (옛 왕도 쪽) */
     private static final double UX = -0.642, UZ = 0.766, PXV = -UZ, PZV = UX;
-    private static final int HALF_LEN = 130, BOTTOM = -30;
+    private static final int HALF_LEN = 130;
+    /** 심연 균열 바닥 높이 */
+    public static final int BOTTOM = -30;
     public static final int STAIR_X = RX + (int) Math.round(PXV * 34), STAIR_Z = RZ + (int) Math.round(PZV * 34);
 
     private final long seed;

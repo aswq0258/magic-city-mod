@@ -44,7 +44,7 @@ public final class RootDungeon implements BuildLayout {
     /** 보스가 나타날 자리 (가운데 수액 웅덩이 위) */
     public static final int BOSS_X = OX, BOSS_Y = F + 1, BOSS_Z = OZ;
     /** 방 위치 (중심 기준) */
-    static final int[] SAP = {-48, -12}, NEST = {42, -34}, COCOON = {-18, 50}, CAMP = {-56, 34}, DESCENT = {54, 26}, REWARD = {0, -46};
+    public static final int[] SAP = {-48, -12}, NEST = {42, -34}, COCOON = {-18, 50}, CAMP = {-56, 34}, DESCENT = {54, 26}, REWARD = {0, -46};
 
     private final long seed;
     private final List<ChunkPos> chunks = new ArrayList<>();

@@ -15,6 +15,18 @@
   "steps": [
     {
       "type": "enter_area",
+      "goal": "배를 타고 앞바다의 등대 섬에 건너간다",
+      "mark": "port_isle",
+      "radius": 110
+    },
+    {
+      "type": "enter_area",
+      "goal": "섬 서쪽 해상신전에서 잠긴 성소로 내려가는 계단을 찾는다",
+      "mark": "port_temple",
+      "radius": 12
+    },
+    {
+      "type": "enter_area",
       "goal": "등대 섬 앞바다, 잠긴 성소로 간다",
       "at_chapter": 6,
       "radius": 48
@@ -29,5 +41,6 @@
   "complete": [
     "바다가 잔잔해졌어요! 배들이 돌아오고 있어요.",
     "바다의 봉인… 초대 왕의 함대가 맡긴 게 정말 있었네요."
-  ]
+  ],
+  "version": 2
 }

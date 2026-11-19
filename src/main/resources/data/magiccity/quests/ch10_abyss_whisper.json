@@ -15,9 +15,16 @@
   "steps": [
     {
       "type": "enter_area",
+      "goal": "나선 계단 굴로 협곡 중턱까지 내려간다",
+      "mark": "rift_midway",
+      "radius": 10
+    },
+    {
+      "type": "enter_area",
       "goal": "심연 균열 바닥으로 내려간다",
       "at_chapter": 10,
-      "radius": 48
+      "radius": 60,
+      "mark": "rift_floor"
     },
     {
       "type": "chapter_clear",
@@ -29,5 +36,6 @@
   "complete": [
     "속삭임이 멎었다. 하지만 문 너머의 것들은 그대를 기억할 거다.",
     "왕성의 시종장에게 가라. 남은 것은 왕관과 문이다."
-  ]
+  ],
+  "version": 2
 }

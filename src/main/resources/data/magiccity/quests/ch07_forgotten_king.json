@@ -15,9 +15,22 @@
   "steps": [
     {
       "type": "enter_area",
+      "goal": "발굴 야영지에 들러 발굴 기록을 살핀다",
+      "mark": "ruins_camp",
+      "radius": 12
+    },
+    {
+      "type": "enter_area",
+      "goal": "구덩이 바닥, 무너진 대신전 제단으로 내려간다",
+      "mark": "ruins_temple",
+      "radius": 14
+    },
+    {
+      "type": "enter_area",
       "goal": "고대 왕국 유적, 왕릉으로 간다",
       "at_chapter": 7,
-      "radius": 48
+      "radius": 40,
+      "mark": "ruins_tomb"
     },
     {
       "type": "chapter_clear",
@@ -29,5 +42,6 @@
   "complete": [
     "잠들었군… 마지막에 그 무기를 보며 웃는 것 같았어.",
     "비문 끝줄: \"제자여, 문을 닫는 것은 네 몫이다.\" 무슨 뜻일까."
-  ]
+  ],
+  "version": 2
 }

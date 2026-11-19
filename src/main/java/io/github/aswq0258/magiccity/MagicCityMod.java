@@ -48,6 +48,7 @@ public class MagicCityMod {
         // 개인 퀘스트·퀘스트 NPC (2026-11-19)
         NeoForge.EVENT_BUS.addListener(io.github.aswq0258.magiccity.quest.QuestManager::onAddReloadListeners);
         NeoForge.EVENT_BUS.addListener(io.github.aswq0258.magiccity.quest.QuestNpcs::onInteract);
+        NeoForge.EVENT_BUS.addListener(io.github.aswq0258.magiccity.quest.QuestService::onUseBlock);
         NeoForge.EVENT_BUS.addListener(io.github.aswq0258.magiccity.quest.QuestService::onServerTick);
         NeoForge.EVENT_BUS.addListener(io.github.aswq0258.magiccity.quest.QuestService::onLogin);
         NeoForge.EVENT_BUS.addListener(io.github.aswq0258.magiccity.quest.QuestService::onChangeDimension);

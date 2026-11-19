@@ -15,9 +15,22 @@
   "steps": [
     {
       "type": "enter_area",
+      "goal": "천공의 탑을 올라 큰 섬에 닿는다",
+      "mark": "sky_isle",
+      "radius": 34
+    },
+    {
+      "type": "enter_area",
+      "goal": "별 관측소 섬에서 별자리를 확인한다",
+      "mark": "sky_observatory",
+      "radius": 12
+    },
+    {
+      "type": "enter_area",
       "goal": "부유섬 유적 결투장으로 간다",
       "at_chapter": 9,
-      "radius": 48
+      "radius": 24,
+      "mark": "sky_arena"
     },
     {
       "type": "chapter_clear",
@@ -29,5 +42,6 @@
   "complete": [
     "폭풍이 걷혔어요. 하늘의 봉인이 문양 한 칸을 채웠네요.",
     "이제 다섯 봉인이 거의 다 모였어요. 왕성으로 소식을 전하세요."
-  ]
+  ],
+  "version": 2
 }

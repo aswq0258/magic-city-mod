@@ -15,9 +15,22 @@
   "steps": [
     {
       "type": "enter_area",
+      "goal": "세계수 밑동 남쪽 틈으로 들어가 뿌리 회랑까지 내려간다",
+      "mark": "root_corridor",
+      "radius": 80
+    },
+    {
+      "type": "enter_area",
+      "goal": "뿌리 회랑의 엘프 탐사대 마지막 야영지에서 일지를 찾는다",
+      "mark": "root_camp",
+      "radius": 8
+    },
+    {
+      "type": "enter_area",
       "goal": "세계수 뿌리 던전, 기생충의 둥지로 내려간다",
       "at_chapter": 3,
-      "radius": 48
+      "radius": 40,
+      "mark": "root_nest"
     },
     {
       "type": "chapter_clear",
@@ -29,5 +42,6 @@
   "complete": [
     "세계수가 다시 노래해요. 생명의 봉인이 돌아왔어요.",
     "무기가 조금 따뜻해졌죠? 세계수가 고맙다고 하는 거예요."
-  ]
+  ],
+  "version": 2
 }

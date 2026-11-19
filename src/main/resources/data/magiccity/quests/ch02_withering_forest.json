@@ -15,6 +15,12 @@
   "steps": [
     {
       "type": "enter_area",
+      "goal": "검은 연못가, 기둥 위 마녀의 오두막을 살핀다",
+      "mark": "cursed_hut",
+      "radius": 14
+    },
+    {
+      "type": "enter_area",
       "goal": "저주받은 숲 제단으로 간다",
       "at_chapter": 2,
       "radius": 48
@@ -29,5 +35,6 @@
   "complete": [
     "숲이 다시 숨을 쉬는군. 고맙네.",
     "봉인이 그 무기와 공명하는 걸 봤나? 초대 왕의 서약은 아직 살아 있어."
-  ]
+  ],
+  "version": 2
 }

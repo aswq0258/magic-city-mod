@@ -130,7 +130,7 @@ class QuestRulesTest {
     }
 
     @Test
-    @DisplayName("배포 퀘스트 12개(1~12장) 모두 읽힘: 장마다 하나, 2~12장은 도착 → 처치, 받는 조건은 보스 입장 조건과 같음")
+    @DisplayName("배포 퀘스트 12개(1~12장) 모두 읽힘: 장마다 하나, 2~12장은 (중간 단계) → 보스 자리 도착 → 처치, 받는 조건은 보스 입장 조건과 같음")
     void allShippedQuests() throws Exception {
         java.util.Map<Integer, QuestDef> byChapter = new java.util.HashMap<>();
         try (var files = Files.list(Path.of("src/main/resources/data/magiccity/quests"))) {
@@ -143,10 +143,11 @@ class QuestRulesTest {
         assertEquals(11, byChapter.size());
         for (int c = 2; c <= 12; c++) {
             QuestDef q = byChapter.get(c);
-            assertEquals(QuestDef.Type.ENTER_AREA, q.steps().get(0).type());
-            assertEquals(c, q.steps().get(0).atChapter());
-            assertEquals(QuestDef.Type.CHAPTER_CLEAR, q.steps().get(1).type());
-            assertEquals(c, q.steps().get(1).chapter());
+            QuestDef.Step last = q.steps().get(q.size() - 1);
+            assertEquals(QuestDef.Type.CHAPTER_CLEAR, last.type());
+            assertEquals(c, last.chapter());
+            final int ch = c;
+            assertEquals(1, q.steps().stream().filter(st -> st.type() == QuestDef.Type.ENTER_AREA && st.atChapter() == ch).count(), "장 " + c + " 도착 단계");
             assertEquals(3, q.offer().size());
         }
         assertEquals(List.of(1), byChapter.get(5).requiresChapters());

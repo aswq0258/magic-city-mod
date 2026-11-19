@@ -45,6 +45,9 @@ public final class AncientRuins implements BuildLayout {
     public static final int TEMPLE_X = CX, TEMPLE_Z = CZ - 28;
     public static final int KING_X = CX, KING_Z = CZ - 92;
     private static final double RAMP_ANG = Math.toRadians(-135);                               // 북서쪽 (발굴지 지선 쪽)
+    /** 발굴 야영지 가운데 (퀘스트 자리) */
+    public static final int CAMP_X = CX + (int) Math.round(Math.cos(RAMP_ANG + 0.35) * (PIT_R + 12)),
+            CAMP_Z = CZ + (int) Math.round(Math.sin(RAMP_ANG + 0.35) * (PIT_R + 12));
 
     private final long seed;
     private final List<Feature> features = new ArrayList<>();
@@ -330,7 +333,7 @@ public final class AncientRuins implements BuildLayout {
         final int cx, cz;
 
         Camp() {
-            this(CX + (int) Math.round(Math.cos(RAMP_ANG + 0.35) * (PIT_R + 12)), CZ + (int) Math.round(Math.sin(RAMP_ANG + 0.35) * (PIT_R + 12)));
+            this(CAMP_X, CAMP_Z);
         }
 
         private Camp(int cx, int cz) {

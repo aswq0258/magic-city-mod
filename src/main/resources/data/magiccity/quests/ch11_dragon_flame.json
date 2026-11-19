@@ -24,9 +24,28 @@
   "steps": [
     {
       "type": "enter_area",
+      "goal": "용의 아가리, 샘의 동굴로 들어간다",
+      "mark": "dragon_mouth",
+      "radius": 20
+    },
+    {
+      "type": "enter_area",
+      "goal": "용의 목구멍을 내려가 상층 미궁에 들어선다",
+      "mark": "dragon_upper",
+      "radius": 75
+    },
+    {
+      "type": "enter_area",
+      "goal": "하층 미궁, 불타는 미로로 내려간다",
+      "mark": "dragon_lower",
+      "radius": 75
+    },
+    {
+      "type": "enter_area",
       "goal": "고룡 봉우리 보물 동굴로 간다",
       "at_chapter": 11,
-      "radius": 48
+      "radius": 40,
+      "mark": "dragon_hoard"
     },
     {
       "type": "chapter_clear",
@@ -38,5 +57,6 @@
   "complete": [
     "왕관 봉인…! 초대 왕의 비밀을 이제 말해 주겠네. 그분은 마계문을 닫으며 스스로 무기 속에 힘을 남기셨네.",
     "그대가 들고 있는 것은 무기이자, 문을 닫는 열쇠일세."
-  ]
+  ],
+  "version": 2
 }

@@ -14,10 +14,39 @@
   "decline": "나중에",
   "steps": [
     {
+      "type": "talk_npc",
+      "npc": "gate_doren",
+      "goal": "봉쇄된 갱도 문에서 갱도 문지기 도른과 이야기한다",
+      "lines": [
+        "이 문 너머로 내려간 광부 셋이 아직 안 돌아왔소.",
+        "무너진 갱도 뒤에 갇혔을 거요. 자갈을 치우고 꺼내 주시오 — 브루크는 서쪽 채굴조, 할다는 북쪽 붕괴 갱도, 퀸은 노천 채굴장 끝 언덕이오.",
+        "맨 아래 고대 용광로 홀의 압력 밸브 셋도 잠가 주시오. 그래야 용광로가 숨을 고르오."
+      ]
+    },
+    {
+      "type": "talk_npcs",
+      "goal": "심부 광산에 갇힌 광부 3명을 찾아 구한다",
+      "npcs": [
+        "miner_bruk",
+        "miner_halda",
+        "miner_quin"
+      ]
+    },
+    {
       "type": "enter_area",
       "goal": "드워프 심층 광산, 고대 용광로 홀로 내려간다",
       "at_chapter": 5,
-      "radius": 48
+      "radius": 30,
+      "mark": "deep_hall"
+    },
+    {
+      "type": "use_blocks",
+      "goal": "고대 용광로 홀 다리 끝의 압력 밸브 3개를 잠근다(레버)",
+      "blocks": [
+        "deep_valve_1",
+        "deep_valve_2",
+        "deep_valve_3"
+      ]
     },
     {
       "type": "chapter_clear",
@@ -29,5 +58,6 @@
   "complete": [
     "불길이 다시 고르게 타는군! 대지의 봉인도 돌아왔어.",
     "칼날이 더 단단해졌지? 고향 불을 다시 맛봤으니까."
-  ]
+  ],
+  "version": 2
 }

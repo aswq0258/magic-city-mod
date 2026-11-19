@@ -16,8 +16,17 @@ import io.github.aswq0258.magiccity.site.WorldTree;
 public final class QuestAnchors {
     private QuestAnchors() {}
 
-    /** 모르는 이름이면 null */
+    /**
+     * 모르는 이름이면 null. 지면 자리는 {x, z}, 정해진 높이에 세우는 자리(지하 NPC, {@link QuestMarks} 의 블록 자리)는 {x, z, y}.
+     */
     public static int[] resolve(String name) {
+        int[] surface = surface(name);
+        if (surface != null) return surface;
+        QuestMarks.Mark m = QuestMarks.resolve(name);
+        return m != null && m.hasY() ? new int[]{m.x(), m.z(), m.y()} : null;
+    }
+
+    private static int[] surface(String name) {
         return switch (name) {
             case "cursed_crossroads" -> new int[]{CursedLands.WX - 3, CursedLands.WZ - 6};
             case "worldtree_plaza" -> new int[]{WorldTree.OX + 3, WorldTree.OZ + 46};

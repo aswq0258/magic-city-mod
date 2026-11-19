@@ -39,6 +39,11 @@ public final class QuestNpcs {
      * 자리를 저장해 안내 좌표로 쓴다.
      */
     public static Villager spawn(ServerLevel level, String npcId, double x, double y, double z, float yaw) {
+        return spawn(level, npcId, x, y, z, yaw, 1.0);
+    }
+
+    /** 크기(scale, 드워프는 0.72)까지 정해 소환 */
+    public static Villager spawn(ServerLevel level, String npcId, double x, double y, double z, float yaw, double scale) {
         int removed = remove(level, npcId);
         level.getChunk(BlockPos.containing(x, y, z));
         Villager v = EntityType.VILLAGER.create(level);
@@ -51,6 +56,10 @@ public final class QuestNpcs {
         v.setPersistenceRequired();
         v.setCustomName(Component.literal(QuestManager.npc(npcId).name()));
         v.setCustomNameVisible(true);
+        if (scale != 1.0) {
+            var sc = v.getAttribute(net.minecraft.world.entity.ai.attributes.Attributes.SCALE);
+            if (sc != null) sc.setBaseValue(scale);
+        }
         v.addTag(TAG);
         v.addTag(ID_PREFIX + npcId);
         level.addFreshEntity(v);
@@ -99,13 +108,13 @@ public final class QuestNpcs {
         }
     }
 
-    /** 데이터 자리에 놓기 (지면 높이는 지금 월드 기준) */
+    /** 데이터 자리에 놓기 (지면 자리면 지금 월드의 지면 높이, 높이가 정해진 자리(지하)면 그 높이) */
     public static boolean placeAtAnchor(ServerLevel k, QuestManager.NpcDef def) {
         int[] at = QuestAnchors.resolve(def.spawnAnchor());
         if (at == null) return false;
         k.getChunk(at[0] >> 4, at[1] >> 4);
-        int y = k.getHeight(net.minecraft.world.level.levelgen.Heightmap.Types.MOTION_BLOCKING_NO_LEAVES, at[0], at[1]);
-        return spawn(k, def.id(), at[0] + 0.5, y, at[1] + 0.5, def.yaw()) != null;
+        int y = at.length > 2 ? at[2] : k.getHeight(net.minecraft.world.level.levelgen.Heightmap.Types.MOTION_BLOCKING_NO_LEAVES, at[0], at[1]);
+        return spawn(k, def.id(), at[0] + 0.5, y, at[1] + 0.5, def.yaw(), def.scale()) != null;
     }
 
     /** 오른쪽 클릭: 거래 창 대신 대화 */

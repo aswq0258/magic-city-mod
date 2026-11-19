@@ -31,9 +31,9 @@ public final class QuestManager {
     /**
      * NPC 이름, 평소 대사, 상시 선택지, 놓을 자리(spawnAnchor: {@link QuestAnchors} 이름, 빈 문자열 = 코드가 직접 놓음, 예: 왕좌의 전당 시종장)
      */
-    public record NpcDef(String id, String name, List<String> idle, List<Service> services, String spawnAnchor, float yaw) {
+    public record NpcDef(String id, String name, List<String> idle, List<Service> services, String spawnAnchor, float yaw, double scale) {
         public NpcDef(String id, String name, List<String> idle, List<Service> services) {
-            this(id, name, idle, services, "", 0F);
+            this(id, name, idle, services, "", 0F, 1.0);
         }
 
         public boolean offers(String serviceId) {
@@ -84,13 +84,16 @@ public final class QuestManager {
                         }
                         String anchor = "";
                         float yaw = 0F;
+                        double scale = 1.0;
                         if (o.has("spawn")) {
                             JsonObject sp = o.getAsJsonObject("spawn");
                             anchor = sp.get("anchor").getAsString();
                             if (QuestAnchors.resolve(anchor) == null) throw new IllegalArgumentException("모르는 자리: " + anchor);
                             yaw = sp.has("yaw") ? sp.get("yaw").getAsFloat() : 0F;
+                            scale = sp.has("scale") ? sp.get("scale").getAsDouble() : 1.0;
+                            if (scale < 0.3 || scale > 3) throw new IllegalArgumentException("scale 은 0.3~3");
                         }
-                        out.put(id, new NpcDef(id, o.has("name") ? o.get("name").getAsString() : id, List.copyOf(idle), List.copyOf(services), anchor, yaw));
+                        out.put(id, new NpcDef(id, o.has("name") ? o.get("name").getAsString() : id, List.copyOf(idle), List.copyOf(services), anchor, yaw, scale));
                     } catch (RuntimeException ex) {
                         MagicCityMod.LOGGER.error("[퀘스트] NPC {} 읽기 실패: {}", e.getKey(), ex.getMessage());
                     }
@@ -101,19 +104,35 @@ public final class QuestManager {
         });
     }
 
-    /** at_chapter 단계에 그 챕터 보스 자리 좌표를 채움 */
-    private static QuestDef withChapterPositions(QuestDef q) {
+    /**
+     * 좌표 채우기: at_chapter → 그 챕터 보스 자리, mark → 코드가 계산하는 자리(높이 범위 포함, QuestMarks),
+     * use_blocks 자리 이름 → 블록 좌표. 모르는 자리 이름이면 예외(그 퀘스트는 읽기 실패).
+     */
+    static QuestDef withChapterPositions(QuestDef q) {
         List<QuestDef.Step> steps = new ArrayList<>();
         for (QuestDef.Step s : q.steps()) {
+            QuestDef.Step t = s;
             if (s.atChapter() > 0) {
                 var ch = io.github.aswq0258.magiccity.boss.Story.CHAPTERS.get(s.atChapter() - 1);
-                steps.add(s.at(ch.x(), ch.z()));
-            } else {
-                steps.add(s);
+                t = t.at(ch.x(), ch.z());
             }
+            if (!s.mark().isEmpty()) {
+                QuestMarks.Mark m = QuestMarks.resolve(s.mark());
+                if (m == null) throw new IllegalArgumentException("모르는 자리: " + s.mark());
+                t = t.at(m.x(), m.z(), m.yMin(), m.yMax());
+            }
+            if (!s.blocks().isEmpty()) {
+                List<int[]> pos = new ArrayList<>();
+                for (String b : s.blocks()) {
+                    QuestMarks.Mark m = QuestMarks.resolve(b);
+                    if (m == null || !m.hasY()) throw new IllegalArgumentException("모르는 블록 자리: " + b);
+                    pos.add(new int[]{m.x(), m.y(), m.z()});
+                }
+                t = t.withBlocks(pos);
+            }
+            steps.add(t);
         }
-        return new QuestDef(q.id(), q.title(), q.giver(), q.hint(), q.requires(), q.offer(), q.accept(), q.decline(),
-                List.copyOf(steps), q.complete(), q.chapter(), q.requiresChapters());
+        return q.withSteps(steps);
     }
 
     /** 자리가 데이터로 정해진 NPC 들 */
