@@ -46,6 +46,8 @@ public final class Placer {
     private final int minX, minZ, maxX, maxZ, minY, maxY;
     private final BlockPos.MutableBlockPos cursor = new BlockPos.MutableBlockPos();
     private boolean sawWater = false;
+    /** WATER 패스에서 이미 다른 블록으로 덮여 있어 놓지 않은 물 칸 수 (서버 시작 뒤 누적, 점검용) */
+    public static volatile long coveredWater = 0;
 
     public Placer(ServerLevel level, ChunkPos chunk, Pass pass) {
         this.level = level;
@@ -117,6 +119,13 @@ public final class Placer {
         }
         BlockState old = level.getBlockState(cursor);
         if (old == state) return;
+        // WATER 패스 (2026-11-21 점검): SOLID 패스는 물 자리를 공기로 두므로, 지금 공기가 아니면 그 물은 나중에 다른 블록으로
+        // 덮인 것 → 물을 놓지 않음 (1장 납골당처럼 덮인 물길 끝에서 물이 새던 문제를 모든 건물에서 막음).
+        // 단, 실내 조명(빛 블록)은 SOLID 패스 끝에 빈 물길에도 놓이므로 물로 바꿈
+        if (pass == Pass.WATER && !old.isAir() && !old.is(Blocks.LIGHT)) {
+            coveredWater++;
+            return;
+        }
         // 다시 지을 때: 아직 열어 보지 않은 보물 상자·통을 지우면 그 자리에서 전리품이 만들어져 바닥에 쏟아지므로, 지우기 전에 전리품 표를 떼어 냄
         // (이미 열어 본 상자는 안의 물건을 그대로 떨어뜨려 플레이어 물건이 사라지지 않게 함)
         if (old.hasBlockEntity() && level.getBlockEntity(cursor) instanceof net.minecraft.world.level.block.entity.RandomizableContainerBlockEntity rc

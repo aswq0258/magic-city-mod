@@ -83,6 +83,7 @@ public final class CityBuildJob {
                     continue;
                 }
                 long sec = (System.currentTimeMillis() - startMillis) / 1000;
+                MagicCityMod.LOGGER.info("[건설] 물 패스: 다른 블록으로 덮여 물을 놓지 않은 칸 누적 {}개 (2026-11-21 점검)", Placer.coveredWater);
                 broadcast(String.format("§a[마법 도시] 완성! (%d분 %d초) 중심: %d, %d, %d",
                         sec / 60, sec % 60, layout.cx(), layout.base() + 1, layout.cz()));
                 return true;
