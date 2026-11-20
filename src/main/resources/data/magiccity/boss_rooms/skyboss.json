@@ -1,0 +1,7 @@
+{
+  "_comment": "[초안] 9장 폭풍의 결투장(부유섬) — 전장으로 뜰 범위 (보스 자리 기준 가로 ±radius, 아래 down ~ 위 up). claude/보스방복사전장_초안.md 4절. 바꾸면 /magiccity boss room-capture 9",
+  "radius": 21,
+  "down": 10,
+  "up": 20,
+  "underground": false
+}

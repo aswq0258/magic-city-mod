@@ -1,0 +1,7 @@
+{
+  "_comment": "[초안] 2장 저주받은 숲 제단 — 전장으로 뜰 범위 (보스 자리 기준 가로 ±radius, 아래 down ~ 위 up). claude/보스방복사전장_초안.md 4절. 바꾸면 /magiccity boss room-capture 2",
+  "radius": 20,
+  "down": 6,
+  "up": 24,
+  "underground": false
+}

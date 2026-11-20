@@ -1,0 +1,7 @@
+{
+  "_comment": "[초안] 3장 기생충의 둥지 — 전장으로 뜰 범위 (보스 자리 기준 가로 ±radius, 아래 down ~ 위 up). claude/보스방복사전장_초안.md 4절. 바꾸면 /magiccity boss room-capture 3",
+  "radius": 38,
+  "down": 4,
+  "up": 30,
+  "underground": true
+}

@@ -88,6 +88,9 @@ public final class ArenaManager {
         long phaseStart;
         UUID bossId;
         final List<ChunkPos> forced = new ArrayList<>();
+        /** 실제 보스 방 사본을 깔았으면 그 자리 (없으면 공용 전장) */
+        BossRooms.Placed room;
+        Vec3 roomPlayerSpot;
 
         Run(int chapter, ManagedBoss boss, List<UUID> members, BlockPos altar, long now) {
             this.chapter = chapter;
@@ -100,15 +103,23 @@ public final class ArenaManager {
         }
 
         Vec3 bossSpot() {
+            if (room != null) return room.bossSpot();
             return new Vec3(floor.getX() + 0.5, floor.getY() + 1 + boss.arenaYOffset(), floor.getZ() + 0.5);
         }
 
         Vec3 playerSpot() {
+            if (roomPlayerSpot != null) return roomPlayerSpot;
             return new Vec3(floor.getX() + 0.5, floor.getY() + 1, floor.getZ() + 16.5);
         }
 
         int radius() {
             return ArenaRules.radius(boss.arenaShape());
+        }
+
+        /** 전장 밖인지 (보스 방 사본이면 범위 상자, 아니면 공용 원형) */
+        boolean outside(Vec3 p) {
+            if (room != null) return room.outside(p);
+            return ArenaRules.outOfBounds(p.x - (floor.getX() + 0.5), p.y - floor.getY(), p.z - (floor.getZ() + 0.5), radius());
         }
     }
 
@@ -323,8 +334,7 @@ public final class ArenaManager {
                     return;
                 }
                 Vec3 c = r.bossSpot();
-                if (ArenaRules.outOfBounds(boss.getX() - c.x, boss.getY() - r.floor.getY(), boss.getZ() - c.z, r.radius()))
-                    boss.teleportTo(c.x, c.y, c.z);
+                if (r.outside(boss.position())) boss.teleportTo(c.x, c.y, c.z);
                 r.boss.arenaTick(arena, boss, alive, c, t);
                 if (el % 1200 == 0 && el > 0) {
                     long left = (ArenaRules.TIME_LIMIT_TICKS - el) / 1200;
@@ -356,7 +366,16 @@ public final class ArenaManager {
             r.forced.add(new ChunkPos(x, z));
         }
         clearEntities(arena, r);
-        ArenaShapes.build(arena, r.floor, r.boss.arenaShape());
+        // 실제 보스 방 사본 (처음이면 지금 지역에서 뜸). 없으면 공용 전장 (2026-11-20)
+        BossRooms.clearArea(arena, r.floor.getX(), r.floor.getZ(), 52, 20, 160);
+        BossRooms.Room room = BossRooms.get(s, r.boss);
+        if (room != null) {
+            r.room = BossRooms.place(arena, room, r.floor.getX(), ArenaRules.FLOOR_Y, r.floor.getZ());
+            r.roomPlayerSpot = BossRooms.playerSpot(arena, r.room);
+            clearEntities(arena, r);                                                    // 깔면서 생긴 떨어진 물건 등
+        } else {
+            ArenaShapes.build(arena, r.floor, r.boss.arenaShape());
+        }
         Vec3 spot = r.playerSpot();
         for (UUID u : new ArrayList<>(r.members)) {
             ServerPlayer p = online(s, u);
@@ -390,7 +409,7 @@ public final class ArenaManager {
         for (UUID u : r.members) {
             ServerPlayer p = arena.getServer().getPlayerList().getPlayer(u);
             if (p == null || p.level() != arena) continue;
-            if (ArenaRules.outOfBounds(p.getX() - (r.floor.getX() + 0.5), p.getY() - r.floor.getY(), p.getZ() - (r.floor.getZ() + 0.5), r.radius())) {
+            if (r.outside(p.position())) {
                 p.teleportTo(arena, spot.x, spot.y, spot.z, p.getYRot(), p.getXRot());
                 p.fallDistance = 0;
             }
@@ -528,11 +547,11 @@ public final class ArenaManager {
     }
 
     public static void onBreak(BlockEvent.BreakEvent event) {
-        if (event.getLevel() instanceof Level l && inArena(l) && !event.getPlayer().isCreative()) event.setCanceled(true);
+        if (event.getLevel() instanceof Level l && inArena(l)) event.setCanceled(true);          // 크리에이티브도 막음 (2026-11-20)
     }
 
     public static void onPlace(BlockEvent.EntityPlaceEvent event) {
-        if (event.getLevel() instanceof Level l && inArena(l) && !(event.getEntity() instanceof Player pl && pl.isCreative())) event.setCanceled(true);
+        if (event.getLevel() instanceof Level l && inArena(l)) event.setCanceled(true);
     }
 
     public static void onExplode(ExplosionEvent.Detonate event) {
@@ -545,14 +564,14 @@ public final class ArenaManager {
     }
 
     public static void onUseItem(PlayerInteractEvent.RightClickItem event) {
-        if (inArena(event.getLevel()) && !event.getEntity().isCreative() && forbidden(event.getItemStack())) {
+        if (inArena(event.getLevel()) && forbidden(event.getItemStack())) {
             event.setCanceled(true);
             if (event.getEntity() instanceof ServerPlayer p) p.displayClientMessage(text("§c전장에서는 쓸 수 없습니다."), true);
         }
     }
 
     public static void onUseOnBlock(PlayerInteractEvent.RightClickBlock event) {
-        if (inArena(event.getLevel()) && !event.getEntity().isCreative() && forbidden(event.getItemStack())) event.setCanceled(true);
+        if (inArena(event.getLevel()) && forbidden(event.getItemStack())) event.setCanceled(true);
     }
 
     public static void onJoin(EntityJoinLevelEvent event) {

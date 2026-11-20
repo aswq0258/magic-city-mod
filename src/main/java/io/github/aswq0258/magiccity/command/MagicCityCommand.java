@@ -352,6 +352,23 @@ public final class MagicCityCommand {
                     boolean ok = io.github.aswq0258.magiccity.arena.ArenaManager.stop(ctx.getSource().getServer(), com.mojang.brigadier.arguments.IntegerArgumentType.getInteger(ctx, "chapter"));
                     ctx.getSource().sendSuccess(() -> Component.literal(ok ? "§e[보스전] 전장을 닫았습니다" : "§c그 장의 전장이 열려 있지 않음"), false);
                     return 1;
+                }))).then(Commands.literal("room-capture").then(Commands.argument("chapter", com.mojang.brigadier.arguments.IntegerArgumentType.integer(1, 12)).executes(ctx -> {
+                    int ch = com.mojang.brigadier.arguments.IntegerArgumentType.getInteger(ctx, "chapter");
+                    var b = io.github.aswq0258.magiccity.boss.ManagedBoss.forChapter(ch);
+                    var room = b == null ? null : io.github.aswq0258.magiccity.arena.BossRooms.capture(ctx.getSource().getServer(), b);
+                    if (room == null) {
+                        ctx.getSource().sendFailure(Component.literal("§c" + ch + "장 보스 방을 뜨지 못했습니다 (범위 데이터 없음 또는 높이 밖)"));
+                        return 0;
+                    }
+                    var sp = room.spec();
+                    ctx.getSource().sendSuccess(() -> Component.literal("§e[보스전] " + ch + "장 보스 방을 다시 떴습니다 (" + sp.sizeX() + "×" + sp.sizeY() + "×" + sp.sizeZ()
+                            + (room.playerRel() == null ? ", 제단 자리를 몰라 플레이어는 보스 둘레에 섬 — 제단 근처에서 다시 뜨면 제단 자리에 섬" : "") + "). 다음 입장부터 적용"), true);
+                    return 1;
+                }))).then(Commands.literal("room-clear").then(Commands.argument("chapter", com.mojang.brigadier.arguments.IntegerArgumentType.integer(1, 12)).executes(ctx -> {
+                    int ch = com.mojang.brigadier.arguments.IntegerArgumentType.getInteger(ctx, "chapter");
+                    boolean ok = io.github.aswq0258.magiccity.arena.BossRooms.clear(ctx.getSource().getServer(), ch);
+                    ctx.getSource().sendSuccess(() -> Component.literal(ok ? "§e[보스전] " + ch + "장 보스 방 사본을 지웠습니다. 다음 입장 때 다시 뜹니다" : "§7" + ch + "장 사본이 없습니다"), true);
+                    return 1;
                 }))).then(Commands.literal("patterns").executes(ctx -> {
                     ctx.getSource().sendSuccess(() -> Component.literal(io.github.aswq0258.magiccity.boss.BossPatterns.list()), false);
                     return 1;
