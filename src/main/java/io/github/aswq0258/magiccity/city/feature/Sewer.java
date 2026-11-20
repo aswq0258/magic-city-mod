@@ -151,7 +151,9 @@ public class Sewer extends Feature {
                     for (int y = F; y <= F + 6; y++) if (!isOpen(u, v, y, F)) p.set(x, y, z, brick(x, y, z));
                     continue;
                 }
-                p.set(x, F, z, lat == 0 ? WATER : brick(x, F, z));
+                // 방(납골당·감옥·저수조)과 닿는 끝 칸에는 물을 두지 않음: 물 패스는 나중에 방 벽·방 안 공기로 덮인 물까지 놓아서
+                // 납골당 입구 계단 위에 물 근원이 생기고 납골당 바닥으로 흘러내렸음 (2026-11-20 게임 확인)
+                p.set(x, F, z, lat == 0 && !openEnd(u, v) ? WATER : brick(x, F, z));
                 int top = al == 2 ? 4 : 5;
                 for (int ly = 1; ly <= top; ly++) p.set(x, F + ly, z, AIR);
                 for (int ly = top + 1; ly <= 6; ly++) p.set(x, F + ly, z, brick(x, F + ly, z));

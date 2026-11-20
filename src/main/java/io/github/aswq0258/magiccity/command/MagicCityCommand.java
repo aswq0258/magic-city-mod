@@ -119,6 +119,17 @@ public final class MagicCityCommand {
                 .then(io.github.aswq0258.magiccity.quest.QuestCommand.admin())
                 .then(Commands.literal("fix").then(Commands.literal("roads").executes(MagicCityCommand::fixRoads))
                         .then(Commands.literal("npcs").executes(MagicCityCommand::fixNpcs))
+                        .then(Commands.literal("crypt").executes(ctx -> {
+                            CommandSourceStack src = ctx.getSource();
+                            ServerLevel k = src.getServer().getLevel(io.github.aswq0258.magiccity.world.ModWorldgen.KINGDOM);
+                            if (k == null) {
+                                src.sendFailure(Component.literal("[마법 도시] 왕국 대륙이 없습니다."));
+                                return 0;
+                            }
+                            int n = io.github.aswq0258.magiccity.site.CryptFix.run(k);
+                            src.sendSuccess(() -> Component.literal("[마법 도시] 하수도 납골당의 물을 빼고 양탄자를 다시 깔았습니다 (블록 " + n + "개). 바닥에 떨어진 양탄자 아이템은 그대로 남습니다."), true);
+                            return n;
+                        }))
                         .then(Commands.literal("lava").executes(ctx -> fixLava(ctx, 512))
                                 .then(Commands.argument("radius", com.mojang.brigadier.arguments.IntegerArgumentType.integer(16, 4096))
                                         .executes(ctx -> fixLava(ctx, com.mojang.brigadier.arguments.IntegerArgumentType.getInteger(ctx, "radius")))))
