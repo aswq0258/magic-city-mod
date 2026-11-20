@@ -1,0 +1,22 @@
+{
+  "_comment": "[초안] 챕터 보스 꾸러미에 더하는 fantasyrpg 재료. first = 그 장 첫 완료, repeat = 반복. fantasyrpg 가 없으면 건너뜀 / 2026-11-21 룬석: 첫 완료 상급 룬석 1(장마다 정한 종류)·룬 원석 10, 반복 원석 5 (claude/룬석_재료드롭_초안.md 5절)",
+  "first": [
+    {
+      "item": "fantasyrpg:rune_guard",
+      "count": 1,
+      "components": {
+        "fantasyrpg:rune_grade": 3
+      }
+    },
+    {
+      "item": "fantasyrpg:rune_ore",
+      "count": 10
+    }
+  ],
+  "repeat": [
+    {
+      "item": "fantasyrpg:rune_ore",
+      "count": 5
+    }
+  ]
+}

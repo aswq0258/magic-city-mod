@@ -207,6 +207,7 @@
 - 모든 차원에서 크리퍼가 생기지 않음: 자연 생성 목록에서 뺌(`data/magiccity/neoforge/biome_modifier/no_creepers.json`), 스폰 알·스포너·명령·번개로 생기는 것도 막음, 이미 있던 크리퍼는 그 청크를 불러올 때 사라짐
 
 ## 보스 꾸러미 지역 소재 (2026-11-20)
+- 2026-11-21 룬석: 꾸러미 항목에 `components`(아이템 부가 정보)를 적을 수 있음 — 예 `{"item": "fantasyrpg:rune_life", "count": 1, "components": {"fantasyrpg:rune_grade": 3}}`. 챕터 보스 12종 `boss_materials`(첫 완료 상급 룬석 1·룬 원석 10 / 반복 원석 5), 필드보스 10마리 `field_boss_loot`(첫 처치 중급 룬석 1·원석 6 / 반복 원석 3). 읽지 못하면 그 항목만 건너뜀
 - `fantasyrpg` 계열 방어구 핵심 부품 재료를 보스 꾸러미에 더함 (fantasyrpg 가 없으면 건너뜀). 챕터 보스 = `data/magiccity/boss_materials/<보스 키>.json`(그 장 첫 완료 6 / 반복 3), 필드보스 = `field_boss_loot` 안(첫 4 / 반복 2)
 - 성역 결정: 1장·8장 + 약탈단 흑마법사 / 드워프 강철: 5장 + 산악 파괴수 / 용린: 11장 + 고갯길의 비룡 / 월은사: 3장 + 숲의 여왕거미 / 고대 각인석: 7장·9장 + 균열의 감시자
 - 드워프 대장간의 5×5 작업대 단은 `fantasyrpg:workbench_5x5`(장인 작업대)

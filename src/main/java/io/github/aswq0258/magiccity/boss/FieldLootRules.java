@@ -19,7 +19,12 @@ public final class FieldLootRules {
     public static final String[] KEYS = {"frost_bear", "queen_spider", "mountain_ravager", "pass_wyvern", "raider_evoker",
             "plague_giant", "river_lord", "swamp_witch", "cursed_archer", "rift_watcher"};
 
-    public record Entry(String item, int count) {}
+    /** components: 아이템 부가 정보(예: fantasyrpg 룬석 등급 {"fantasyrpg:rune_grade": 3}), 없으면 null (2026-11-21) */
+    public record Entry(String item, int count, JsonObject components) {
+        public Entry(String item, int count) {
+            this(item, count, null);
+        }
+    }
 
     public record Loot(String name, List<Entry> first, List<Entry> repeat) {}
 
@@ -60,7 +65,8 @@ public final class FieldLootRules {
             int count = x.has("count") ? x.get("count").getAsInt() : 1;
             if (!item.contains(":")) throw new IllegalArgumentException("아이템 id 는 네임스페이스 포함: " + item);
             if (count < 1 || count > 64) throw new IllegalArgumentException(item + " 수량은 1~64");
-            out.add(new Entry(item, count));
+            JsonObject comp = x.has("components") && x.get("components").isJsonObject() ? x.getAsJsonObject("components") : null;
+            out.add(new Entry(item, count, comp));
         }
         return out;
     }

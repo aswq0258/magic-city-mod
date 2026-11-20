@@ -76,6 +76,28 @@ public final class FieldLoot {
         return it;
     }
 
+    /**
+     * 꾸러미에 넣을 아이템 묶음. 다른 모드 아이템이 없으면 빈 것. components(부가 정보, 예: 룬석 등급)를 읽지 못하면
+     * 잘못된 등급으로 주지 않도록 빈 것 + 로그 (2026-11-21 룬석 꾸러미)
+     */
+    public static net.minecraft.world.item.ItemStack stack(FieldLootRules.Entry e) {
+        Item it = item(e);
+        if (it == Items.AIR) return net.minecraft.world.item.ItemStack.EMPTY;
+        net.minecraft.world.item.ItemStack s = new net.minecraft.world.item.ItemStack(it, e.count());
+        if (e.components() == null) return s;
+        var server = net.neoforged.neoforge.server.ServerLifecycleHooks.getCurrentServer();
+        com.mojang.serialization.DynamicOps<com.google.gson.JsonElement> ops = server != null
+                ? net.minecraft.resources.RegistryOps.create(com.mojang.serialization.JsonOps.INSTANCE, server.registryAccess())
+                : com.mojang.serialization.JsonOps.INSTANCE;
+        var r = net.minecraft.core.component.DataComponentPatch.CODEC.parse(ops, e.components());
+        if (r.error().isPresent()) {
+            MagicCityMod.LOGGER.warn("[보스] 꾸러미 아이템 {} 의 components 를 읽지 못해 건너뜀: {}", e.item(), r.error().get().message());
+            return net.minecraft.world.item.ItemStack.EMPTY;
+        }
+        s.applyComponents(r.result().get());
+        return s;
+    }
+
     /** 플레이어별 처치 기록 (길 번호 비트) */
     public static final class Kills extends SavedData {
         final Map<UUID, Integer> masks = new HashMap<>();
@@ -118,8 +140,8 @@ public final class FieldLoot {
             boolean first = FieldLootRules.firstKill(mask, road);
             List<ItemStack> items = new ArrayList<>();
             for (FieldLootRules.Entry e : FieldLootRules.pick(l, first)) {
-                Item it = item(e);
-                if (it != Items.AIR) items.add(new ItemStack(it, e.count()));
+                ItemStack st = stack(e);
+                if (!st.isEmpty()) items.add(st);
             }
             Pouches.give(p, LootPouchItem.make(bossName + (first ? "의 첫 전리품 꾸러미" : "의 전리품 꾸러미"), items), level.dimension(), room, ROOM_R);
             if (first) {

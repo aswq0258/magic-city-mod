@@ -58,8 +58,8 @@ public final class BossMaterials {
         List<ItemStack> out = new ArrayList<>();
         if (l == null) return out;
         for (FieldLootRules.Entry e : FieldLootRules.pick(l, first)) {
-            Item it = FieldLoot.item(e);
-            if (it != Items.AIR) out.add(new ItemStack(it, e.count()));
+            ItemStack st = FieldLoot.stack(e);                                                   // 룬석 등급 등 부가 정보 포함
+            if (!st.isEmpty()) out.add(st);
         }
         return out;
     }

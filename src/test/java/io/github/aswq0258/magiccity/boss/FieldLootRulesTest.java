@@ -68,4 +68,33 @@ class FieldLootRulesTest {
         assertThrows(IllegalArgumentException.class, () -> FieldLootRules.parse(JsonParser.parseString(
                 "{\"first\":[{\"item\":\"minecraft:dirt\",\"count\":65}],\"repeat\":[{\"item\":\"minecraft:dirt\"}]}").getAsJsonObject()));
     }
+
+    @org.junit.jupiter.api.Test
+    @org.junit.jupiter.api.DisplayName("부가 정보(components): 룬석 등급을 읽고, 없으면 null (2026-11-21 룬석 꾸러미)")
+    void components() {
+        FieldLootRules.Loot l = FieldLootRules.parse(com.google.gson.JsonParser.parseString(
+                "{\"first\":[{\"item\":\"fantasyrpg:rune_life\",\"count\":1,\"components\":{\"fantasyrpg:rune_grade\":2}},{\"item\":\"fantasyrpg:rune_ore\",\"count\":6}],"
+                + "\"repeat\":[{\"item\":\"fantasyrpg:rune_ore\",\"count\":3}]}").getAsJsonObject());
+        org.junit.jupiter.api.Assertions.assertEquals(2, l.first().get(0).components().get("fantasyrpg:rune_grade").getAsInt());
+        org.junit.jupiter.api.Assertions.assertNull(l.first().get(1).components());
+        org.junit.jupiter.api.Assertions.assertEquals(3, FieldLootRules.count(l.repeat(), "fantasyrpg:rune_ore"));
+    }
+
+    @org.junit.jupiter.api.Test
+    @org.junit.jupiter.api.DisplayName("배포 데이터: 필드보스 10마리 첫 처치에 중급 룬석 1, 챕터 보스 12종 첫 완료에 상급 룬석 1")
+    void shippedRunes() throws java.io.IOException {
+        java.nio.file.Path base = java.nio.file.Path.of("src/main/resources/data/magiccity");
+        for (String k : FieldLootRules.KEYS) checkRune(base.resolve("field_boss_loot/" + k + ".json"), 2);
+        for (String k : new String[]{"plague", "cursedboss", "parasite", "frost", "furnace", "deep", "tombboss", "grimbald", "skyboss", "watcher", "dragon", "gatekeeper"})
+            checkRune(base.resolve("boss_materials/" + k + ".json"), 3);
+    }
+
+    private static void checkRune(java.nio.file.Path p, int grade) throws java.io.IOException {
+        FieldLootRules.Loot l = FieldLootRules.parse(com.google.gson.JsonParser.parseString(java.nio.file.Files.readString(p)).getAsJsonObject());
+        long runes = l.first().stream().filter(e -> e.item().startsWith("fantasyrpg:rune_") && !e.item().equals("fantasyrpg:rune_ore")
+                && e.components() != null && e.components().get("fantasyrpg:rune_grade").getAsInt() == grade).count();
+        org.junit.jupiter.api.Assertions.assertEquals(1, runes, p.toString());
+        org.junit.jupiter.api.Assertions.assertTrue(FieldLootRules.count(l.first(), "fantasyrpg:rune_ore") > 0, p.toString());
+        org.junit.jupiter.api.Assertions.assertTrue(FieldLootRules.count(l.repeat(), "fantasyrpg:rune_ore") > 0, p.toString());
+    }
 }
