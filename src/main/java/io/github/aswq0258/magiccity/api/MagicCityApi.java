@@ -62,4 +62,17 @@ public final class MagicCityApi {
      * 다른 모드는 자기 피해 감소·무효 처리를 이 피해에 적용하지 않는다(흡수 체력은 바닐라가 먼저 깎음).
      */
     public static boolean isBossFixed(net.minecraft.world.damagesource.DamageSource source) { return io.github.aswq0258.magiccity.boss.BossPatterns.isFixed(source); }
+
+    // ───────── 파티 (API 버전 1 그대로: 추가만 함, 2026-11-21) ─────────
+
+    /** 접속 중인 파티원 (FTB Teams 파티, 본인 포함·맨 앞). 파티가 없거나 FTB Teams 가 없으면 본인만 */
+    public static java.util.List<ServerPlayer> partyMembers(ServerPlayer p) { return io.github.aswq0258.magiccity.arena.Party.onlineMembers(p); }
+
+    // ───────── 마을 (API 버전 1 그대로: 추가만 함, 2026-11-21) ─────────
+
+    /** 왕국 차원의 마을 안인지: 왕성도시·신시가지, 드워프 요새, 항구도시, 국경도시, 작은 마을, 세계수 성역, 길가 쉼터 (폐왕도 제외) */
+    public static boolean inTown(ServerPlayer p) {
+        return p.level().dimension().equals(io.github.aswq0258.magiccity.world.ModWorldgen.KINGDOM)
+                && io.github.aswq0258.magiccity.world.Towns.at(p.getX(), p.getZ());
+    }
 }
