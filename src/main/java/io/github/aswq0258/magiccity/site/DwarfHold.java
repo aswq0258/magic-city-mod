@@ -112,7 +112,7 @@ public final class DwarfHold implements BuildLayout {
     }
 
     /** `fantasyrpg`가 5×5 작업대를 등록했으면 그 블록, 없으면 바닐라 작업대. ID 는 확정되면 맨 앞에 둠 */
-    static final String[] BENCH_IDS = {"fantasyrpg:master_workbench", "fantasyrpg:workbench_5x5", "fantasyrpg:crafting_table_5x5"};
+    static final String[] BENCH_IDS = {"fantasyrpg:workbench_5x5", "fantasyrpg:master_workbench", "fantasyrpg:crafting_table_5x5"};
 
     static BlockState benchBlock() {
         for (String id : BENCH_IDS) {

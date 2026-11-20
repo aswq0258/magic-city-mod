@@ -1,0 +1,15 @@
+{
+  "_comment": "[초안] 3장 보스 꾸러미에 더하는 지역 소재 월은사 (fantasyrpg 계열 방어구 핵심 부품 재료, claude/작업대_방어구제작_초안.md 4절). first = 그 장 첫 완료, repeat = 반복. fantasyrpg 가 없으면 건너뜀",
+  "first": [
+    {
+      "item": "fantasyrpg:moonsilver_thread",
+      "count": 6
+    }
+  ],
+  "repeat": [
+    {
+      "item": "fantasyrpg:moonsilver_thread",
+      "count": 3
+    }
+  ]
+}

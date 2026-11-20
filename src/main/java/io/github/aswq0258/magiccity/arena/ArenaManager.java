@@ -426,9 +426,15 @@ public final class ArenaManager {
             ServerPlayer p = online(s, u);
             if (p != null) players.add(p);
         }
+        Map<UUID, Boolean> first = new HashMap<>();
+        for (ServerPlayer p : players) first.put(p.getUUID(), !Story.cleared(p, r.chapter));
         Story.creditPlayers(players, r.chapter);
-        ItemStack pouch = LootPouchItem.make(r.boss.name() + "의 전리품 꾸러미", List.of(r.boss.lootStacks()));
-        for (ServerPlayer p : players) Pouches.give(p, pouch, ARENA, Vec3.atCenterOf(r.floor), 200);
+        for (ServerPlayer p : players) {
+            List<ItemStack> items = new ArrayList<>(List.of(r.boss.lootStacks()));
+            // 지역 소재 (fantasyrpg 계열 방어구 재료): 그 장 첫 완료면 많이, 반복이면 조금 (2026-11-20)
+            items.addAll(io.github.aswq0258.magiccity.boss.BossMaterials.stacks(r.boss.key(), first.getOrDefault(p.getUUID(), false)));
+            Pouches.give(p, LootPouchItem.make(r.boss.name() + "의 전리품 꾸러미", items), ARENA, Vec3.atCenterOf(r.floor), 200);
+        }
         if (r.boss.hasPreFight()) r.boss.resetPreFight();
         tell(s, r.members, text("§a[보스전] 승리! 30초 뒤 제단으로 돌아갑니다."));
     }

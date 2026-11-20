@@ -67,9 +67,12 @@ public final class FieldLoot {
         });
     }
 
-    private static Item item(FieldLootRules.Entry e) {
-        Item it = BuiltInRegistries.ITEM.get(ResourceLocation.parse(e.item()));
-        if (it == Items.AIR) throw new IllegalArgumentException("모르는 아이템: " + e.item());
+    /** 아이템 찾기. 다른 모드(fantasyrpg 지역 소재 등) 아이템은 그 모드가 없으면 빈 것(건너뜀), 바닐라·magiccity 아이템이 없으면 오류 */
+    static Item item(FieldLootRules.Entry e) {
+        ResourceLocation id = ResourceLocation.parse(e.item());
+        Item it = BuiltInRegistries.ITEM.get(id);
+        if (it == Items.AIR && (id.getNamespace().equals("minecraft") || id.getNamespace().equals(MagicCityMod.MODID)))
+            throw new IllegalArgumentException("모르는 아이템: " + e.item());
         return it;
     }
 
@@ -114,7 +117,10 @@ public final class FieldLoot {
             int mask = k.masks.getOrDefault(p.getUUID(), 0);
             boolean first = FieldLootRules.firstKill(mask, road);
             List<ItemStack> items = new ArrayList<>();
-            for (FieldLootRules.Entry e : FieldLootRules.pick(l, first)) items.add(new ItemStack(item(e), e.count()));
+            for (FieldLootRules.Entry e : FieldLootRules.pick(l, first)) {
+                Item it = item(e);
+                if (it != Items.AIR) items.add(new ItemStack(it, e.count()));
+            }
             Pouches.give(p, LootPouchItem.make(bossName + (first ? "의 첫 전리품 꾸러미" : "의 전리품 꾸러미"), items), level.dimension(), room, ROOM_R);
             if (first) {
                 k.masks.put(p.getUUID(), FieldLootRules.markKill(mask, road));

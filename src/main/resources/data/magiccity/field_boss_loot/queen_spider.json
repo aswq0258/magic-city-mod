@@ -1,5 +1,5 @@
 {
-  "_comment": "[초안] 필드보스 꾸러미 (claude/인스턴스전장_구현초안.md 9절). first = 플레이어별 첫 처치, repeat = 그 뒤",
+  "_comment": "[초안] 필드보스 꾸러미 (claude/인스턴스전장_구현초안.md 9절). first = 플레이어별 첫 처치, repeat = 그 뒤 2026-11-20: 지역 소재(fantasyrpg) 첫 4 / 반복 2, fantasyrpg 가 없으면 건너뜀.",
   "name": "숲의 여왕거미",
   "first": [
     {
@@ -29,6 +29,10 @@
     {
       "item": "minecraft:spider_eye",
       "count": 4
+    },
+    {
+      "item": "fantasyrpg:moonsilver_thread",
+      "count": 4
     }
   ],
   "repeat": [
@@ -55,6 +59,10 @@
     {
       "item": "minecraft:spider_eye",
       "count": 1
+    },
+    {
+      "item": "fantasyrpg:moonsilver_thread",
+      "count": 2
     }
   ]
 }

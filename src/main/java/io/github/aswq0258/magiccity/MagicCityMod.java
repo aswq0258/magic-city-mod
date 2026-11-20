@@ -55,6 +55,7 @@ public class MagicCityMod {
         NeoForge.EVENT_BUS.addListener(io.github.aswq0258.magiccity.boss.Progression::onIncomingDamage);
         NeoForge.EVENT_BUS.addListener(io.github.aswq0258.magiccity.boss.BossPatterns::onAddReloadListeners);
         NeoForge.EVENT_BUS.addListener(io.github.aswq0258.magiccity.boss.FieldLoot::onAddReloadListeners);
+        NeoForge.EVENT_BUS.addListener(io.github.aswq0258.magiccity.boss.BossMaterials::onAddReloadListeners);
         NeoForge.EVENT_BUS.addListener(io.github.aswq0258.magiccity.arena.BossRooms::onAddReloadListeners);
         NeoForge.EVENT_BUS.addListener(io.github.aswq0258.magiccity.boss.BossPatterns::onServerTick);
         // 개인 퀘스트·퀘스트 NPC (2026-11-19)

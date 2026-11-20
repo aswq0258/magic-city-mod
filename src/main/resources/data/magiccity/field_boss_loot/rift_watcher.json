@@ -1,5 +1,5 @@
 {
-  "_comment": "[초안] 필드보스 꾸러미 (claude/인스턴스전장_구현초안.md 9절). first = 플레이어별 첫 처치, repeat = 그 뒤",
+  "_comment": "[초안] 필드보스 꾸러미 (claude/인스턴스전장_구현초안.md 9절). first = 플레이어별 첫 처치, repeat = 그 뒤 2026-11-20: 지역 소재(fantasyrpg) 첫 4 / 반복 2, fantasyrpg 가 없으면 건너뜀.",
   "name": "균열의 감시자",
   "first": [
     {
@@ -25,6 +25,10 @@
     {
       "item": "minecraft:blaze_rod",
       "count": 6
+    },
+    {
+      "item": "fantasyrpg:ancient_glyphstone",
+      "count": 4
     }
   ],
   "repeat": [
@@ -46,6 +50,10 @@
     },
     {
       "item": "minecraft:blaze_rod",
+      "count": 2
+    },
+    {
+      "item": "fantasyrpg:ancient_glyphstone",
       "count": 2
     }
   ]
