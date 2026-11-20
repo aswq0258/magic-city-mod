@@ -196,6 +196,7 @@ public final class ArenaManager {
         BlockPos altar = SealAltar.core(chapter);
         if (altar == null) altar = p.blockPosition();
         List<UUID> ids = party.stream().map(Entity::getUUID).toList();
+        warnGradeGap(s, chapter, party, ids);
         Vote v = new Vote(chapter, p.getUUID(), ids, now);
         if (v.result(now) == VoteResult.PASSED) {                                              // 파티가 없으면 바로
             start(s, v, altar);
@@ -212,6 +213,25 @@ public final class ArenaManager {
             if (m != null && !u.equals(p.getUUID())) m.sendSystemMessage(row);
         }
         p.sendSystemMessage(text("§7(투표를 시작했습니다. 파티원 " + (ids.size() - 1) + "명의 응답을 기다립니다)"));
+    }
+
+    /** 파티원 등급 차 경고 (2026-11-21): 보스는 파티 최고 진행도로 정해지므로 뒤처진 파티원을 알려 줌 */
+    private static void warnGradeGap(MinecraftServer s, int chapter, List<ServerPlayer> party, List<UUID> ids) {
+        if (party.size() < 2) return;
+        int gap = io.github.aswq0258.magiccity.boss.Progression.config().warn_grade_gap;
+        int best = 0;
+        for (ServerPlayer m : party) best = Math.max(best, io.github.aswq0258.magiccity.boss.Progression.completed(m));
+        int boss = io.github.aswq0258.magiccity.boss.ProgressionRules.bossGrade(chapter, best);
+        StringBuilder low = new StringBuilder();
+        for (ServerPlayer m : party) {
+            int g = io.github.aswq0258.magiccity.boss.Progression.grade(m);
+            if (!io.github.aswq0258.magiccity.boss.ProgressionRules.gradeGapWarn(boss, g, gap)) continue;
+            if (low.length() > 0) low.append(", ");
+            low.append(m.getName().getString()).append("(").append(g).append("급)");
+        }
+        if (low.length() == 0) return;
+        tell(s, ids, text("§e[보스전] 주의: 보스는 파티 최고 진행도에 맞춰 " + boss + "급으로 나옵니다. "
+                + low + "에게는 훨씬 강합니다."));
     }
 
     private static final Map<Vote, BlockPos> pendingAltar = new HashMap<>();

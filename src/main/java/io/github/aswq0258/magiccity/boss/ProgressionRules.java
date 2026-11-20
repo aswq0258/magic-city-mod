@@ -25,6 +25,14 @@ public final class ProgressionRules {
         return Math.min(MAX_GRADE, completed / 2 + 1);
     }
 
+    /**
+     * 파티 등급 차 경고 (2026-11-21): 보스 등급이 그 파티원 등급보다 gap 이상 높으면 경고. gap 0 이하면 끔.
+     * 보스는 파티 최고 진행도로 정해지므로, 뒤처진 파티원에게는 훨씬 강하게 느껴진다.
+     */
+    public static boolean gradeGapWarn(int bossGrade, int memberGrade, int gap) {
+        return gap > 0 && bossGrade - memberGrade >= gap;
+    }
+
     /** 챕터 보스의 등급: 11·12장은 6급 고정, 나머지는 파티 최고 진행도 */
     public static int bossGrade(int chapter, int partyMaxCompleted) {
         if (chapter >= 11) return MAX_GRADE;

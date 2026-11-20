@@ -51,6 +51,15 @@ class ProgressionRulesTest {
     }
 
     @Test
+    @DisplayName("파티 등급 차 경고: 보스 등급 − 파티원 등급 ≥ 기준이면 경고, 기준 0이면 끔")
+    void gradeGapWarn() {
+        assertTrue(ProgressionRules.gradeGapWarn(4, 2, 2));
+        assertFalse(ProgressionRules.gradeGapWarn(4, 3, 2));
+        assertFalse(ProgressionRules.gradeGapWarn(6, 1, 0));
+        assertTrue(ProgressionRules.gradeGapWarn(6, 5, 1));
+    }
+
+    @Test
     @DisplayName("보스 등급: 1~10장은 파티 최고 진행도, 11·12장은 6급 고정")
     void bossGrade() {
         assertEquals(1, ProgressionRules.bossGrade(1, 0));

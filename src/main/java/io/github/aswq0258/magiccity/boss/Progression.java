@@ -45,6 +45,8 @@ public final class Progression {
         public double[] boss_basic;
         /** 예전 항목 (쓰지 않음) */
         public double[] hp_scale;
+        /** 보스전 투표 때 파티원 등급이 보스보다 이만큼 이상 낮으면 경고 [초안], 0 = 끔 (2026-11-21) */
+        public int warn_grade_gap = 2;
     }
 
     private static Config config;
