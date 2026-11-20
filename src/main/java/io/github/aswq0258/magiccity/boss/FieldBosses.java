@@ -127,6 +127,7 @@ public final class FieldBosses {
         attr(m, Attributes.ARMOR, 10);
         attr(m, Attributes.KNOCKBACK_RESISTANCE, 0.9);
         attr(m, Attributes.FOLLOW_RANGE, 40);
+        BossData.applyField(FieldLootRules.key(s.road()), m);                                   // data/magiccity/field_boss_stats/<키>.json
         m.setHealth(m.getMaxHealth());
         if (d.weapon() != null) m.setItemSlot(EquipmentSlot.MAINHAND, new ItemStack(d.weapon()));
         for (EquipmentSlot slot : EquipmentSlot.values()) m.setDropChance(slot, 0F);

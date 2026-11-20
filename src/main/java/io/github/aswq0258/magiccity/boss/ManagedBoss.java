@@ -233,13 +233,20 @@ public abstract class ManagedBoss {
 
     private void wake(ServerLevel level, Vec3 c, List<ServerPlayer> party) {
         BlockPos at = BlockPos.containing(c.x, c.y, c.z);
-        Mob m = create(level, at);
-        if (m == null) return;
+        // 외부 보스 연결(data/magiccity/boss_entity/<키>.json)이 있고 그 몹이 게임에 있으면 그 몹, 아니면 기본(바닐라 바탕) 보스
+        BossDataRules.Link link = BossData.activeLink(key());
+        Mob m = link != null ? BossData.spawnExternal(level, link, c) : null;
+        if (m == null) {
+            link = null;
+            m = create(level, at);
+            if (m == null) return;
+            BossData.applyBoss(key(), m);                                                        // data/magiccity/boss_stats/<키>.json
+            m.setCustomName(Component.literal("§l" + name));
+            m.setCustomNameVisible(true);
+        }
         m.addTag(tag);
-        m.setCustomName(Component.literal("§l" + name));
-        m.setCustomNameVisible(true);
         m.setPersistenceRequired();
-        grade = Progression.apply(m, chapter, party);
+        grade = Progression.apply(m, chapter, party, link == null || link.gradeScaling());
         m.setHealth(m.getMaxHealth());
         id = m.getUUID();
         s66 = s33 = enraged = false;
@@ -249,17 +256,24 @@ public abstract class ManagedBoss {
     }
 
     private void fight(ServerLevel level, Mob boss, List<ServerPlayer> near, Vec3 c) {
-        if (bar == null) {
-            int g = Progression.gradeOf(boss);
-            if (g > 0) grade = g;
-            bar = new ServerBossEvent(Component.literal(name + (g > 0 ? " §7[" + g + "급]" : "")), color, BossEvent.BossBarOverlay.NOTCHED_20);
-        }
+        // 외부 보스: 연결 데이터대로 우리 기술·체력바를 끔 (연결이 /reload 로 사라졌으면 기술은 끄고 체력바만 띄움)
+        boolean external = BossData.isExternal(boss);
+        BossDataRules.Link link = external ? BossData.activeLink(key()) : null;
+        boolean skills = !external || (link != null && link.ourSkills());
+        boolean ourBar = !external || link == null || link.ourBossbar();
+        int g = Progression.gradeOf(boss);
+        if (g > 0) grade = g;
         float hp = boss.getHealth() / boss.getMaxHealth();
-        bar.setProgress(hp);
-        for (ServerPlayer p : near) bar.addPlayer(p);
-        for (ServerPlayer p : new ArrayList<>(bar.getPlayers())) if (!near.contains(p)) bar.removePlayer(p);
+        if (ourBar) {
+            if (bar == null)
+                bar = new ServerBossEvent(Component.literal(name + (g > 0 ? " §7[" + g + "급]" : "")), color, BossEvent.BossBarOverlay.NOTCHED_20);
+            bar.setProgress(hp);
+            for (ServerPlayer p : near) bar.addPlayer(p);
+            for (ServerPlayer p : new ArrayList<>(bar.getPlayers())) if (!near.contains(p)) bar.removePlayer(p);
+        } else clearBar();
         if (near.isEmpty()) return;                                                          // 전장: 전멸·시간 초과는 ArenaManager 가 판정
         empty = 0;
+        if (!skills) return;                                                                 // 외부 보스는 외부 모드가 움직임·공격을 정함
         if (boss.position().distanceToSqr(c) > leashR * leashR) boss.teleportTo(c.x, c.y, c.z);
         ServerPlayer target = null;
         double best = 1e9;

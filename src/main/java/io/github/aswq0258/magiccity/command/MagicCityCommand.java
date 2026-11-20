@@ -372,7 +372,28 @@ public final class MagicCityCommand {
                 }))).then(Commands.literal("patterns").executes(ctx -> {
                     ctx.getSource().sendSuccess(() -> Component.literal(io.github.aswq0258.magiccity.boss.BossPatterns.list()), false);
                     return 1;
-                })))
+                })).then(Commands.literal("stats").executes(ctx -> {
+                    // 보스 수치·외부 보스 연결 (데이터 boss_stats·field_boss_stats·boss_entity, 2026-11-20)
+                    StringBuilder b = new StringBuilder("§6[보스] 수치 데이터\n").append(io.github.aswq0258.magiccity.boss.BossData.describeGrades());
+                    for (var mb : io.github.aswq0258.magiccity.boss.ManagedBoss.ALL)
+                        b.append("\n§e").append(mb.chapter()).append("장 ").append(mb.name()).append(" (").append(mb.key()).append(")\n")
+                                .append(io.github.aswq0258.magiccity.boss.BossData.describe(mb.key()));
+                    b.append("\n§7필드보스: /magiccity boss stats <키> — ").append(String.join(", ", io.github.aswq0258.magiccity.boss.FieldLootRules.KEYS));
+                    String msg = b.toString();
+                    ctx.getSource().sendSuccess(() -> Component.literal(msg), false);
+                    return 1;
+                }).then(Commands.argument("key", com.mojang.brigadier.arguments.StringArgumentType.word())
+                        .suggests((c, sb) -> net.minecraft.commands.SharedSuggestionProvider.suggest(io.github.aswq0258.magiccity.boss.BossData.keys(), sb))
+                        .executes(ctx -> {
+                            String k = com.mojang.brigadier.arguments.StringArgumentType.getString(ctx, "key");
+                            if (k.matches("\\d+")) {
+                                var mb = io.github.aswq0258.magiccity.boss.ManagedBoss.forChapter(Integer.parseInt(k));
+                                if (mb != null) k = mb.key();
+                            }
+                            String key = k;
+                            ctx.getSource().sendSuccess(() -> Component.literal("§6[보스] " + key + "\n" + io.github.aswq0258.magiccity.boss.BossData.describe(key)), false);
+                            return 1;
+                        }))))
                 .then(Commands.literal("status").executes(ctx -> {
                     ctx.getSource().sendSuccess(() -> Component.literal(CityBuildManager.status()), false);
                     return 1;
@@ -403,8 +424,7 @@ public final class MagicCityCommand {
                             io.github.aswq0258.magiccity.boss.Progression.load();
                             var c = io.github.aswq0258.magiccity.boss.Progression.config();
                             ctx.getSource().sendSuccess(() -> Component.literal("§e[마법 도시] magiccity-progression.json 을 다시 읽었습니다. 등급 조정 "
-                                    + (c.enabled ? "켜짐" : "꺼짐") + " · 보스 기본 공격 " + java.util.Arrays.toString(c.boss_basic)
-                                    + " · 체력 배율 " + java.util.Arrays.toString(c.hp_scale)), true);
+                                    + (c.enabled ? "켜짐" : "꺼짐") + "\n" + io.github.aswq0258.magiccity.boss.BossData.describeGrades()), true);
                             return 1;
                         }))
                         .then(Commands.literal("reset").executes(ctx -> {

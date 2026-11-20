@@ -1,0 +1,8 @@
+{
+  "scale": 1.8,
+  "health": 150,
+  "attack": 6,
+  "armor": 4,
+  "knockback_resistance": 1.0,
+  "follow_range": 48
+}

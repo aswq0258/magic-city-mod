@@ -22,7 +22,8 @@ import java.util.List;
  *  - 보스가 깨어날 때(전투 시작) 그 자리 플레이어들 중 가장 높은 진행도로 등급을 정하고, 전투가 끝날 때까지 바꾸지 않는다.
  *  - 등급은 보스 엔티티의 저장 데이터에 남는다 (magiccity_grade, magiccity_dmg_scale).
  *  - 보스(와 탈것)가 플레이어에게 주는 피해는 모두 등급 배율을 곱한다 (근접·기술·소환 투사체의 주인이 보스인 경우).
- *  - 최대 체력 배율은 설정 파일 config/magiccity-progression.json 의 hp_scale (기본 1.0 = 기존 체력 그대로, 미정 수치).
+ *  - 등급별 보스 기본 공격·최대 체력 배율은 데이터 data/magiccity/boss_stats/_grades.json (기본 8/11/14/15/17/18, 체력 1.0).
+ *    설정 파일 config/magiccity-progression.json 에는 enabled(등급 조정 켜고 끄기)만 남음.
  *
  * 다른 모드(예: fantasyrpg)가 진행도를 쓰려면 {@link #completed(ServerPlayer)}, {@link #grade(ServerPlayer)},
  * {@link #levelCap(ServerPlayer)}, {@link #craftGrid(ServerPlayer)} 를 부르면 된다.
@@ -33,14 +34,17 @@ public final class Progression {
     public static final String GRADE_KEY = "magiccity_grade";
     public static final String SCALE_KEY = "magiccity_dmg_scale";
 
-    /** 설정 파일 내용 */
+    /**
+     * 설정 파일 내용. 2026-11-20부터 등급별 보스 기본 공격·체력 배율은 데이터 {@code data/magiccity/boss_stats/_grades.json} 으로 옮겼고
+     * 설정 파일에는 켜고 끄기만 남는다. 예전 파일에 있는 boss_basic·hp_scale 은 읽기만 하고 쓰지 않는다(로그 안내).
+     */
     public static final class Config {
         /** false 면 보스 등급 조정을 하지 않음 (기존 수치 그대로) */
         public boolean enabled = true;
-        /** 등급 1~6 의 보스 기본 공격 원본 피해 [초안] */
-        public double[] boss_basic = ProgressionRules.BOSS_BASIC.clone();
-        /** 등급 1~6 의 보스 최대 체력 배율 (보스마다 정해 둔 체력에 곱함) [미정 — 기본 1.0] */
-        public double[] hp_scale = {1, 1, 1, 1, 1, 1};
+        /** 예전 항목 (쓰지 않음) */
+        public double[] boss_basic;
+        /** 예전 항목 (쓰지 않음) */
+        public double[] hp_scale;
     }
 
     private static Config config;
@@ -59,7 +63,9 @@ public final class Progression {
         } catch (Exception e) {
             MagicCityMod.LOGGER.warn("magiccity-progression.json 을 읽지 못해 기본값을 씁니다: {}", e.toString());
         }
-        if (c == null || c.boss_basic == null || c.boss_basic.length < 6 || c.hp_scale == null || c.hp_scale.length < 6) {
+        if (c != null && (c.boss_basic != null || c.hp_scale != null))
+            MagicCityMod.LOGGER.info("magiccity-progression.json 의 boss_basic·hp_scale 은 이제 쓰지 않습니다 — 데이터 boss_stats/_grades.json 으로 옮겨졌습니다 (데이터팩으로 덮어쓰기).");
+        if (c == null) {
             c = new Config();
             try {
                 Files.createDirectories(file.getParent());
@@ -93,11 +99,16 @@ public final class Progression {
 
     /** 전투 시작 시 한 번: 파티 최고 진행도로 등급을 정해 보스(와 탈것)에 기록하고 체력을 맞춘다. 정한 등급을 돌려준다. */
     public static int apply(Mob boss, int chapter, List<ServerPlayer> party) {
+        return apply(boss, chapter, party, true);
+    }
+
+    /** scaling=false 면 등급만 기록하고 배율은 곱하지 않음 (외부 보스 연결의 grade_scaling) */
+    public static int apply(Mob boss, int chapter, List<ServerPlayer> party, boolean scaling) {
         int best = 0;
         for (ServerPlayer p : party) best = Math.max(best, completed(p));
         int grade = ProgressionRules.bossGrade(chapter, best);
         Config c = config();
-        if (!c.enabled) {
+        if (!c.enabled || !scaling) {
             boss.getPersistentData().putInt(GRADE_KEY, grade);
             return grade;
         }
@@ -108,14 +119,15 @@ public final class Progression {
     }
 
     private static void apply(Mob m, int grade, Config c) {
+        BossDataRules.Grades g = BossData.grades();                                          // data/magiccity/boss_stats/_grades.json
         AttributeInstance atk = m.getAttribute(Attributes.ATTACK_DAMAGE);
         double design = atk != null ? atk.getBaseValue() : 0;
-        double scale = design > 0 ? c.boss_basic[grade - 1] / design : 1.0;
+        double scale = g.damageScale(grade, design);
         CompoundTag t = m.getPersistentData();
         t.putInt(GRADE_KEY, grade);
         t.putDouble(SCALE_KEY, scale);
         AttributeInstance hp = m.getAttribute(Attributes.MAX_HEALTH);
-        double hs = c.hp_scale[grade - 1];
+        double hs = g.hpScale(grade);
         if (hp != null && hs > 0 && hs != 1.0) {
             hp.setBaseValue(Math.max(1, hp.getBaseValue() * hs));
             m.setHealth(m.getMaxHealth());
