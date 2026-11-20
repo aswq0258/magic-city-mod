@@ -182,6 +182,9 @@
 - 2·7·9·11·12장 보스는 공용 틀(`ClassicBosses`)로 옮김 (기술·부하·전리품은 그대로)
 - 시험용: `/magiccity boss arena`(상태) · `boss arena-start <장>`(혼자 바로, 조건 무시) · `boss arena-stop <장>`
 
+## 크리퍼 없음 (2026-11-20)
+- 모든 차원에서 크리퍼가 생기지 않음: 자연 생성 목록에서 뺌(`data/magiccity/neoforge/biome_modifier/no_creepers.json`), 스폰 알·스포너·명령·번개로 생기는 것도 막음, 이미 있던 크리퍼는 그 청크를 불러올 때 사라짐
+
 ## 보스 꾸러미 지역 소재 (2026-11-20)
 - `fantasyrpg` 계열 방어구 핵심 부품 재료를 보스 꾸러미에 더함 (fantasyrpg 가 없으면 건너뜀). 챕터 보스 = `data/magiccity/boss_materials/<보스 키>.json`(그 장 첫 완료 6 / 반복 3), 필드보스 = `field_boss_loot` 안(첫 4 / 반복 2)
 - 성역 결정: 1장·8장 + 약탈단 흑마법사 / 드워프 강철: 5장 + 산악 파괴수 / 용린: 11장 + 고갯길의 비룡 / 월은사: 3장 + 숲의 여왕거미 / 고대 각인석: 7장·9장 + 균열의 감시자

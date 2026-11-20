@@ -35,6 +35,7 @@ public class MagicCityMod {
         NeoForge.EVENT_BUS.addListener(io.github.aswq0258.magiccity.arena.ArenaManager::onUseItem);
         NeoForge.EVENT_BUS.addListener(io.github.aswq0258.magiccity.arena.ArenaManager::onUseOnBlock);
         NeoForge.EVENT_BUS.addListener(io.github.aswq0258.magiccity.arena.ArenaManager::onJoin);
+        NeoForge.EVENT_BUS.addListener(io.github.aswq0258.magiccity.world.NoCreepers::onJoin);   // 크리퍼 없음 (2026-11-20)
         NeoForge.EVENT_BUS.addListener(io.github.aswq0258.magiccity.arena.ArenaManager::onPearl);
         NeoForge.EVENT_BUS.addListener(io.github.aswq0258.magiccity.arena.ArenaManager::onChorus);
         NeoForge.EVENT_BUS.addListener(io.github.aswq0258.magiccity.arena.ArenaManager::onGrief);
