@@ -1,0 +1,29 @@
+plugins {
+    id 'java-library'
+    id 'net.neoforged.moddev' version '2.0.148'
+}
+group = 'dev.fantasybosses'
+version = '0.7.5.1'
+base { archivesName = 'fantasybosses' }
+java.toolchain.languageVersion = JavaLanguageVersion.of(21)
+repositories {
+    mavenCentral()
+    maven {
+        name = 'GeckoLib'
+        url = 'https://dl.cloudsmith.io/public/geckolib3/geckolib/maven/'
+        content { includeGroup('software.bernie.geckolib') }
+    }
+}
+dependencies {
+    implementation "software.bernie.geckolib:geckolib-neoforge-1.21.1:${geckolib_version}"
+}
+neoForge {
+    version = project.neo_version
+    runs {
+        client { client() }
+        server { server(); programArgument '--nogui' }
+    }
+    mods { fantasybosses { sourceSet sourceSets.main } }
+}
+tasks.withType(JavaCompile).configureEach { options.encoding = 'UTF-8' }
+tasks.named('wrapper', Wrapper).configure { gradleVersion = '9.2.1'; distributionType = Wrapper.DistributionType.BIN }

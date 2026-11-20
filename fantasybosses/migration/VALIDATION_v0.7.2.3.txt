@@ -1,0 +1,7 @@
+Serialized RDR3: 506 frames, 182 parts, 11 anchors, 18 leg chains.
+9,108 lower-leg pose checks: max body-outward dot -0.24069393; max knee endpoint gap 9.7075221e-07 blocks.
+Original wall/ceiling/dive head and anchor positions identical. Ground start and dive landing identical. Non-leg poses for air/dive unchanged.
+408 simulated air/dive route state transitions (204 start frames each), correct landing and 100 recovery ticks. Simulation is not Minecraft runtime.
+Original model / textures / preview animations / capture / RoutePlayback byte-identical.
+Standalone RoutePlayback javac / 2,500 subframe samples: PASS.
+Java syntax parsing: PASS; dependency build and Minecraft runtime: NOT TESTED.

@@ -46,3 +46,14 @@ jobs:
           name: royalqol-jar
           path: royalqol/build/libs/*.jar
           if-no-files-found: error
+
+      # 챕터 보스 모드 fantasybosses (독립 빌드: fantasybosses/, 2026-11-20 라디키온)
+      - name: Build fantasybosses
+        run: ./gradlew -p fantasybosses build --no-daemon
+
+      - name: Upload fantasybosses jar
+        uses: actions/upload-artifact@v4
+        with:
+          name: fantasybosses-jar
+          path: fantasybosses/build/libs/*.jar
+          if-no-files-found: error

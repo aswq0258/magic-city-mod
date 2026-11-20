@@ -1,0 +1,9 @@
+v0.7.5 offline validation — no full Minecraft dependency compilation or in-game execution.
+- Java 21 parser: 19 main Java files, syntax only.
+- Java 21 isolated tests: 10,226 arena rule cases + bounds and durations; 535 ground attack pose samples; 11 multipart damage multipliers; 2,500 playback samples.
+- Binary resource comparison to v0.7.4: exact match for captured route, combat pose binary, three model/animation JSON files, both textures, and RoutePlayback/RadicionRoute sources.
+- Existing combat pose file: 222,768 pose records, finite values, unit quaternions, positive scales.
+- Special route model simulation: 612 possible starting frames. This simulation tests route transitions, not actual Minecraft events.
+- Four original root coordinates: each 3x3 footprint at y=9 and 10 is air in supplied MCA; solid/mud substrate at y=8. North root near route (minimum anchor distance 1.81 blocks). Actual display collision not tested.
+- Arena changes do not write any world blocks. Existing source MCA and original ZIP are not edited.
+- Maven DNS resolution failed in this environment; no dependency-aware compile, JAR or runtime test. Build locally using included corrected Windows script.

@@ -1,0 +1,3 @@
+Original >0.05 outward lower-leg directions: 658 / 10908
+Corrected source lower-leg poses (<-0.22 target): 721
+New frames: 506; tested 9108 leg joints; max surface normal dot -0.24069393; max knee gap 0.00000000 blocks before float32 serialization. Original air/dive anchors and ground join/landing anchors exact. Fixed route resampled 304->204 ground ticks.

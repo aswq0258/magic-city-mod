@@ -1,0 +1,12 @@
+v0.7.5.1 validation (new BGM patch)
+User reports 25/25 in-game checks passed for v0.7.5, not for this patch.
+Java 21 parser: 21 main sources; syntax only, not type checking.
+PASS: 10226 pure arena rule cases plus wave bounds and durations
+PASS: 535 ground attack pose samples, hit pose, end pose, phase and dive scaling
+PASS: 11 segment multipliers, groggy modifier, phase timing, radius and preserved recovery
+PASS: 2500 monotonic sub-frame samples, simulated 3-tick packet bursts, lag 2.97..3.06 ticks; reset/hold/fallback PASS
+Original 52 files: 45 unchanged, 7 modified (registration, build version, docs/validation only); all existing combat, arena, entity, renderer, route/pose, textures and animations byte-identical.
+OGG: Vorbis 44.1 kHz stereo, 96.0 seconds, 1392564 bytes; ffmpeg full decode without errors.
+Sound resource registration and client API names checked against 1.21.1 mappings/NeoForge Javadocs; runtime loop, fade, volume and music arbitration not tested.
+No Gradle executable / Maven DNS failed; independent full NeoForge compilation and JAR unavailable. No in-game test for v0.7.5.1.
+World region and prior source ZIP read-only. No remote repository edits.
