@@ -53,6 +53,14 @@ public final class ProgressionRules {
         return BOSS_BASIC[g - 1] / designBasic;
     }
 
+    /**
+     * 등급 배율을 건너뛸지: 외부 보스의 방어구 무시 공격(마법 피해 등)은 원래 수치 그대로 (2026-11-20).
+     * 방어구로 줄지 않는 피해에 ×3 까지 붙으면 6급에서 한 방이 되기 때문. 일반 공격(물기·꼬리)은 배율 그대로.
+     */
+    public static boolean skipScaling(boolean externalBoss, boolean bypassesArmor) {
+        return externalBoss && bypassesArmor;
+    }
+
     /** 패턴 복잡도: 33% 부하 소환(두 번째 소환)은 3급부터. 등급 기록이 없는 보스(0)는 기존대로 소환 */
     public static boolean secondSummon(int grade) {
         return grade == 0 || grade >= 3;

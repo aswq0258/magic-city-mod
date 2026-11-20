@@ -109,4 +109,12 @@ class ProgressionRulesTest {
         assertEquals(0, ProgressionRules.completed(1 | (1 << 13)));
         assertEquals(12, ProgressionRules.completed(mask(1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12)));
     }
+
+    @org.junit.jupiter.api.Test
+    @org.junit.jupiter.api.DisplayName("외부 보스의 방어구 무시 공격만 등급 배율을 건너뜀 (라디키온 낙하·돌진·균열)")
+    void skipScalingRule() {
+        org.junit.jupiter.api.Assertions.assertTrue(ProgressionRules.skipScaling(true, true));
+        org.junit.jupiter.api.Assertions.assertFalse(ProgressionRules.skipScaling(true, false));
+        org.junit.jupiter.api.Assertions.assertFalse(ProgressionRules.skipScaling(false, true));
+    }
 }

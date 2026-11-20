@@ -151,6 +151,8 @@ public final class Progression {
         Entity src = event.getSource().getEntity();
         if (src == null) src = event.getSource().getDirectEntity();
         if (src == null) return;
+        // 외부 보스(라디키온 등)의 방어구 무시 마법 공격은 배율 없음 — 고정 피해 패턴과 같은 원칙 (2026-11-20 사용자 결정)
+        if (BossData.isExternal(src) && ProgressionRules.skipScaling(true, event.getSource().is(net.minecraft.tags.DamageTypeTags.BYPASSES_ARMOR))) return;
         CompoundTag t = src.getPersistentData();
         if (!t.contains(SCALE_KEY)) return;
         double s = t.getDouble(SCALE_KEY);
