@@ -2,6 +2,8 @@
   "entity": "fantasybosses:radicion",
   "our_skills": false,
   "our_bossbar": false,
+  "our_patterns": false,
   "grade_scaling": true,
-  "anchor_nbt": "RadicionAnchor"
+  "design_attack": 6,
+  "offset_nbt": "RadicionOffset"
 }

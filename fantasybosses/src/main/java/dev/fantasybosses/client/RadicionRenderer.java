@@ -178,8 +178,8 @@ public final class RadicionRenderer extends GeoEntityRenderer<RadicionEntity> {
         RoutePlayback.Sample sample=entity.renderPose(t);
         preparePose(entity,sample,partialTick);
         entity.positionParts(sample.from(),sample.to(),sample.alpha(),partialTick);
-        Vec3 a=RadicionRoute.DATA.frames[sample.from()].head();
-        Vec3 b=RadicionRoute.DATA.frames[sample.to()].head();
+        Vec3 a=entity.head(sample.from());
+        Vec3 b=entity.head(sample.to());
         Vec3 renderPosition=new Vec3(Mth.lerp((double)t,entity.xOld,entity.getX()),
                 Mth.lerp((double)t,entity.yOld,entity.getY()),Mth.lerp((double)t,entity.zOld,entity.getZ()));
         return a.lerp(b,sample.alpha()).subtract(renderPosition);

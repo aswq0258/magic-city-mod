@@ -3,7 +3,7 @@ loaderVersion="[1,)"
 license="All Rights Reserved"
 [[mods]]
 modId="fantasybosses"
-version="0.7.5.1"
+version="0.8.0"
 displayName="FantasyBosses"
 description='''Standalone boss framework: Radicion captured movement and server combat patterns.'''
 [[dependencies.fantasybosses]]

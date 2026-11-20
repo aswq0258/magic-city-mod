@@ -4,7 +4,9 @@ import java.io.*;
 import java.util.zip.GZIPInputStream;
 import net.minecraft.core.BlockPos;
 import net.minecraft.world.level.Level;
+import net.minecraft.world.phys.AABB;
 import net.minecraft.world.phys.Vec3;
+import dev.fantasybosses.arena.ArenaRules;
 
 /** Captured world-space route: original ground/air/dive frames, ground sampled at 20 TPS. */
 public final class RadicionRoute {
@@ -51,14 +53,23 @@ public final class RadicionRoute {
         return Math.min(203,32+(int)Math.round((frame-48)*172.0/256.0));
     }
     public static boolean valid(int frame) { return frame >= 0 && frame < COUNT; }
-    public static boolean isArena(Level level, Vec3 p) {
-        return level.dimension().location().toString().equals("magiccity:kingdom")
-                && p.x >= -2895 && p.x <= -2825 && p.z >= -895 && p.z <= -825
-                && p.y >= 7 && p.y <= 40;
+    /** 원본 왕국 대륙 둥지 (이동량 0) */
+    public static boolean isArena(Level level, Vec3 p) { return isArena(level, p, BlockPos.ZERO); }
+    /** v0.8: 이동량 o 만큼 옮긴 전장. 이동량 0 이면 원본과 같은 판정 */
+    public static boolean isArena(Level level, Vec3 p, BlockPos o) {
+        return validDimension(level, o) && ArenaRules.inBox(p.x, p.y, p.z, o.getX(), o.getY(), o.getZ());
     }
-    public static boolean loaded(Level level, int frame) {
+    public static boolean validDimension(Level level, BlockPos o) {
+        return ArenaRules.dimensionOk(level.dimension().location().toString(), o.getX(), o.getY(), o.getZ());
+    }
+    public static AABB bounds(BlockPos o) {
+        return new AABB(ArenaRules.MIN_X, ArenaRules.MIN_Y, ArenaRules.MIN_Z, ArenaRules.MAX_X, ArenaRules.MAX_Y, ArenaRules.MAX_Z)
+                .move(o.getX(), o.getY(), o.getZ());
+    }
+    public static boolean loaded(Level level, int frame) { return loaded(level, frame, BlockPos.ZERO); }
+    public static boolean loaded(Level level, int frame, BlockPos o) {
         for (Vec3 p : DATA.frames[frame].anchors()) {
-            if (!level.hasChunkAt(BlockPos.containing(p))) return false;
+            if (!level.hasChunkAt(BlockPos.containing(p).offset(o))) return false;
         }
         return true;
     }

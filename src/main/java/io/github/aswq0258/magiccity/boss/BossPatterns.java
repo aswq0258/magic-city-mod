@@ -126,7 +126,8 @@ public final class BossPatterns {
     }
 
     private static String patternTag(Mob m) {
-        for (String t : m.getTags()) if (patterns.containsKey(t)) return t;
+        for (String t : m.getTags())
+            if (patterns.containsKey(t)) return BossData.ourPatterns(m, t.startsWith("magiccity_") ? t.substring("magiccity_".length()) : t) ? t : null;
         return null;
     }
 

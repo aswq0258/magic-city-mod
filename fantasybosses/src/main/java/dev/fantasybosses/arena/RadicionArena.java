@@ -24,23 +24,23 @@ import java.util.List;
 public final class RadicionArena {
     private static final Vec3[] ROOT={new Vec3(-2877.5,9,-859.5),new Vec3(-2841.5,9,-859.5),new Vec3(-2859.5,9,-872.5),new Vec3(-2859.5,9,-843.5)};
     private static final Vec3[][] WAVES={{new Vec3(-2871.5,9,-868.5),new Vec3(-2847.5,9,-851.5)},{new Vec3(-2847.5,9,-868.5),new Vec3(-2871.5,9,-849.5)}};
-    private static final AABB BOUNDS=new AABB(-2895,7,-895,-2825,40,-825);
     private final RadicionEntity boss;
     private final ServerBossEvent rootBar=new ServerBossEvent(Component.literal("마력 흡수 기관"),BossEvent.BossBarColor.GREEN,BossEvent.BossBarOverlay.NOTCHED_10);
     private boolean enabled, lockAnnounced;
     private int mask, healClock, waveClock, waveTicks, waveIndex, reconcileClock;
     public RadicionArena(RadicionEntity boss){this.boss=boss;}
     private ServerLevel world(){return (ServerLevel)boss.level();}
-    public static boolean chunksReady(ServerLevel level){for(int x=-2895;x<=-2816;x+=16)for(int z=-895;z<=-816;z+=16)if(!level.hasChunkAt(new BlockPos(x,9,z)))return false;return level.hasChunkAt(new BlockPos(-2825,9,-825));}
+    public static boolean chunksReady(ServerLevel level){return chunksReady(level,BlockPos.ZERO);}
+    public static boolean chunksReady(ServerLevel level,BlockPos o){for(int x=-2895;x<=-2816;x+=16)for(int z=-895;z<=-816;z+=16)if(!level.hasChunkAt(new BlockPos(x,9,z).offset(o)))return false;return level.hasChunkAt(new BlockPos(-2825,9,-825).offset(o));}
     public int roots(){return enabled?ArenaRules.count(mask):0;}
     public boolean shield(){return roots()>0&&boss.getHealth()<=ArenaRules.floor(boss.getMaxHealth())+.01F;}
     public boolean waveActive(){return waveTicks>0;}
     public float clampHealth(float health){return enabled?ArenaRules.clamp(health,boss.getMaxHealth(),mask):health;}
     public boolean ownsSlot(ArenaOrgan organ){return enabled&&organ.belongsTo(boss)&&(organ.egg()||(organ.slot()>=0&&organ.slot()<4&&(mask&(1<<organ.slot()))!=0));}
-    public List<ArenaOrgan> organs(){return world().getEntitiesOfClass(ArenaOrgan.class,BOUNDS.inflate(4),e->e.belongsTo(boss)&&e.isAlive());}
+    public List<ArenaOrgan> organs(){return world().getEntitiesOfClass(ArenaOrgan.class,boss.bounds().inflate(4),e->e.belongsTo(boss)&&e.isAlive());}
     public int eggs(){return enabled&&boss.level() instanceof ServerLevel?(int)organs().stream().filter(ArenaOrgan::egg).count():0;}
     public String status(){return "roots="+roots()+"/4 shield="+shield()+" eggs="+eggs()+" fissureTicks="+waveTicks;}
-    private List<ServerPlayer> players(){return world().players().stream().filter(p->p.isAlive()&&!p.isSpectator()&&RadicionRoute.isArena(p.level(),p.position())).toList();}
+    private List<ServerPlayer> players(){return world().players().stream().filter(p->p.isAlive()&&!p.isSpectator()&&boss.inArena(p.level(),p.position())).toList();}
     private boolean hasCombatPlayers(){return players().stream().anyMatch(p->!p.isCreative());}
     public void announce(String msg){for(ServerPlayer p:players())p.displayClientMessage(Component.literal(msg),true);}
     public void start(){cleanup();enabled=true;mask=boss.getHealth()>boss.getMaxHealth()*.66F?15:0;healClock=waveClock=waveTicks=waveIndex=reconcileClock=0;waveIndex=1;lockAnnounced=false;ensureRoots();updateBar();if(mask!=0)announce("세계수 마력 흡수 기관 4개를 파괴하세요!");}
@@ -49,7 +49,7 @@ public final class RadicionArena {
         List<ArenaOrgan> current=organs();
         for(int i=0;i<4;i++){
             final int slot=i;if((mask&(1<<i))==0||current.stream().anyMatch(e->e.slot()==slot))continue;
-            Vec3 p=ROOT[i];if(!world().hasChunkAt(BlockPos.containing(p)))continue;
+            Vec3 p=boss.shifted(ROOT[i]);if(!world().hasChunkAt(BlockPos.containing(p)))continue;
             ArenaOrgan organ=BossEntities.ROOT_ORGAN.get().create(world());if(organ==null)continue;
             organ.configure(boss,i);organ.setPos(p.x,p.y,p.z);
             // Original verified coordinates, but avoid spawning inside a modified world.
@@ -74,7 +74,7 @@ public final class RadicionArena {
     }
     public boolean clearRoots(){if(!enabled)return false;boolean wasShield=shield();mask=0;for(ArenaOrgan e:organs())if(!e.egg())e.discard();if(wasShield)boss.setHealth(Math.min(boss.getHealth(),boss.getMaxHealth()*.659F));updateBar();return true;}
     private void beams(){
-        Vec3 tail=RadicionRoute.DATA.frames[boss.routeFrame()].anchors()[10];
+        Vec3 tail=boss.anchor(boss.routeFrame(),10);
         for(ArenaOrgan organ:organs())if(!organ.egg()&&ownsSlot(organ)){
             Vec3 a=organ.position().add(0,1.4,0);Vec3 v=tail.subtract(a);int points=Math.max(1,Math.min(24,(int)Math.ceil(v.length())));double offset=(boss.tickCount%16)/16.0;
             for(int j=0;j<points;j++){Vec3 p=a.add(v.scale((j+offset)/points));world().sendParticles(ParticleTypes.HAPPY_VILLAGER,p.x,p.y,p.z,1,0,0,0,0);}
@@ -96,7 +96,7 @@ public final class RadicionArena {
             return true;
         }
         if(boss.combat().phase()==3&&boss.tickCount%20==0){
-            for(Vec3[] pair:WAVES)for(Vec3 p:pair){
+            for(Vec3[] pair:WAVES)for(Vec3 o:pair){Vec3 p=boss.shifted(o);
                 world().sendParticles(ParticleTypes.SPORE_BLOSSOM_AIR,p.x,p.y+.1,p.z,8,.65,.05,.65,0);
                 world().sendParticles(ParticleTypes.HAPPY_VILLAGER,p.x,p.y+.1,p.z,3,.25,.04,.25,0);
             }
@@ -111,10 +111,10 @@ public final class RadicionArena {
         if(!enabled||waveActive()||boss.combat().phase()!=3||boss.combat().busy()||!boss.availableGround())return false;
         waveIndex=1-waveIndex;waveTicks=ArenaRules.WAVE_WARNING;waveClock=0;announce("세계수 마력 균열 — 위험 구역 밖으로 이동하세요!");warnWave();return true;
     }
-    private void warnWave(){for(Vec3 p:WAVES[waveIndex]){for(int j=0;j<40;j++){double a=j*Math.PI/20;world().sendParticles(ParticleTypes.SOUL_FIRE_FLAME,p.x+5*Math.cos(a),p.y+.12,p.z+5*Math.sin(a),1,0,0,0,0);}world().sendParticles(ParticleTypes.SPORE_BLOSSOM_AIR,p.x,p.y+.25,p.z,12,1.4,.2,1.4,0);}}
+    private void warnWave(){for(Vec3 o:WAVES[waveIndex]){Vec3 p=boss.shifted(o);for(int j=0;j<40;j++){double a=j*Math.PI/20;world().sendParticles(ParticleTypes.SOUL_FIRE_FLAME,p.x+5*Math.cos(a),p.y+.12,p.z+5*Math.sin(a),1,0,0,0,0);}world().sendParticles(ParticleTypes.SPORE_BLOSSOM_AIR,p.x,p.y+.25,p.z,12,1.4,.2,1.4,0);}}
     private void impactWave(){
-        for(ServerPlayer p:players())if(!p.isCreative())for(Vec3 c:WAVES[waveIndex])if(ArenaRules.inWave(p.getX(),p.getY(),p.getZ(),c.x,c.y,c.z)){p.hurt(boss.damageSources().indirectMagic(boss,boss),ArenaRules.WAVE_DAMAGE);break;}
-        for(Vec3 c:WAVES[waveIndex]){world().sendParticles(ParticleTypes.EXPLOSION,c.x,c.y+.7,c.z,8,1.6,.5,1.6,0);world().playSound(null,c.x,c.y,c.z,SoundEvents.GENERIC_EXPLODE.value(),SoundSource.HOSTILE,2F,.7F);}
+        for(ServerPlayer p:players())if(!p.isCreative())for(Vec3 o:WAVES[waveIndex]){Vec3 c=boss.shifted(o);if(ArenaRules.inWave(p.getX(),p.getY(),p.getZ(),c.x,c.y,c.z)){p.hurt(boss.damageSources().indirectMagic(boss,boss),ArenaRules.WAVE_DAMAGE);break;}}
+        for(Vec3 o:WAVES[waveIndex]){Vec3 c=boss.shifted(o);world().sendParticles(ParticleTypes.EXPLOSION,c.x,c.y+.7,c.z,8,1.6,.5,1.6,0);world().playSound(null,c.x,c.y,c.z,SoundEvents.GENERIC_EXPLODE.value(),SoundSource.HOSTILE,2F,.7F);}
         announce("마력 균열 폭발 종료 — 반격 기회!");
     }
     public void detachBar(){rootBar.removeAllPlayers();}

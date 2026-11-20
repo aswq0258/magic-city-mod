@@ -97,6 +97,28 @@ class BossDataRulesTest {
     }
 
     @Test
+    @DisplayName("v0.8 연결: 이동량 NBT·등급 배율 기준·우리 고정 피해 끄기, 이동량 = 전장 − 왕국 대륙")
+    void linkV08() {
+        Link l = BossDataRules.parseLink(j("{\"entity\":\"fantasybosses:radicion\",\"offset_nbt\":\"RadicionOffset\",\"design_attack\":6,\"our_patterns\":false}"));
+        assertEquals("RadicionOffset", l.offsetNbt());
+        assertEquals(6.0, (double) l.designAttack());
+        assertFalse(l.ourPatterns());
+        assertTrue(BossDataRules.parseLink(j("{\"entity\":\"a:b\"}")).ourPatterns());
+        assertNull(BossDataRules.parseLink(j("{\"entity\":\"a:b\"}")).designAttack());
+        assertEquals(6.0, BossDataRules.designBasic(l, 0));
+        assertEquals(9.0, BossDataRules.designBasic(null, 9));
+        // 라디키온 1페이즈 턱 강타 6 기준: 1급 8/6, 6급 18/6 = 3배
+        assertEquals(3.0, Grades.DEFAULT.damageScale(6, BossDataRules.designBasic(l, 0)), 1e-9);
+        assertEquals(8.0 / 6, Grades.DEFAULT.damageScale(1, BossDataRules.designBasic(l, 0)), 1e-9);
+        int[] o = BossDataRules.offset(3000, 64, 0, -2860, 9, -860);
+        assertEquals(5860, o[0]);
+        assertEquals(55, o[1]);
+        assertEquals(860, o[2]);
+        assertThrows(IllegalArgumentException.class, () -> BossDataRules.parseLink(j("{\"entity\":\"a:b\",\"design_attack\":0}")));
+        assertThrows(IllegalArgumentException.class, () -> BossDataRules.parseLink(j("{\"entity\":\"a:b\",\"offset_nbt\":\"a-b\"}")));
+    }
+
+    @Test
     @DisplayName("외부 보스 연결: 잘못된 id·NBT·기준점 이름·모르는 항목 거부")
     void linkReject() {
         assertThrows(IllegalArgumentException.class, () -> BossDataRules.parseLink(j("{}")));

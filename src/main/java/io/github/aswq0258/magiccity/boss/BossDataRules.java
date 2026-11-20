@@ -122,11 +122,15 @@ public final class BossDataRules {
      * @param gradeScaling 진행 등급 배율(공격·체력)을 곱할지
      * @param anchorNbt   전장 안 보스 자리(블록 좌표 x,y,z 정수 배열)를 넣어 줄 NBT 이름 (없으면 null)
      * @param name        머리 위 이름표 (없으면 외부 모드 이름 그대로)
+     * @param offsetNbt   (v0.8) 이동량 = 전장 보스 자리 − 왕국 대륙 보스 자리 (정수 배열 dx,dy,dz)를 넣어 줄 NBT 이름. 보스 방 사본이 있을 때만
+     * @param designAttack (v0.8) 등급 배율 기준이 될 그 보스의 기본 공격 (없으면 공격력 속성). 배율 = 등급 기본 공격 ÷ 이 값
+     * @param ourPatterns (v0.8) 우리 고정 피해 패턴을 쓸지 (기본 true)
      */
     public record Link(boolean enabled, String entity, JsonElement nbt, boolean ourSkills, boolean ourBossbar, boolean gradeScaling,
-                       String anchorNbt, String name) {}
+                       String anchorNbt, String name, String offsetNbt, Double designAttack, boolean ourPatterns) {}
 
-    static final Set<String> LINK_KEYS = Set.of("enabled", "entity", "nbt", "our_skills", "our_bossbar", "grade_scaling", "anchor_nbt", "name");
+    static final Set<String> LINK_KEYS = Set.of("enabled", "entity", "nbt", "our_skills", "our_bossbar", "grade_scaling", "anchor_nbt", "name",
+            "offset_nbt", "design_attack", "our_patterns");
 
     public static Link parseLink(JsonObject o) {
         for (String k : o.keySet()) if (!LINK_KEYS.contains(k)) throw new IllegalArgumentException("모르는 항목 '" + k + "'");
@@ -137,10 +141,32 @@ public final class BossDataRules {
         JsonElement nbt = o.has("nbt") && !o.get("nbt").isJsonNull() ? o.get("nbt") : null;
         if (nbt != null && !nbt.isJsonObject() && !(nbt.isJsonPrimitive() && nbt.getAsJsonPrimitive().isString()))
             throw new IllegalArgumentException("nbt 는 SNBT 문자열이나 JSON 객체여야 함");
-        String anchor = o.has("anchor_nbt") && !o.get("anchor_nbt").isJsonNull() ? o.get("anchor_nbt").getAsString() : null;
-        if (anchor != null && !anchor.matches("[A-Za-z0-9_]{1,64}")) throw new IllegalArgumentException("anchor_nbt '" + anchor + "' 는 영문·숫자·_ 만");
+        String anchor = nbtName(o, "anchor_nbt");
+        String offset = nbtName(o, "offset_nbt");
         String name = o.has("name") && !o.get("name").isJsonNull() ? o.get("name").getAsString() : null;
-        return new Link(enabled, entity, nbt, bool(o, "our_skills", false), bool(o, "our_bossbar", false), bool(o, "grade_scaling", true), anchor, name);
+        Double design = null;
+        if (o.has("design_attack") && !o.get("design_attack").isJsonNull()) {
+            design = o.get("design_attack").getAsDouble();
+            if (!(design > 0 && design <= 200)) throw new IllegalArgumentException("design_attack = " + design + " (허용 0 초과~200)");
+        }
+        return new Link(enabled, entity, nbt, bool(o, "our_skills", false), bool(o, "our_bossbar", false), bool(o, "grade_scaling", true), anchor, name,
+                offset, design, bool(o, "our_patterns", true));
+    }
+
+    private static String nbtName(JsonObject o, String k) {
+        String v = o.has(k) && !o.get(k).isJsonNull() ? o.get(k).getAsString() : null;
+        if (v != null && !v.matches("[A-Za-z0-9_]{1,64}")) throw new IllegalArgumentException(k + " '" + v + "' 는 영문·숫자·_ 만");
+        return v;
+    }
+
+    /** 이동량: 전장 보스 자리 블록 − 왕국 대륙 보스 자리 블록 (보스 방 복사는 상대 위치를 그대로 옮기므로 녹화 좌표 + 이 값 = 전장 좌표) */
+    public static int[] offset(int ax, int ay, int az, int sx, int sy, int sz) {
+        return new int[]{ax - sx, ay - sy, az - sz};
+    }
+
+    /** 등급 배율의 기준값: 연결에 design_attack 이 있으면 그것, 없으면 공격력 속성 */
+    public static double designBasic(Link l, double attackAttribute) {
+        return l != null && l.designAttack() != null ? l.designAttack() : attackAttribute;
     }
 
     private static boolean bool(JsonObject o, String k, boolean def) {

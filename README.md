@@ -195,7 +195,12 @@
   - `our_skills`(기본 false): 우리 기술·부하 소환·광폭화·대상 지정·묶어 두기. `our_bossbar`(기본 false): 우리 체력바. `grade_scaling`(기본 true): 진행 등급 배율(공격·체력)
   - `anchor_nbt`: 소환할 때 몹 NBT 에 **전장 안 보스 자리 블록 좌표**(정수 배열 `[I; x, y, z]`)를 이 이름으로 넣음. 보스 방 복사 전장은 방을 그대로 옮기므로, 외부 모드가 경로를 이 기준점에서의 상대 좌표로 쓰면 그대로 맞음
   - `nbt`(SNBT 문자열 또는 JSON 객체, 선택): 소환 NBT. `name`(선택): 머리 위 이름표
-  - 지금 연결: 3장 `parasite` → `fantasybosses:radicion` (세계수 잠식자 라디키온, 임시)
+  - (v0.8) `offset_nbt`: 보스 방 사본이 깔렸으면 **이동량**(전장 보스 자리 − 왕국 대륙 보스 자리, 정수 배열 `[I; dx, dy, dz]`)을 이 이름으로 넣음 → 외부 보스가 녹화 좌표를 전장으로 옮김. `design_attack`: 등급 배율 기준 기본 공격(배율 = 등급 기본 공격 ÷ 이 값, 없으면 공격력 속성). `our_patterns`(기본 true): 우리 고정 피해 패턴
+  - 지금 연결: 3장 `parasite` → `fantasybosses:radicion` (세계수 잠식자 라디키온): 우리 기술·체력바·고정 피해 끔, `design_attack` 6, `offset_nbt` `RadicionOffset`
+
+## 챕터 보스 모드 `fantasybosses` (2026-11-20, 폴더 `fantasybosses/`)
+- 라디키온(3장) 모드 소스. 만든 분 인계본 0.7.5.1 그대로 들여온 뒤(되돌릴 자리: 브랜치 `fantasybosses-v0.7.5.1`) **0.8.0 = 전장 원점 변환**: 소환 NBT `RadicionOffset` 만큼 녹화 경로·기관·균열·바닥 높이·상자·BGM 판정을 옮겨 magiccity 보스 방 복사 전장에서 싸움. 이동량이 없으면 원래 왕국 대륙 둥지 그대로
+- 독립 빌드: `./gradlew -p fantasybosses build` (CI 아티팩트 `fantasybosses-jar`). `fantasyrpg` 통합 팩은 `mods.lock.json` 의 고정 커밋으로 빌드해 넣음. 라이선스 All Rights Reserved(사용자 허락으로 이 공개 저장소에 둠)
 - `/magiccity boss stats` 전체 보기, `/magiccity boss stats <키|장 번호>` 한 보스(값과 그 값을 준 데이터팩). 로그 `[보스] 챕터 보스 수치 12개·등급표 1개 로드` · `[보스] 필드보스 수치 10개 로드` · `[보스] 외부 보스 연결 1개 로드 (몹 있음 …)`
 
 ## 크리퍼 없음 (2026-11-20)

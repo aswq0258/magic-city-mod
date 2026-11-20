@@ -181,11 +181,23 @@ public final class BossData {
 
     /** 외부 보스 몹을 전장 보스 자리에 부름. 실패하면 null (부르는 쪽이 기본 보스로 대신) */
     public static Mob spawnExternal(ServerLevel level, Link l, Vec3 c) {
+        return spawnExternal(level, l, c, null);
+    }
+
+    /**
+     * source = 그 보스 방의 왕국 대륙 보스 자리 (보스 방 사본이 깔렸을 때만, 없으면 null).
+     * offset_nbt 가 있으면 이동량(전장 − 왕국 대륙, 블록 단위)을 넣어 줌 → 외부 보스가 녹화 좌표를 전장으로 옮김.
+     */
+    public static Mob spawnExternal(ServerLevel level, Link l, Vec3 c, Vec3 source) {
         try {
             CompoundTag tag = nbt(l).copy();
             tag.putString("id", l.entity());
             BlockPos at = BlockPos.containing(c);
             if (l.anchorNbt() != null) tag.put(l.anchorNbt(), NbtUtils.writeBlockPos(at));
+            if (l.offsetNbt() != null && source != null) {
+                BlockPos s = BlockPos.containing(source);
+                tag.putIntArray(l.offsetNbt(), BossDataRules.offset(at.getX(), at.getY(), at.getZ(), s.getX(), s.getY(), s.getZ()));
+            }
             Entity e = EntityType.loadEntityRecursive(tag, level, en -> {
                 en.moveTo(c.x, c.y, c.z, en.getYRot(), en.getXRot());
                 return en;
@@ -211,6 +223,13 @@ public final class BossData {
             MagicCityMod.LOGGER.error("[보스] 외부 보스 {} 소환 실패: {}", l.entity(), ex.toString());
             return null;
         }
+    }
+
+    /** 우리 고정 피해 패턴을 쓸지 (외부 보스 연결이 our_patterns=false 면 끔) */
+    public static boolean ourPatterns(Entity e, String bossKey) {
+        if (!isExternal(e)) return true;
+        Src<Link> s = links.get(bossKey);
+        return s == null || s.value().ourPatterns();
     }
 
     /** 이 몹이 외부 보스로 불린 것인지 */
@@ -268,6 +287,9 @@ public final class BossData {
             b.append("\n§7외부 보스 ").append(v.entity()).append(!v.enabled() ? " §8(꺼짐)" : have ? " §a(사용 중)" : " §c(몹 없음 → 기본 보스)")
                     .append(" §7우리 기술 ").append(v.ourSkills() ? "켬" : "끔").append(" · 우리 체력바 ").append(v.ourBossbar() ? "켬" : "끔")
                     .append(" · 등급 배율 ").append(v.gradeScaling() ? "켬" : "끔")
+                    .append(" · 우리 고정 피해 ").append(v.ourPatterns() ? "켬" : "끔")
+                    .append(v.designAttack() != null ? " · 배율 기준 공격 " + v.designAttack() : "")
+                    .append(v.offsetNbt() != null ? " · 이동량 NBT " + v.offsetNbt() : "")
                     .append(v.anchorNbt() != null ? " · 기준점 NBT " + v.anchorNbt() : "").append(" §8← ").append(l.pack());
         }
         return b.toString();

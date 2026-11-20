@@ -1,3 +1,11 @@
+# FantasyBosses 0.8.0 (magic-city-mod 저장소 안, 2026-11-20)
+- 0.7.5.1 인계본(아래)에서 바뀐 것: **전장 원점 변환**. 소환 NBT `RadicionOffset` = `[I; dx, dy, dz]` 이면 녹화 머리·마디 앵커·흡수 기관 4·균열 4·바닥 높이 9.15·전장 상자·청크 검사·BGM 판정에 이동량을 더하고, 차원 검사를 "그 몹이 있는 차원"으로 바꿈. 이동량이 없으면(0) 원래 `magiccity:kingdom` 둥지 그대로. 원본 경로·포즈 바이너리, 모델, 공격 수치는 그대로
+- 경로 자동 시작은 청크가 늦게 불러져도 30초 동안 다시 시도
+- 순수 규칙 JUnit `ArenaRulesTest`. 빌드 `./gradlew -p fantasybosses build` (저장소 루트에서)
+- magiccity 연결: `data/magiccity/boss_entity/parasite.json` (`offset_nbt`·`design_attack` 6·`our_patterns` false)
+
+---
+
 # FantasyBosses v0.7.5.1 — BGM 추가 및 Claude 인계
 Minecraft 1.21.1 / NeoForge 21.1.267 / JDK 21 / GeckoLib 4.7.6
 

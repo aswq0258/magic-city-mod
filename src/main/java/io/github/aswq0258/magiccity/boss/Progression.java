@@ -104,6 +104,11 @@ public final class Progression {
 
     /** scaling=false 면 등급만 기록하고 배율은 곱하지 않음 (외부 보스 연결의 grade_scaling) */
     public static int apply(Mob boss, int chapter, List<ServerPlayer> party, boolean scaling) {
+        return apply(boss, chapter, party, scaling, null);
+    }
+
+    /** design = 등급 배율 기준 기본 공격 (외부 보스 design_attack, null 이면 공격력 속성) */
+    public static int apply(Mob boss, int chapter, List<ServerPlayer> party, boolean scaling, Double design) {
         int best = 0;
         for (ServerPlayer p : party) best = Math.max(best, completed(p));
         int grade = ProgressionRules.bossGrade(chapter, best);
@@ -112,16 +117,16 @@ public final class Progression {
             boss.getPersistentData().putInt(GRADE_KEY, grade);
             return grade;
         }
-        apply(boss, grade, c);
+        apply(boss, grade, c, design);
         Entity v = boss.getVehicle();
-        if (v instanceof Mob mount) apply(mount, grade, c);
+        if (v instanceof Mob mount) apply(mount, grade, c, null);
         return grade;
     }
 
-    private static void apply(Mob m, int grade, Config c) {
+    private static void apply(Mob m, int grade, Config c, Double designOverride) {
         BossDataRules.Grades g = BossData.grades();                                          // data/magiccity/boss_stats/_grades.json
         AttributeInstance atk = m.getAttribute(Attributes.ATTACK_DAMAGE);
-        double design = atk != null ? atk.getBaseValue() : 0;
+        double design = designOverride != null ? designOverride : atk != null ? atk.getBaseValue() : 0;
         double scale = g.damageScale(grade, design);
         CompoundTag t = m.getPersistentData();
         t.putInt(GRADE_KEY, grade);

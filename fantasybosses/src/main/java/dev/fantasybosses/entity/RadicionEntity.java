@@ -30,6 +30,7 @@ import net.minecraft.world.entity.ai.attributes.AttributeSupplier;
 import net.minecraft.world.entity.ai.attributes.Attributes;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.phys.Vec3;
+import net.minecraft.core.BlockPos;
 import software.bernie.geckolib.animatable.GeoEntity;
 import software.bernie.geckolib.animatable.instance.AnimatableInstanceCache;
 import software.bernie.geckolib.animation.AnimatableManager;
@@ -50,6 +51,11 @@ public final class RadicionEntity extends PathfinderMob implements GeoEntity {
     private static final EntityDataAccessor<Integer> ROUTE_EPOCH = SynchedEntityData.defineId(RadicionEntity.class, EntityDataSerializers.INT);
     private static final EntityDataAccessor<Integer> COMBAT_POSE = SynchedEntityData.defineId(RadicionEntity.class, EntityDataSerializers.INT);
     private static final EntityDataAccessor<Integer> DEATH_PROGRESS = SynchedEntityData.defineId(RadicionEntity.class,EntityDataSerializers.INT);
+    /** v0.8 전장 원점 변환: 원본 녹화 좌표에 더할 이동량 (0 = 원본 왕국 대륙 둥지). 소환 NBT RadicionOffset = [I; dx, dy, dz] */
+    private static final EntityDataAccessor<BlockPos> OFFSET = SynchedEntityData.defineId(RadicionEntity.class,EntityDataSerializers.BLOCK_POS);
+    public static final String OFFSET_NBT = "RadicionOffset";
+    /** 자동 경로 시작을 다시 시도하는 시간 (청크가 늦게 불러질 때) */
+    private static final int AUTO_START_TICKS = 600;
     private final RadicionArena arena=new RadicionArena(this);
     private boolean bypassArenaClamp;
     private final RadicionPart[] parts = new RadicionPart[11];
@@ -103,7 +109,7 @@ public final class RadicionEntity extends PathfinderMob implements GeoEntity {
     public void positionParts(int from,int to,float alpha,float partial){
         if(!RadicionRoute.valid(from)||!RadicionRoute.valid(to))return;
         var a=RadicionRoute.DATA.frames[from];var b=RadicionRoute.DATA.frames[to];
-        Vec3 h=a.head().lerp(b.head(),alpha);
+        Vec3 h=a.head().lerp(b.head(),alpha).add(shift());
         int code=combatPose(),frame=alpha<.5F?from:to;
         var pose=AttackPattern.pose(code,partial);
         for(int i=0;i<parts.length;i++){
@@ -124,6 +130,7 @@ public final class RadicionEntity extends PathfinderMob implements GeoEntity {
         builder.define(ROUTE_EPOCH, 0);
         builder.define(COMBAT_POSE, 0);
         builder.define(DEATH_PROGRESS,0);
+        builder.define(OFFSET,BlockPos.ZERO);
     }
     public static AttributeSupplier.Builder createAttributes() {
         return PathfinderMob.createMobAttributes().add(Attributes.MAX_HEALTH, BASE_HEALTH)
@@ -134,6 +141,18 @@ public final class RadicionEntity extends PathfinderMob implements GeoEntity {
     public int routeFrame() { return entityData.get(ROUTE_FRAME); }
     public int previousRouteFrame() { return entityData.get(PREV_FRAME); }
     public boolean inRoute() { return RadicionRoute.valid(routeFrame()); }
+    // ── v0.8 전장 원점 변환: 원본 녹화 좌표(절대) + 이동량
+    public BlockPos offset() { return entityData.get(OFFSET); }
+    public Vec3 shift() { BlockPos o=offset(); return new Vec3(o.getX(),o.getY(),o.getZ()); }
+    public Vec3 head(int frame) { return RadicionRoute.DATA.frames[frame].head().add(shift()); }
+    public Vec3 anchor(int frame,int segment) { return RadicionRoute.DATA.frames[frame].anchors()[segment].add(shift()); }
+    public Vec3[] anchors(int frame) { Vec3[] a=RadicionRoute.DATA.frames[frame].anchors(),out=new Vec3[a.length];Vec3 s=shift();for(int i=0;i<a.length;i++)out[i]=a[i].add(s);return out; }
+    /** 원본 좌표 하나를 이 전장으로 옮김 (기관·균열 등) */
+    public Vec3 shifted(Vec3 original) { return original.add(shift()); }
+    public AABB bounds() { return RadicionRoute.bounds(offset()); }
+    /** 이 보스 전장 안인지 (같은 차원 + 옮긴 상자) */
+    public boolean inArena(Level level, Vec3 p) { return level.dimension()==level().dimension() && RadicionRoute.isArena(level,p,offset()); }
+    public double floorY() { return dev.fantasybosses.arena.ArenaRules.FLOOR_Y+offset().getY(); }
 
     public RoutePlayback.Sample renderPose(float partialTick) {
         int current=routeFrame(), previous=previousRouteFrame();
@@ -156,8 +175,9 @@ public final class RadicionEntity extends PathfinderMob implements GeoEntity {
         } else {
             if (isAlive()) {
                 if (!autoAttempted) {
-                    autoAttempted = true;
-                    if (!inRoute() && RadicionRoute.isArena(level(), position())) startRoute();
+                    // v0.8: 청크가 늦게 불러지는 전장에서도 시작하도록 30초 동안 다시 시도
+                    if (inRoute() || !inArena(level(), position()) || tickCount > AUTO_START_TICKS) autoAttempted = true;
+                    else if (tickCount % 10 == 1) startRoute();
                 } else if (inRoute()) {
                     if (arena.tick() || combat.tick()) applyRouteFrame(routeFrame(),routeFrame());
                     else stepRoute();
@@ -171,15 +191,15 @@ public final class RadicionEntity extends PathfinderMob implements GeoEntity {
         updateParts();
     }
     public boolean startRoute() {
-        if (level().isClientSide || !isAlive() || !RadicionRoute.isArena(level(), position()) || !RadicionRoute.loaded(level(),0)) return false;
-        if(level() instanceof ServerLevel world && !world.getEntitiesOfClass(RadicionEntity.class,new AABB(-2895,7,-895,-2825,40,-825),e->e!=this&&e.isAlive()&&e.inRoute()).isEmpty())return false;
+        if (level().isClientSide || !isAlive() || !inArena(level(), position()) || !RadicionRoute.loaded(level(),0,offset())) return false;
+        if(level() instanceof ServerLevel world && !world.getEntitiesOfClass(RadicionEntity.class,bounds(),e->e!=this&&e.isAlive()&&e.inRoute()).isEmpty())return false;
         combat.reset(true);
         autoAttempted = true; paused = false; request = 0; hold = 0; groggyTicks=0; waitingForChunks = false;
         setNoGravity(true); noPhysics = true; setDeltaMovement(Vec3.ZERO);
         entityData.set(PREV_FRAME, 0); entityData.set(ROUTE_FRAME, 0);
         entityData.set(ROUTE_EPOCH,entityData.get(ROUTE_EPOCH)+1);
         entityData.set(ROUTE_CLOCK,0);
-        Vec3 p = RadicionRoute.DATA.frames[0].head();
+        Vec3 p = head(0);
         setPos(p.x,p.y,p.z);
         arena.start();
         return true;
@@ -218,7 +238,7 @@ public final class RadicionEntity extends PathfinderMob implements GeoEntity {
         deathTime++;
         if(level() instanceof ServerLevel world){
             entityData.set(DEATH_PROGRESS,deathTime);
-            if(deathTime<=41&&(deathTime-1)%4==0){int segment=10-(deathTime-1)/4;Vec3 p=RadicionRoute.DATA.frames[routeFrame()].anchors()[segment];
+            if(deathTime<=41&&(deathTime-1)%4==0){int segment=10-(deathTime-1)/4;Vec3 p=anchor(routeFrame(),segment);
                 world.sendParticles(ParticleTypes.HAPPY_VILLAGER,p.x,p.y,p.z,24,.55,.4,.55,.01);
                 world.sendParticles(ParticleTypes.POOF,p.x,p.y,p.z,18,.45,.35,.45,.04);
             }
@@ -230,7 +250,7 @@ public final class RadicionEntity extends PathfinderMob implements GeoEntity {
     }
     private void stepRoute() {
         int current = routeFrame();
-        if (!level().dimension().location().toString().equals("magiccity:kingdom")) {
+        if (!RadicionRoute.validDimension(level(),offset())) {
             entityData.set(ROUTE_FRAME,-1); entityData.set(PREV_FRAME,-1);
             setNoGravity(false); noPhysics=false; request=0; hold=0; groggyTicks=0; combat.reset(true); arena.cleanup(); return;
         }
@@ -262,7 +282,7 @@ public final class RadicionEntity extends PathfinderMob implements GeoEntity {
             next=current+1;
             if (next >= RadicionRoute.COUNT) { next=RadicionRoute.DIVE_LAND; landed=true; }
         }
-        if (!RadicionRoute.loaded(level(),next)) { waitingForChunks=true; applyRouteFrame(current,current); return; }
+        if (!RadicionRoute.loaded(level(),next,offset())) { waitingForChunks=true; applyRouteFrame(current,current); return; }
         waitingForChunks=false;
         applyRouteFrame(current,next);
         if (beginDiveHold) hold=combat.busy()?AttackPattern.DIVE.windup:30;
@@ -270,7 +290,7 @@ public final class RadicionEntity extends PathfinderMob implements GeoEntity {
         else combat.onRouteFrame(next);
     }
     private void applyRouteFrame(int previous,int next) {
-        Vec3 p=RadicionRoute.DATA.frames[next].head();
+        Vec3 p=head(next);
         setDeltaMovement(Vec3.ZERO);
         setPos(p.x,p.y,p.z);
         entityData.set(PREV_FRAME,previous); entityData.set(ROUTE_FRAME,next);
@@ -278,6 +298,7 @@ public final class RadicionEntity extends PathfinderMob implements GeoEntity {
     }
     @Override public void addAdditionalSaveData(CompoundTag tag) {
         super.addAdditionalSaveData(tag);
+        BlockPos o=offset();tag.putIntArray(OFFSET_NBT,new int[]{o.getX(),o.getY(),o.getZ()});
         tag.putInt("RadicionRouteLayout",3); tag.putInt("RadicionRouteFrame",routeFrame()); tag.putBoolean("RadicionPaused",paused);
         tag.putInt("RadicionGroggy",groggyTicks); tag.putInt("RadicionRequest",request); tag.putInt("RadicionHold",hold); tag.putBoolean("RadicionAutoAttempted",autoAttempted);
         combat.save(tag);
@@ -285,10 +306,12 @@ public final class RadicionEntity extends PathfinderMob implements GeoEntity {
     }
     @Override public void readAdditionalSaveData(CompoundTag tag) {
         super.readAdditionalSaveData(tag);
+        int[] o=dev.fantasybosses.arena.ArenaRules.offset(tag.contains(OFFSET_NBT)?tag.getIntArray(OFFSET_NBT):null);
+        entityData.set(OFFSET,new BlockPos(o[0],o[1],o[2]));
         int frame=tag.contains("RadicionRouteFrame") ? tag.getInt("RadicionRouteFrame") : -1;
         if (tag.getInt("RadicionRouteLayout")!=3) frame=RadicionRoute.remapLegacyFrame(frame);
         if (!RadicionRoute.valid(frame)) frame=-1;
-        if (!level().dimension().location().toString().equals("magiccity:kingdom")) frame=-1;
+        if (!RadicionRoute.validDimension(level(),offset())) frame=-1;
         entityData.set(ROUTE_FRAME,frame); entityData.set(PREV_FRAME,frame);
         paused=tag.getBoolean("RadicionPaused"); request=Math.max(0,Math.min(2,tag.getInt("RadicionRequest")));
         hold=Math.max(0,Math.min(40,tag.getInt("RadicionHold"))); autoAttempted=tag.getBoolean("RadicionAutoAttempted") || frame>=0;

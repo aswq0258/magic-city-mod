@@ -22,17 +22,24 @@ import net.neoforged.neoforge.client.event.SelectMusicEvent;
 @EventBusSubscriber(modid=FantasyBosses.MOD_ID,value=Dist.CLIENT,bus=EventBusSubscriber.Bus.GAME)
 public final class RadicionMusic {
     private RadicionMusic() {}
-    private static final AABB BOUNDS=new AABB(-2895,7,-895,-2825,40,-825);
+    /** 보스를 찾는 범위 (플레이어 둘레). v0.8: 보스마다 옮긴 전장 상자로 판정 */
+    private static final double SEARCH=96;
     private static ClientLevel lastLevel;
     private static RadicionEntity boss;
     private static Loop track;
     private static int retry;
     private static int age;
 
-    // Handoff: replace this fixed-world predicate with the synchronized encounter/participant state.
+    // v0.8: 고정 좌표 대신 그 보스의 전장(이동량을 더한 상자, 같은 차원) 안에 있을 때만. magiccity 보스 전장은 장마다 한 팀이라 참가자에게만 들림
     private static boolean eligible(Minecraft mc){
-        return mc.level!=null && mc.player!=null && mc.player.isAlive() && !mc.player.isSpectator()
-            && RadicionRoute.isArena(mc.level,mc.player.position());
+        if(mc.level==null || mc.player==null || !mc.player.isAlive() || mc.player.isSpectator()) return false;
+        if(live(boss)) return boss.inArena(mc.level,mc.player.position());
+        boss=find(mc);
+        return boss!=null;
+    }
+    private static RadicionEntity find(Minecraft mc){
+        return mc.level.getEntitiesOfClass(RadicionEntity.class,mc.player.getBoundingBox().inflate(SEARCH),
+                e->live(e)&&e.inArena(mc.level,mc.player.position())).stream().findFirst().orElse(null);
     }
     private static boolean live(RadicionEntity entity){return entity!=null&&!entity.isRemoved()&&entity.isAlive()&&entity.inRoute();}
     private static void clear(Minecraft mc){
@@ -45,7 +52,7 @@ public final class RadicionMusic {
         if(lastLevel!=mc.level){clear(mc);lastLevel=mc.level;}
         if(!eligible(mc)||mc.options.getSoundSourceVolume(SoundSource.MUSIC)<=0F||mc.options.getSoundSourceVolume(SoundSource.MASTER)<=0F){clear(mc);return;}
         if(mc.isPaused())return;
-        if(!live(boss))boss=mc.level.getEntitiesOfClass(RadicionEntity.class,BOUNDS,RadicionMusic::live).stream().findFirst().orElse(null);
+        if(!live(boss))boss=find(mc);
         boolean wanted=live(boss);
         if(retry>0)retry--;
         if(track!=null){

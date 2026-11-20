@@ -306,7 +306,8 @@ public final class ArenaManager {
             case SPAWN_WAIT -> {
                 keepInside(arena, r);
                 if (el >= ArenaRules.SPAWN_DELAY_TICKS) {
-                    Mob m = r.boss.arenaSpawn(arena, r.bossSpot(), alive(s, r));
+                    // 보스 방 사본이 있으면 왕국 대륙 보스 자리도 넘김 → 외부 보스(라디키온)가 녹화 좌표를 전장으로 옮김
+                    Mob m = r.boss.arenaSpawn(arena, r.bossSpot(), alive(s, r), r.room != null ? r.boss.altarCenter() : null);
                     if (m == null) {
                         finish(s, arena, r, "§c[보스전] 보스를 부르지 못했습니다. 제단으로 돌아갑니다.");
                         return;

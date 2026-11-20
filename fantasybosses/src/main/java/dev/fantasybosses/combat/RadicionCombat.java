@@ -34,7 +34,6 @@ import java.util.List;
 public final class RadicionCombat {
     public static final int WALL_WARN=RadicionRoute.AIR+225;
     public static final int DIVE_HIT=RadicionRoute.DIVE+23;
-    private static final AABB ARENA=new AABB(-2895,7,-895,-2825,40,-825);
     private final RadicionEntity boss;
     private AttackPattern active;
     private final List<Vec3> zones=new ArrayList<>();
@@ -49,11 +48,11 @@ public final class RadicionCombat {
     public String status(){return "phase="+phase()+" attack="+(active==null?"none":active.key)+" elapsed="+elapsed+" auto="+automatic+" groundTicks="+groundTicks+" cooldown="+cooldown+" larvae="+larvaCount()+" lastSpawned="+lastSpawned+" "+boss.arena().status();}
     public String label(){return active==null?"":active.label;}
     private ServerLevel world(){return (ServerLevel)boss.level();}
-    private boolean eligible(ServerPlayer p){return p.isAlive()&&!p.isSpectator()&&!p.isCreative()&&RadicionRoute.isArena(p.level(),p.position());}
+    private boolean eligible(ServerPlayer p){return p.isAlive()&&!p.isSpectator()&&!p.isCreative()&&boss.inArena(p.level(),p.position());}
     private List<ServerPlayer> participants(){return world().players().stream().filter(this::eligible).toList();}
-    private void announce(String text){for(ServerPlayer p:world().players())if(!p.isSpectator()&&RadicionRoute.isArena(p.level(),p.position()))p.displayClientMessage(Component.literal(text),true);}
-    private Vec3 floor(Vec3 p){return new Vec3(p.x,9.15,p.z);}
-    private Vec3[] anchors(){return RadicionRoute.DATA.frames[boss.routeFrame()].anchors();}
+    private void announce(String text){for(ServerPlayer p:world().players())if(!p.isSpectator()&&boss.inArena(p.level(),p.position()))p.displayClientMessage(Component.literal(text),true);}
+    private Vec3 floor(Vec3 p){return new Vec3(p.x,boss.floorY(),p.z);}
+    private Vec3[] anchors(){return boss.anchors(boss.routeFrame());}
     private Vec3 front(double distance){Vec3[] a=anchors();Vec3 v=a[0].subtract(a[1]);return floor(a[0].add(new Vec3(v.x,0,v.z).normalize().scale(distance)));}
     private boolean near(List<ServerPlayer> players,Vec3 point,double radius){return players.stream().anyMatch(p->horizontalDistance(p.position(),point)<=radius*radius&&Math.abs(p.getY()-point.y)<3);}
     private static double horizontalDistance(Vec3 a,Vec3 b){double x=a.x-b.x,z=a.z-b.z;return x*x+z*z;}
@@ -61,7 +60,7 @@ public final class RadicionCombat {
     public boolean tick(){
         if(!boss.inRoute()||!boss.isAlive())return false;
         updatePhase();
-        if(boss.tickCount%20==0)for(Endermite e:larvae())if(!RadicionRoute.isArena(e.level(),e.position()))e.discard();
+        if(boss.tickCount%20==0)for(Endermite e:larvae())if(!boss.inArena(e.level(),e.position()))e.discard();
         if(boss.routePaused())return busy()&&active.ground();
         if(active!=null){
             if(active.ground()){
@@ -109,16 +108,16 @@ public final class RadicionCombat {
     }
     public void onRouteFrame(int next){
         if(active==null||active.ground())return;
-        if(active==AttackPattern.DIVE && next==RadicionRoute.DIVE_JOIN&&!warned){zones.add(floor(RadicionRoute.DATA.frames[DIVE_HIT].head()));prepareWarning();}
+        if(active==AttackPattern.DIVE && next==RadicionRoute.DIVE_JOIN&&!warned){zones.add(floor(boss.head(DIVE_HIT)));prepareWarning();}
         if(active==AttackPattern.DIVE && next==DIVE_HIT&&!impacted)impact();
         if(active==AttackPattern.BROOD && next==RadicionRoute.DIVE_JOIN&&!warned){
             List<ServerPlayer> players=new ArrayList<>(participants());Collections.shuffle(players);
             for(ServerPlayer p:players){if(zones.size()>= (phaseAtStart==3?3:2))break;zones.add(floor(p.position()));}
             // Creative operators can see the telegraph/visual preview without taking damage.
-            if(zones.isEmpty())for(ServerPlayer p:world().players())if(!p.isSpectator()&&RadicionRoute.isArena(p.level(),p.position())){zones.add(floor(p.position()));break;}
+            if(zones.isEmpty())for(ServerPlayer p:world().players())if(!p.isSpectator()&&boss.inArena(p.level(),p.position())){zones.add(floor(p.position()));break;}
             boss.setRouteHold(active.windup);prepareWarning();
         }
-        if(active==AttackPattern.DESCENT&&next==WALL_WARN&&!warned){zones.add(floor(RadicionRoute.DATA.frames[RadicionRoute.AIR].head()));boss.setRouteHold(active.windup);prepareWarning();}
+        if(active==AttackPattern.DESCENT&&next==WALL_WARN&&!warned){zones.add(floor(boss.head(RadicionRoute.AIR)));boss.setRouteHold(active.windup);prepareWarning();}
         if(active==AttackPattern.DESCENT&&next==RadicionRoute.AIR&&!impacted)impact();
     }
     public boolean fastDescent(int current){return active==AttackPattern.DESCENT && warned && !impacted && current>=WALL_WARN && current<RadicionRoute.DIVE;}
@@ -151,7 +150,7 @@ public final class RadicionCombat {
     }
     private static final String OWNER_PREFIX="fantasybosses.radicion.";
     private String ownerTag(){return OWNER_PREFIX+boss.getUUID();}
-    private List<Endermite> larvae(){return world().getEntitiesOfClass(Endermite.class,ARENA.inflate(24),e->e.getTags().contains(ownerTag())&&e.isAlive());}
+    private List<Endermite> larvae(){return world().getEntitiesOfClass(Endermite.class,boss.bounds().inflate(24),e->e.getTags().contains(ownerTag())&&e.isAlive());}
     private int lastSpawned;
     public int lastSpawned(){return lastSpawned;}
     public int larvaCount(){return boss.level() instanceof ServerLevel?larvae().size():0;}
@@ -164,7 +163,7 @@ public final class RadicionCombat {
             if(Math.max(Math.abs(dx),Math.abs(dz))!=ring)continue;
             for(int y:dy)for(double frac:new double[]{.01,.26,.51,.76}){
                 Vec3 v=new Vec3(Math.floor(p.x)+dx+.5,Math.floor(p.y)+y+frac,Math.floor(p.z)+dz+.5);
-                if(!RadicionRoute.isArena(world(),v)||!world().hasChunkAt(BlockPos.containing(v)))continue;
+                if(!boss.inArena(world(),v)||!world().hasChunkAt(BlockPos.containing(v)))continue;
                 mite.setPos(v.x,v.y,v.z);
                 AABB box=mite.getBoundingBox();
                 if(!world().noCollision(mite,box)||!world().getFluidState(BlockPos.containing(v)).isEmpty())continue;

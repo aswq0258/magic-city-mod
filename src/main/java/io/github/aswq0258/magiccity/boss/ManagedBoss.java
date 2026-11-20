@@ -192,9 +192,14 @@ public abstract class ManagedBoss {
 
     /** 전장에서 보스 소환. 등급은 참가자 중 최고 진행도 (지금 규칙 그대로) */
     public Mob arenaSpawn(ServerLevel level, Vec3 c, List<ServerPlayer> party) {
+        return arenaSpawn(level, c, party, null);
+    }
+
+    /** source = 보스 방 사본이 깔렸을 때 왕국 대륙 쪽 보스 자리 (외부 보스 이동량 계산용, 없으면 null) */
+    public Mob arenaSpawn(ServerLevel level, Vec3 c, List<ServerPlayer> party, Vec3 source) {
         clearBar();
         id = null;
-        wake(level, c, party);
+        wake(level, c, party, source);
         return id == null ? null : level.getEntity(id) instanceof Mob m ? m : null;
     }
 
@@ -231,11 +236,11 @@ public abstract class ManagedBoss {
         return found.get(0);
     }
 
-    private void wake(ServerLevel level, Vec3 c, List<ServerPlayer> party) {
+    private void wake(ServerLevel level, Vec3 c, List<ServerPlayer> party, Vec3 source) {
         BlockPos at = BlockPos.containing(c.x, c.y, c.z);
         // 외부 보스 연결(data/magiccity/boss_entity/<키>.json)이 있고 그 몹이 게임에 있으면 그 몹, 아니면 기본(바닐라 바탕) 보스
         BossDataRules.Link link = BossData.activeLink(key());
-        Mob m = link != null ? BossData.spawnExternal(level, link, c) : null;
+        Mob m = link != null ? BossData.spawnExternal(level, link, c, source) : null;
         if (m == null) {
             link = null;
             m = create(level, at);
@@ -246,7 +251,7 @@ public abstract class ManagedBoss {
         }
         m.addTag(tag);
         m.setPersistenceRequired();
-        grade = Progression.apply(m, chapter, party, link == null || link.gradeScaling());
+        grade = Progression.apply(m, chapter, party, link == null || link.gradeScaling(), link == null ? null : link.designAttack());
         m.setHealth(m.getMaxHealth());
         id = m.getUUID();
         s66 = s33 = enraged = false;
