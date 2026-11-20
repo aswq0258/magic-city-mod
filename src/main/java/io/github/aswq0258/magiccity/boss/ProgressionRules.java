@@ -5,24 +5,29 @@ package io.github.aswq0258.magiccity.boss;
  * 기준: 프로젝트 문서 "방어구_전투밸런스_기준_v1.0" 2절·6절, 통합문서 5절 (2026-11-17 진행도 결정).
  *
  *  - 등급은 장 번호가 아니라 "처음 완료한 메인 챕터 수"로 정한다.
- *  - 0~1개 1급, 2~3개 2급, 4~5개 3급, 6~7개 4급, 8~9개 5급, 10개 이상 6급. 11·12장 보스는 6급 고정.
- *  - 레벨 상한 = 등급 × 10 (Lv.10 ~ Lv.60).
+ *  - 0~1개 1급, 2~3개 2급, 4~5개 3급, 6~7개 4급, 8~9개 5급, 10개 이상 6급. 11장 보스는 6급 고정.
+ *  - (2026-11-21, claude/등급재배치_7급오버월드_초안.md) 12장까지 모두 완료 → 7급(오버월드 최대). 12장 보스는 7급 고정.
+ *    네더 13~15장은 첫 완료 수 1·2·3 → 8·9·10급 (설계만, 구현 전).
+ *  - 레벨 상한 = min(등급, 6) × 10 (Lv.10 ~ Lv.60, 7급은 장비만 — SP 66 유지).
  *  - 작업대: 2개 완료 → 4×4, 6개 완료 → 5×5.
  */
 public final class ProgressionRules {
     private ProgressionRules() {}
 
-    public static final int MAX_GRADE = 6;
+    public static final int MAX_GRADE = 7;
+    /** 레벨 상한이 오르는 마지막 등급 (Lv.60) */
+    public static final int LEVEL_GRADE = 6;
 
     /** 등급별 보스 기본 공격 원본 피해 [초안] (인챈트 없음·보통 난이도 기준) */
-    public static final double[] BOSS_BASIC = {8, 11, 14, 15, 17, 18};
+    public static final double[] BOSS_BASIC = {8, 11, 14, 15, 17, 18, 19};
     /** 등급별 보스 강공 원본 피해 [초안] — 3·4급 20/21은 [확정] */
-    public static final double[] BOSS_STRONG = {12, 15, 20, 21, 24, 25};
+    public static final double[] BOSS_STRONG = {12, 15, 20, 21, 24, 25, 26};
 
-    /** 완료한 메인 챕터 수 → 등급 (1~6) */
+    /** 완료한 메인 챕터 수 → 등급 (1~7). 12개(= 12장까지 모두) 완료면 7급 */
     public static int grade(int completed) {
         if (completed < 0) completed = 0;
-        return Math.min(MAX_GRADE, completed / 2 + 1);
+        if (completed >= 12) return MAX_GRADE;
+        return Math.min(6, completed / 2 + 1);
     }
 
     /**
@@ -33,15 +38,16 @@ public final class ProgressionRules {
         return gap > 0 && bossGrade - memberGrade >= gap;
     }
 
-    /** 챕터 보스의 등급: 11·12장은 6급 고정, 나머지는 파티 최고 진행도 */
+    /** 챕터 보스의 등급: 11장 6급·12장 7급 고정, 나머지는 파티 최고 진행도 */
     public static int bossGrade(int chapter, int partyMaxCompleted) {
-        if (chapter >= 11) return MAX_GRADE;
+        if (chapter >= 12) return MAX_GRADE;
+        if (chapter == 11) return 6;
         return grade(partyMaxCompleted);
     }
 
-    /** 레벨 상한 (Lv.10 ~ Lv.60) */
+    /** 레벨 상한 (Lv.10 ~ Lv.60, 7급도 Lv.60) */
     public static int levelCap(int completed) {
-        return grade(completed) * 10;
+        return Math.min(LEVEL_GRADE, grade(completed)) * 10;
     }
 
     /** 쓸 수 있는 작업대 크기 (3, 4, 5) */

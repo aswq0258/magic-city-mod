@@ -61,17 +61,19 @@ class BossDataRulesTest {
     }
 
     @Test
-    @DisplayName("등급표: 기본값 = 지금 규칙(8/11/14/15/17/18, 체력 1.0), 일부만 쓰면 나머지 기본, 6개 아니면 거부")
+    @DisplayName("등급표: 기본값 = 지금 규칙(8/11/14/15/17/18/19, 체력 1.0), 일부만 쓰면 나머지 기본, 예전 6개면 7급은 기본, 6·7개 아니면 거부")
     void grades() {
         Grades d = Grades.DEFAULT;
-        assertTrue(java.util.Arrays.equals(new double[]{8, 11, 14, 15, 17, 18}, d.basic()));
+        assertTrue(java.util.Arrays.equals(new double[]{8, 11, 14, 15, 17, 18, 19}, d.basic()));
         assertEquals(ProgressionRules.damageScale(3, 9), d.damageScale(3, 9), 1e-9);
         assertEquals(1.0, d.damageScale(3, 0));
-        assertEquals(18, d.basic(9));
+        assertEquals(19, d.basic(9));
         assertEquals(8, d.basic(0));
         Grades g = BossDataRules.parseGrades(j("{\"hp_scale\":[1,1.2,1.4,1.6,1.8,2]}"));
         assertTrue(java.util.Arrays.equals(d.basic(), g.basic()));
         assertEquals(1.4, g.hpScale(3));
+        assertEquals(1.0, g.hpScale(7));                                                       // 예전 6개 → 7급 기본
+        assertEquals(1.5, BossDataRules.parseGrades(j("{\"hp_scale\":[1,1,1,1,1,1,1.5]}")).hpScale(7));
         assertThrows(IllegalArgumentException.class, () -> BossDataRules.parseGrades(j("{\"basic\":[1,2,3]}")));
         assertThrows(IllegalArgumentException.class, () -> BossDataRules.parseGrades(j("{\"hp_scale\":[1,1,1,1,1,0]}")));
         assertThrows(IllegalArgumentException.class, () -> BossDataRules.parseGrades(j("{\"boss_basic\":[8,11,14,15,17,18]}")));

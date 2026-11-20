@@ -19,7 +19,7 @@ public final class FixedStrikeRules {
     public enum Shape { AROUND_BOSS, AT_PLAYERS, RING }
 
     /** 고정 수치형 등급 계수 [초안]: 1급 0.5 … 6급 1.0, 7급 이상은 1.0 */
-    static final double[] GRADE_FACTOR = {0.5, 0.6, 0.7, 0.8, 0.9, 1.0};
+    static final double[] GRADE_FACTOR = {0.5, 0.6, 0.7, 0.8, 0.9, 1.0, 1.0};
     /** 예고 시간: 기본 40틱, 1·2급 60틱 [초안] */
     public static final int TELEGRAPH = 40, TELEGRAPH_LOW = 60;
     /** 깨어난 뒤 첫 사용까지 */

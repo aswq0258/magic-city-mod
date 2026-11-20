@@ -22,9 +22,9 @@ class ProgressionRulesTest {
     @Test
     @DisplayName("완료 수 → 등급: 0~1개 1급, 2~3개 2급 … 10개 이상 6급, 음수는 0으로")
     void grade() {
-        int[] expected = {1, 1, 2, 2, 3, 3, 4, 4, 5, 5, 6, 6, 6};
+        int[] expected = {1, 1, 2, 2, 3, 3, 4, 4, 5, 5, 6, 6, 7};
         for (int n = 0; n <= 12; n++) assertEquals(expected[n], ProgressionRules.grade(n), "완료 " + n);
-        assertEquals(6, ProgressionRules.grade(100));
+        assertEquals(7, ProgressionRules.grade(100));
         assertEquals(1, ProgressionRules.grade(-3));
     }
 
@@ -66,7 +66,7 @@ class ProgressionRulesTest {
         assertEquals(3, ProgressionRules.bossGrade(1, 4));
         assertEquals(6, ProgressionRules.bossGrade(10, 11));
         assertEquals(6, ProgressionRules.bossGrade(11, 0));
-        assertEquals(6, ProgressionRules.bossGrade(12, 3));
+        assertEquals(7, ProgressionRules.bossGrade(12, 3));
     }
 
     @Test
@@ -75,10 +75,10 @@ class ProgressionRulesTest {
         assertEquals(8.0 / 4.0, ProgressionRules.damageScale(1, 4.0), 1e-12);
         assertEquals(18.0 / 6.0, ProgressionRules.damageScale(6, 6.0), 1e-12);
         assertEquals(8.0 / 4.0, ProgressionRules.damageScale(0, 4.0), 1e-12);
-        assertEquals(18.0 / 6.0, ProgressionRules.damageScale(9, 6.0), 1e-12);
+        assertEquals(19.0 / 6.0, ProgressionRules.damageScale(9, 6.0), 1e-12);   // 7급이 최대 (2026-11-21)
         assertEquals(1.0, ProgressionRules.damageScale(3, 0.0), 1e-12);
-        double[] basic = {8, 11, 14, 15, 17, 18};
-        for (int g = 1; g <= 6; g++) assertEquals(basic[g - 1], ProgressionRules.damageScale(g, 10.0) * 10.0, 1e-9);
+        double[] basic = {8, 11, 14, 15, 17, 18, 19};
+        for (int g = 1; g <= 7; g++) assertEquals(basic[g - 1], ProgressionRules.damageScale(g, 10.0) * 10.0, 1e-9);
     }
 
     @Test

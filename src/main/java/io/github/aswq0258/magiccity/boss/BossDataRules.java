@@ -71,7 +71,7 @@ public final class BossDataRules {
 
     /** 등급 1~6 의 보스 기본 공격 원본 피해와 최대 체력 배율 */
     public record Grades(double[] basic, double[] hpScale) {
-        public static final Grades DEFAULT = new Grades(ProgressionRules.BOSS_BASIC.clone(), new double[]{1, 1, 1, 1, 1, 1});
+        public static final Grades DEFAULT = new Grades(ProgressionRules.BOSS_BASIC.clone(), new double[]{1, 1, 1, 1, 1, 1, 1});
 
         public double basic(int grade) {
             return basic[clamp(grade) - 1];
@@ -99,10 +99,13 @@ public final class BossDataRules {
         return new Grades(basic, hp);
     }
 
+    /** 등급 1~7 값. 예전 데이터처럼 6개만 있으면 7급은 기본값 (2026-11-21 7급 추가) */
     private static double[] six(JsonArray a, String k, double min, double max) {
-        if (a.size() != 6) throw new IllegalArgumentException(k + " 는 등급 1~6 의 값 6개여야 함 (지금 " + a.size() + "개)");
-        double[] out = new double[6];
-        for (int i = 0; i < 6; i++) {
+        if (a.size() != 6 && a.size() != 7) throw new IllegalArgumentException(k + " 는 등급 1~7 의 값 7개(또는 예전 6개)여야 함 (지금 " + a.size() + "개)");
+        double[] def = k.equals("basic") ? Grades.DEFAULT.basic() : Grades.DEFAULT.hpScale();
+        double[] out = new double[7];
+        out[6] = def[6];
+        for (int i = 0; i < a.size(); i++) {
             out[i] = a.get(i).getAsDouble();
             if (Double.isNaN(out[i]) || out[i] < min || out[i] > max)
                 throw new IllegalArgumentException(k + "[" + (i + 1) + "급] = " + out[i] + " (허용 " + min + "~" + max + ")");
