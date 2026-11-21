@@ -15,5 +15,8 @@ public final class ClientEvents {
         event.registerEntityRenderer(BossEntities.RADICION.get(), RadicionRenderer::new);
         event.registerEntityRenderer(BossEntities.ROOT_ORGAN.get(),ArenaOrganRenderer::new);
         event.registerEntityRenderer(BossEntities.BROOD_EGG.get(),ArenaOrganRenderer::new);
+        for (var spec : dev.fantasybosses.field.FieldMonsters.SPECS)
+            event.registerEntityRenderer(dev.fantasybosses.field.FieldMonsters.TYPES.get(spec.id()).get(),
+                    ctx -> new FieldMonsterRenderer(ctx, spec));
     }
 }

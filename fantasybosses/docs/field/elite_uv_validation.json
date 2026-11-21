@@ -1,0 +1,280 @@
+[
+  {
+    "id": "frost_executioner",
+    "name": "설원의 망령 집행자",
+    "size": 256,
+    "faces": 426,
+    "old_cubes": 22,
+    "new_cubes": 7,
+    "total_cubes": 71,
+    "pixels": 78,
+    "glow_faces": 19,
+    "selected": {
+      "head": {
+        "1": "front",
+        "2": "front",
+        "10": "jewel",
+        "17": "slit"
+      },
+      "chest_relic": {
+        "1": "front"
+      },
+      "body": {
+        "12": "jewel",
+        "21": "jewel"
+      }
+    }
+  },
+  {
+    "id": "spider_nest_guardian",
+    "name": "거미 둥지 수호자",
+    "size": 256,
+    "faces": 684,
+    "old_cubes": 27,
+    "new_cubes": 10,
+    "total_cubes": 114,
+    "pixels": 68,
+    "glow_faces": 14,
+    "selected": {
+      "head": {
+        "1": "front",
+        "2": "front",
+        "3": "front",
+        "4": "front"
+      },
+      "egg_canopy": {
+        "3": "vein",
+        "9": "vein",
+        "15": "vein",
+        "21": "vein",
+        "27": "vein"
+      },
+      "thorax": {
+        "12": "jewel"
+      }
+    }
+  },
+  {
+    "id": "cursed_mine_overseer",
+    "name": "저주받은 광산 감독관",
+    "size": 256,
+    "faces": 444,
+    "old_cubes": 11,
+    "new_cubes": 6,
+    "total_cubes": 74,
+    "pixels": 23,
+    "glow_faces": 6,
+    "selected": {
+      "head": {
+        "1": "front",
+        "2": "front"
+      },
+      "helm_lamp": {
+        "1": "front"
+      },
+      "back_furnace": {
+        "1": "rear_vein",
+        "2": "rear_vein",
+        "3": "rear_vein"
+      }
+    }
+  },
+  {
+    "id": "wyvern_hunter",
+    "name": "고갯길 비룡 사냥꾼",
+    "size": 256,
+    "faces": 408,
+    "old_cubes": 7,
+    "new_cubes": 4,
+    "total_cubes": 68,
+    "pixels": 45,
+    "glow_faces": 8,
+    "selected": {
+      "head": {
+        "1": "front",
+        "2": "front"
+      },
+      "ballista_bow": {
+        "5": "slit"
+      },
+      "quiver": {
+        "4": "jewel"
+      }
+    }
+  },
+  {
+    "id": "corrupted_captain",
+    "name": "침식 부대장",
+    "size": 256,
+    "faces": 474,
+    "old_cubes": 37,
+    "new_cubes": 8,
+    "total_cubes": 79,
+    "pixels": 104,
+    "glow_faces": 28,
+    "selected": {
+      "head": {
+        "7": "front",
+        "8": "front"
+      },
+      "chest_eye": {
+        "2": "front"
+      },
+      "void_diadem": {
+        "3": "jewel",
+        "7": "jewel",
+        "11": "jewel"
+      },
+      "body": {
+        "15": "jewel",
+        "29": "jewel"
+      }
+    }
+  },
+  {
+    "id": "plague_devourer",
+    "name": "역병 포식자",
+    "size": 256,
+    "faces": 666,
+    "old_cubes": 40,
+    "new_cubes": 11,
+    "total_cubes": 111,
+    "pixels": 114,
+    "glow_faces": 21,
+    "selected": {
+      "head": {
+        "1": "front",
+        "2": "front"
+      },
+      "pulsing_sac": {
+        "3": "front",
+        "5": "front",
+        "7": "front",
+        "9": "front",
+        "11": "front"
+      },
+      "siphon_tubes": {
+        "3": "side_vein",
+        "9": "side_vein"
+      },
+      "spinal_growth": {
+        "3": "jewel",
+        "5": "jewel"
+      }
+    }
+  },
+  {
+    "id": "drowned_commander",
+    "name": "익사자 지휘관",
+    "size": 256,
+    "faces": 396,
+    "old_cubes": 16,
+    "new_cubes": 7,
+    "total_cubes": 66,
+    "pixels": 71,
+    "glow_faces": 15,
+    "selected": {
+      "head": {
+        "1": "front",
+        "2": "front"
+      },
+      "arm_r": {
+        "4": "vein",
+        "5": "vein",
+        "6": "vein"
+      },
+      "coral_crown": {
+        "5": "jewel"
+      },
+      "soul_lantern": {
+        "1": "jewel"
+      }
+    }
+  },
+  {
+    "id": "swamp_hexer",
+    "name": "늪의 저주술사",
+    "size": 256,
+    "faces": 378,
+    "old_cubes": 16,
+    "new_cubes": 7,
+    "total_cubes": 63,
+    "pixels": 104,
+    "glow_faces": 19,
+    "selected": {
+      "head": {
+        "1": "front",
+        "2": "front"
+      },
+      "wand_spores": {
+        "2": "jewel"
+      },
+      "totem_ring": {
+        "3": "front",
+        "7": "front"
+      },
+      "fungal_hat": {
+        "7": "jewel",
+        "11": "jewel"
+      }
+    }
+  },
+  {
+    "id": "border_captain",
+    "name": "망령 국경대장",
+    "size": 256,
+    "faces": 402,
+    "old_cubes": 14,
+    "new_cubes": 6,
+    "total_cubes": 67,
+    "pixels": 145,
+    "glow_faces": 14,
+    "selected": {
+      "head": {
+        "1": "front",
+        "2": "front"
+      },
+      "aegis_rune": {
+        "1": "slit",
+        "2": "vein"
+      },
+      "helm_plume": {
+        "3": "jewel",
+        "4": "jewel"
+      }
+    }
+  },
+  {
+    "id": "rift_devourer",
+    "name": "마계 균열 포식자",
+    "size": 256,
+    "faces": 546,
+    "old_cubes": 35,
+    "new_cubes": 10,
+    "total_cubes": 91,
+    "pixels": 524,
+    "glow_faces": 38,
+    "selected": {
+      "head": {
+        "1": "front",
+        "3": "front"
+      },
+      "rift_heart": {
+        "2": "front"
+      },
+      "rift_crest": {
+        "3": "jewel",
+        "7": "jewel",
+        "11": "jewel"
+      },
+      "arc_segments": {
+        "2": "jewel",
+        "6": "jewel",
+        "10": "jewel"
+      },
+      "tail_fins": {
+        "5": "jewel"
+      }
+    }
+  }
+]
