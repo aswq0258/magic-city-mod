@@ -66,6 +66,7 @@ import java.util.List;
  * /magiccity quest list|start|set|reset|signal — 개인 퀘스트 시험 (/quest 는 모든 플레이어)
  * /magiccity fix roads      — 이미 생성된 대륙에서 길·강·길가 나무만 그 자리에서 고침 (+ 신시가지 다시 짓기)
  * /magiccity fix lava [반지름]   — 내 주변(기본 512) 지표의 용암 호수·용암 샘을 물로 바꿈
+ * /magiccity fix caves [반지름]  — 동굴 규칙 전에 생성된 땅(기본 512)에 Y 0 미만 동굴을 파냄. 던전 영역 + 8칸 제외
  * /magiccity fix forests [반지름] — 이미 생성된 땅에 새 숲 배치(산기슭·산비탈 침엽수·들판 작은 숲)를 입힘 (기본 1024)
  * /magiccity fix deepwood   — 이미 생성된 땅의 엘프 대수림 심부에 태고의 숲(고목·이끼 바닥·선돌·버섯 고리)을 입힘
  * /magiccity fix elfwood    — 세계수 주변 반지름 360 을 잎 천장으로 닫힌 보랏빛 숲(엘프의 성역 바이옴, 빛 구슬·수정·빛나는 버섯)으로
@@ -133,6 +134,9 @@ public final class MagicCityCommand {
                         .then(Commands.literal("lava").executes(ctx -> fixLava(ctx, 512))
                                 .then(Commands.argument("radius", com.mojang.brigadier.arguments.IntegerArgumentType.integer(16, 4096))
                                         .executes(ctx -> fixLava(ctx, com.mojang.brigadier.arguments.IntegerArgumentType.getInteger(ctx, "radius")))))
+                        .then(Commands.literal("caves").executes(ctx -> fixCaves(ctx, 512))
+                                .then(Commands.argument("radius", com.mojang.brigadier.arguments.IntegerArgumentType.integer(16, 4096))
+                                        .executes(ctx -> fixCaves(ctx, com.mojang.brigadier.arguments.IntegerArgumentType.getInteger(ctx, "radius")))))
                         .then(Commands.literal("deepwood").executes(MagicCityCommand::fixDeepwood))
                         .then(Commands.literal("seams").executes(MagicCityCommand::fixSeams))
                         .then(Commands.literal("elfwood").executes(ctx -> {
@@ -1006,6 +1010,26 @@ public final class MagicCityCommand {
         CityBuildJob job = new CityBuildJob(k, new io.github.aswq0258.magiccity.site.LavaFix(x, z, radius));
         CityBuildManager.start(job);
         src.sendSuccess(() -> Component.literal(String.format("§a[마법 도시] 용암 호수 정리 시작! (%d, %d) 주변 %d블록, 청크 %d개. 땅 위로 드러난 용암만 물로 바꿉니다 (지하 용암은 그대로).",
+                x, z, radius, job.chunkCount())), true);
+        return 1;
+    }
+
+    /** 동굴 규칙(2026-11-22) 전에 생성된 땅에 Y 0 미만 동굴을 파냄 (던전 영역 + 8칸 제외) */
+    private static int fixCaves(CommandContext<CommandSourceStack> ctx, int radius) {
+        CommandSourceStack src = ctx.getSource();
+        if (CityBuildManager.isRunning()) {
+            src.sendFailure(Component.literal("[마법 도시] 이미 건설 중입니다. /magiccity status 로 확인하세요."));
+            return 0;
+        }
+        ServerLevel k = src.getServer().getLevel(io.github.aswq0258.magiccity.world.ModWorldgen.KINGDOM);
+        if (k == null || src.getLevel() != k) {
+            src.sendFailure(Component.literal("[마법 도시] 왕국 대륙 안에서 입력하세요."));
+            return 0;
+        }
+        int x = (int) Math.floor(src.getPosition().x), z = (int) Math.floor(src.getPosition().z);
+        CityBuildJob job = new CityBuildJob(k, new io.github.aswq0258.magiccity.site.CaveFix(x, z, radius));
+        CityBuildManager.start(job);
+        src.sendSuccess(() -> Component.literal(String.format("§a[마법 도시] 지하 동굴 파기 시작! (%d, %d) 주변 %d블록, 청크 %d개. Y 0 미만의 돌만 파고(Y −55 이하는 용암), 지어 둔 던전 영역 + 8칸은 건드리지 않습니다.",
                 x, z, radius, job.chunkCount())), true);
         return 1;
     }

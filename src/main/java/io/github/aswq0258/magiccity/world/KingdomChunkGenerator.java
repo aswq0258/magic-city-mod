@@ -61,6 +61,7 @@ public class KingdomChunkGenerator extends ChunkGenerator {
     private static final BlockState SANDSTONE = Blocks.SANDSTONE.defaultBlockState();
     private static final BlockState GRAVEL = Blocks.GRAVEL.defaultBlockState();
     private static final BlockState WATER = Blocks.WATER.defaultBlockState();
+    private static final BlockState LAVA = Blocks.LAVA.defaultBlockState();
     private static final BlockState ICE = Blocks.ICE.defaultBlockState();
     private static final BlockState SNOW_LAYER = Blocks.SNOW.defaultBlockState();
     private static final BlockState SNOW_BLOCK = Blocks.SNOW_BLOCK.defaultBlockState();
@@ -92,7 +93,11 @@ public class KingdomChunkGenerator extends ChunkGenerator {
             return null;
         }
         int depth = h - y;
-        if (depth > 4) return y < 0 ? DEEPSLATE : STONE;
+        if (depth > 4) {
+            // 지하 동굴 (2026-11-22): Y 0 미만에만, 지어 둔 던전 영역 + 8칸 안은 빼고 (CaveRules)
+            if (y <= CaveRules.TOP && UndergroundZones.carve(x, y, z)) return CaveRules.lava(y) ? LAVA : null;
+            return y < 0 ? DEEPSLATE : STONE;
+        }
         boolean top = depth == 0;
         boolean underwater = c.water() != Integer.MIN_VALUE && h < c.water();
         int hash = (int) ((x * 73856093L ^ z * 19349663L) & 0x7fffffff);
@@ -216,6 +221,8 @@ public class KingdomChunkGenerator extends ChunkGenerator {
                 LavaClear.column(acc, x, z, top, nb == Integer.MAX_VALUE ? top : nb);
             }
         }
+        // 던전 영역 + 8칸 안의 땅속 액체(바닐라 지하 용암 호수·물/용암 샘)를 돌로 (2026-11-22) — 나중에 지을 던전에 액체가 새지 않게
+        sealZones(acc, rx0, rz0, rx1, rz1);
         double[] edge = new double[1];
         for (int x = cp.getMinBlockX() - 8; x <= cp.getMaxBlockX() + 8; x++) {
             for (int z = cp.getMinBlockZ() - 8; z <= cp.getMaxBlockZ() + 8; z++) {
@@ -224,6 +231,26 @@ public class KingdomChunkGenerator extends ChunkGenerator {
                 KingdomTerrain.Column c = KingdomTerrain.column(x, z);
                 int y0 = Math.max(c.h() + 1, c.water() == Integer.MIN_VALUE ? c.h() + 1 : c.water() + 3);   // 다리 기둥·난간은 그대로
                 TreeClearer.clearColumn(acc, x, z, y0, Math.min(c.h() + 40, getMinY() + HEIGHT - 1), edge[0], 0);
+            }
+        }
+    }
+
+    /** 영역 상자 + 여백 안, 지표 5칸 아래부터의 액체를 돌·심층암으로 바꿈. 강·바다·호수(지표 위)는 건드리지 않음 */
+    private static void sealZones(TreeClearer.Access acc, int rx0, int rz0, int rx1, int rz1) {
+        int m = CaveRules.MARGIN;
+        BlockPos.MutableBlockPos q = new BlockPos.MutableBlockPos();
+        for (int[] a : UndergroundZones.all()) {
+            int x0 = Math.max(rx0, a[0] - m), x1 = Math.min(rx1, a[2] + m), z0 = Math.max(rz0, a[1] - m), z1 = Math.min(rz1, a[3] + m);
+            if (x0 > x1 || z0 > z1) continue;
+            for (int x = x0; x <= x1; x++) {
+                for (int z = z0; z <= z1; z++) {
+                    if (!acc.ok(x, z)) continue;
+                    int yTop = Math.min(a[5] + m, KingdomTerrain.column(x, z).h() - 5);
+                    for (int y = Math.max(MIN_Y + 1, a[4] - m); y <= yTop; y++) {
+                        BlockState s = acc.get(q.set(x, y, z));
+                        if (!s.getFluidState().isEmpty()) acc.set(q.immutable(), y < 0 ? DEEPSLATE : STONE);
+                    }
+                }
             }
         }
     }
