@@ -237,6 +237,14 @@
 - 상시 선택지: 퀘스트와 상관없이 대화 끝에 늘 나오는 버튼(예: 시종장 `[유산을 다시 부른다]`). 누르면 서버가 NPC 표식·6칸·목록을 확인한 뒤 `NpcActionEvent`(퀘스트 id 빈 문자열) 발행 → fantasyrpg 가 처리
 - 시험용: `/magiccity quest list|start <퀘스트>|set <퀘스트> <단계>|reset <퀘스트>|signal <신호>`
 
+## 건축 웅장화 (2026-11-23, 기존 월드에 덧짓기)
+기존 지역 생성(`build`·`site`)과 따로 도는 선택형 개선. 빈 공간에만 덧지어서 기존 건축물·플레이어 블록을 덮어쓰지 않고, 바꾼 칸은 모두 백업합니다.
+- `/magiccity monument list` — 웅장화 묶음과 적용 기록
+- `/magiccity monument survey <id>` — 월드를 바꾸지 않고 요소별로 지을 수 있는지·막힌 이유(기존 블록과 겹침, 받침 없음, 보스 방·봉인 제단·NPC 둘레) 보고
+- `/magiccity monument apply <id>` — 검사를 통과한 요소만 덧짓기. 요소는 전부 짓거나 아예 안 지음. 같은 판을 두 번 적용하지 않음. 백업 `<월드>/magiccity/monuments/<id>.nbt`
+- `/magiccity monument rollback <id>` — 백업대로 되돌림 (적용 뒤 누가 바꾼 칸은 그대로 두고 수만 알려 줌). `status`, `cancel`(중단해도 백업은 남음)
+- `capital1` 왕성도시 1차: 왕궁 왕관 첨탑 4·서쪽 플라잉 버트레스 3·성채 전망 발코니 4·외성문 관문 왕관 4·마법 학원 대첨탑. `/magiccity build` 기록(magiccity_city)이 있는 월드에서만, 성채 성벽 표본 확인 뒤 적용
+
 ## 다른 모드에서 쓰기 (API)
 - 공개 API는 `io.github.aswq0258.magiccity.api` 패키지만 쓴다 (나머지는 내부 구현).
   - `MagicCityApi.completed / grade / levelCap / craftGrid / cleared(ServerPlayer)` — 서버 쪽, 읽기 전용. `API_VERSION` = 1

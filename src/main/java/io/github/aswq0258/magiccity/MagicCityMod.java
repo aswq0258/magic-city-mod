@@ -44,6 +44,8 @@ public class MagicCityMod {
         NeoForge.EVENT_BUS.addListener(io.github.aswq0258.magiccity.item.Pouches::onLogout);
         NeoForge.EVENT_BUS.addListener(MagicCityMod::onRegisterCommands);
         NeoForge.EVENT_BUS.addListener(CityBuildManager::onServerTick);
+        NeoForge.EVENT_BUS.addListener(io.github.aswq0258.magiccity.monument.MonumentRunner::onServerTick);      // 웅장화 (2026-11-23)
+        NeoForge.EVENT_BUS.addListener(io.github.aswq0258.magiccity.monument.MonumentRunner::onServerStopping);
         NeoForge.EVENT_BUS.addListener(CityBuildManager::onServerStopping);
         NeoForge.EVENT_BUS.addListener(io.github.aswq0258.magiccity.boss.GateKeeper::onServerTick);
         NeoForge.EVENT_BUS.addListener(io.github.aswq0258.magiccity.boss.GateKeeper::onTravel);
@@ -75,5 +77,6 @@ public class MagicCityMod {
         MagicCityCommand.register(event.getDispatcher());
         io.github.aswq0258.magiccity.quest.QuestCommand.register(event.getDispatcher());
         io.github.aswq0258.magiccity.arena.ArenaCommand.register(event.getDispatcher());
+        io.github.aswq0258.magiccity.monument.MonumentCommand.register(event.getDispatcher());
     }
 }
